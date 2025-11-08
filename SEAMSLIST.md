@@ -1,8 +1,8 @@
 # Seams List - TarotUpMyHeart
 
-**Last Updated**: 2025-11-07
-**Total Seams**: TBD
-**Status**: ⚠️ Seams not yet defined - contracts pending
+**Last Updated**: 2025-11-08
+**Total Seams**: 5 (AI Coordination Server)
+**Status**: ✅ AI Coordination seams defined and tested
 
 ---
 
@@ -36,15 +36,250 @@ Boundaries between application services
 
 ## Seam Overview Table
 
-| #   | Seam Name         | Type | Priority | Contract Location | Mock Status | Real Status |
-| --- | ----------------- | ---- | -------- | ----------------- | ----------- | ----------- |
-| -   | _Not yet defined_ | -    | -        | -                 | ⏸️ Pending  | ⏸️ Pending  |
-
-> **Note**: This table will be populated during the IDENTIFY phase of SDD implementation.
+| #   | Seam Name                 | Type                     | Priority | Contract Location                    | Mock Status | Real Status |
+| --- | ------------------------- | ------------------------ | -------- | ------------------------------------ | ----------- | ----------- |
+| 1   | StateStore                | Internal Service Seams   | High     | `/contracts/StateStore.ts`           | ✅ Complete | ⏸️ Pending  |
+| 2   | ClaudeCoordination        | Internal Service Seams   | High     | `/contracts/ClaudeCoordination.ts`   | ✅ Complete | ⏸️ Pending  |
+| 3   | CopilotCoordination       | Internal Service Seams   | High     | `/contracts/CopilotCoordination.ts`  | ✅ Complete | ⏸️ Pending  |
+| 4   | UserCoordination          | Internal Service Seams   | High     | `/contracts/UserCoordination.ts`     | ✅ Complete | ⏸️ Pending  |
+| 5   | FileSystemCoordination    | Internal Service Seams   | High     | `/contracts/FileSystemCoordination.ts` | ✅ Complete | ⏸️ Pending  |
 
 ---
 
 ## Seam Details
+
+### 1. StateStore
+
+**Boundary**: Application Services → Shared State
+**Contract**: `/contracts/StateStore.ts`
+**Purpose**: Provides coordination primitives for multiple AI agents including task queue management, file locking, and shared context storage.
+**Priority**: High
+
+#### Input Contract
+
+Manages tasks, file locks, and agent contexts with methods for:
+- Task queue operations (enqueue, dequeue, update status)
+- File lock operations (acquire, release, check status)
+- Context operations (set, get, delete, list)
+
+#### Output Contract
+
+Returns managed state including:
+- Task objects with status, priority, and metadata
+- FileLock objects with agent, timestamp, and expiration
+- AgentContext objects with key-value data and persistence flags
+
+#### Dependencies
+
+- **Depends on**: None (core service)
+- **Used by**: ClaudeCoordination, CopilotCoordination, UserCoordination, FileSystemCoordination
+
+#### Status Checklist
+
+- [x] Contract defined (`/contracts/StateStore.ts`)
+- [x] Contract compiles (TypeScript validation passes)
+- [x] Mock service implemented (`/services/mock/StateStoreMock.ts`)
+- [x] Contract tests written (`/tests/contracts/StateStore.test.ts`)
+- [x] Contract tests passing (24 tests)
+- [x] Mock tests written (`/tests/mocks/StateStore.mock.test.ts`)
+- [x] Mock tests passing (18 tests)
+- [ ] Real service implemented
+- [ ] Integration tests passing
+- [x] Documented in SEAMSLIST.md (this file)
+
+---
+
+### 2. ClaudeCoordination
+
+**Boundary**: Application → Claude AI Agent
+**Contract**: `/contracts/ClaudeCoordination.ts`
+**Purpose**: Interface for coordinating with Claude AI agent, handling task assignment, status monitoring, and result retrieval.
+**Priority**: High
+
+#### Input Contract
+
+Task requests including:
+- Task type (code review, generation, documentation, refactoring, testing, analysis)
+- Prompt text
+- Context files
+- Priority level
+
+#### Output Contract
+
+Task results including:
+- Generated content/response
+- Modified files list
+- Agent status information
+- Completion metadata
+
+#### Dependencies
+
+- **Depends on**: StateStore (for coordination)
+- **Used by**: Application workflow orchestration
+
+#### Status Checklist
+
+- [x] Contract defined (`/contracts/ClaudeCoordination.ts`)
+- [x] Contract compiles (TypeScript validation passes)
+- [x] Mock service implemented (`/services/mock/ClaudeCoordinationMock.ts`)
+- [x] Contract tests written (`/tests/contracts/ClaudeCoordination.test.ts`)
+- [x] Contract tests passing (21 tests)
+- [ ] Mock tests written (basic behavior tested in integration)
+- [ ] Real service implemented
+- [ ] Integration tests passing
+- [x] Documented in SEAMSLIST.md (this file)
+
+---
+
+### 3. CopilotCoordination
+
+**Boundary**: Application → GitHub Copilot Agent
+**Contract**: `/contracts/CopilotCoordination.ts`
+**Purpose**: Interface for coordinating with GitHub Copilot agent for code completion, suggestions, and unit test generation.
+**Priority**: High
+
+#### Input Contract
+
+Task requests including:
+- Task type (completion, suggestion, inline chat, workspace edit, unit test)
+- Prompt text
+- File path and code context
+- Priority level
+
+#### Output Contract
+
+Task results including:
+- Generated code/content
+- Suggested file path
+- Confidence score (0-1)
+- Completion metadata
+
+#### Dependencies
+
+- **Depends on**: StateStore (for coordination)
+- **Used by**: Application workflow orchestration
+
+#### Status Checklist
+
+- [x] Contract defined (`/contracts/CopilotCoordination.ts`)
+- [x] Contract compiles (TypeScript validation passes)
+- [x] Mock service implemented (`/services/mock/CopilotCoordinationMock.ts`)
+- [x] Contract tests written (`/tests/contracts/CopilotCoordination.test.ts`)
+- [x] Contract tests passing (20 tests)
+- [ ] Mock tests written (basic behavior tested in integration)
+- [ ] Real service implemented
+- [ ] Integration tests passing
+- [x] Documented in SEAMSLIST.md (this file)
+
+---
+
+### 4. UserCoordination
+
+**Boundary**: AI Agents → User
+**Contract**: `/contracts/UserCoordination.ts`
+**Purpose**: Interface for user interaction in the AI coordination system, handling requests requiring user input and sending notifications.
+**Priority**: High
+
+#### Input Contract
+
+User requests including:
+- Request type (approve change, provide input, resolve conflict, select option, review output)
+- Title and description
+- Options (for selection requests)
+- Expiration time
+
+Notifications including:
+- Level (info, warning, error, success)
+- Message text
+- Source agent
+- Additional data
+
+#### Output Contract
+
+User responses including:
+- Approval/rejection status
+- Selected value or input text
+- User comments
+- Notification read status
+
+#### Dependencies
+
+- **Depends on**: StateStore (for request tracking)
+- **Used by**: ClaudeCoordination, CopilotCoordination, FileSystemCoordination
+
+#### Status Checklist
+
+- [x] Contract defined (`/contracts/UserCoordination.ts`)
+- [x] Contract compiles (TypeScript validation passes)
+- [x] Mock service implemented (`/services/mock/UserCoordinationMock.ts`)
+- [x] Contract tests written (`/tests/contracts/UserCoordination.test.ts`)
+- [x] Contract tests passing (24 tests)
+- [ ] Mock tests written (basic behavior tested in integration)
+- [ ] Real service implemented
+- [ ] Integration tests passing
+- [x] Documented in SEAMSLIST.md (this file)
+
+---
+
+### 5. FileSystemCoordination
+
+**Boundary**: AI Agents → File System
+**Contract**: `/contracts/FileSystemCoordination.ts`
+**Purpose**: Provides safe, coordinated file system operations for multiple agents with change tracking and conflict detection.
+**Priority**: High
+
+#### Input Contract
+
+File operations including:
+- Read, write, create, delete operations
+- Agent identifier
+- Change description
+- File paths
+
+#### Output Contract
+
+File operations results including:
+- File content
+- File metadata (size, modified time, hash)
+- Change history
+- Conflict information
+
+#### Dependencies
+
+- **Depends on**: StateStore (for file locks)
+- **Used by**: ClaudeCoordination, CopilotCoordination
+
+#### Status Checklist
+
+- [x] Contract defined (`/contracts/FileSystemCoordination.ts`)
+- [x] Contract compiles (TypeScript validation passes)
+- [x] Mock service implemented (`/services/mock/FileSystemCoordinationMock.ts`)
+- [x] Contract tests written (`/tests/contracts/FileSystemCoordination.test.ts`)
+- [x] Contract tests passing (28 tests)
+- [ ] Mock tests written (basic behavior tested in integration)
+- [ ] Real service implemented
+- [ ] Integration tests passing
+- [x] Documented in SEAMSLIST.md (this file)
+
+---
+
+## Integration Tests
+
+**Integration Test Suite**: `/tests/integration/Integration.test.ts`
+**Status**: ✅ Complete (8 tests passing)
+
+The integration tests verify:
+- Multi-agent workflow coordination
+- File conflict detection and resolution
+- Task coordination between state store and agents
+- File locking to prevent concurrent modifications
+- Context sharing between agents
+- Error handling and agent unavailability
+- Complete feature development workflow
+
+---
+
+## Seam Details (Template for Future Seams)
 
 > **Instructions**: For each identified seam, add a section using the template below.
 
