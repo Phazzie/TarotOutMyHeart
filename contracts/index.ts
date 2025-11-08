@@ -12,7 +12,12 @@
 // Export common types
 export * from './types/common'
 
-// AI Coordination Contracts (for Claude-Copilot collaboration)
+// AI Coordination Contracts (for Claude-Copilot collaboration system)
+export * from './StateStore'
+export * from './ClaudeCoordination'
+export * from './CopilotCoordination'
+export * from './UserCoordination'
+export * from './FileSystemCoordination'
 export * from './CoordinationServer'
 
 // Tarot Application Contracts (SDD Seams #1-7)

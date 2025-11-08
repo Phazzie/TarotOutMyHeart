@@ -19,18 +19,21 @@
 **Critical**: All SDD requirements must be met before merge.
 
 ### Contracts
+
 - [ ] No existing contracts modified (or new version created: V2, V3, etc.)
 - [ ] All new seams documented in `SEAMSLIST.md`
 - [ ] All contracts compile without errors (`npm run check`)
 - [ ] No `any` types in contracts (strict type safety maintained)
 
 ### Mocks & Services
+
 - [ ] Mock services created/updated for any new contracts
 - [ ] Mock services implement contracts exactly
 - [ ] Real services implement contracts exactly (if applicable)
 - [ ] No manual data transformations (or properly isolated in gateway)
 
 ### Testing
+
 - [ ] Contract tests added/updated
 - [ ] Contract tests passing (`npm run test:contracts`)
 - [ ] Mock tests added/updated
@@ -40,6 +43,7 @@
 - [ ] All tests pass (`npm test`)
 
 ### Code Quality
+
 - [ ] Type checking passes (`npm run check`)
 - [ ] Linting passes (`npm run lint`)
 - [ ] Code formatted (`npm run format`)
@@ -47,6 +51,7 @@
 - [ ] No commented-out code
 
 ### Documentation
+
 - [ ] `CHANGELOG.md` updated (if user-facing change)
 - [ ] `AGENTS.md` updated (if affects AI agent behavior)
 - [ ] `README.md` updated (if user-facing change)
@@ -111,6 +116,7 @@ Before submitting this PR, I have:
 ---
 
 **Note**: This PR will be automatically checked by CI/CD workflows including:
+
 - SDD Compliance (contract immutability, type safety, mock coverage)
 - Tests (contract, mock, integration)
 - Code Quality (linting, type checking, formatting)

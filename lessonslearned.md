@@ -1,6 +1,6 @@
 # Lessons Learned - TarotUpMyHeart
 
-*This document captures insights specific to applying Seam-Driven Development (SDD) to the TarotUpMyHeart project.*
+_This document captures insights specific to applying Seam-Driven Development (SDD) to the TarotUpMyHeart project._
 
 ## Project Context
 
@@ -109,11 +109,13 @@ Before defining contracts:
 
 ### What Worked Well
 
-*To be filled during development*
+_To be filled during development_
 
 **Template for entries:**
+
 ```markdown
 #### [Feature/Decision Name]
+
 - **What**: [Brief description]
 - **Why it worked**: [Explanation]
 - **Impact**: [Measurable result]
@@ -121,8 +123,10 @@ Before defining contracts:
 ```
 
 **Example:**
+
 ```markdown
 #### Mock-First Image Upload
+
 - **What**: Built image upload UI against mock file validation service
 - **Why it worked**: Could iterate on UX without waiting for real upload implementation
 - **Impact**: Saved 2 days of blocked time
@@ -133,11 +137,13 @@ Before defining contracts:
 
 ### What Didn't Work
 
-*To be filled during development*
+_To be filled during development_
 
 **Template for entries:**
+
 ```markdown
 #### [Issue Name]
+
 - **What went wrong**: [Description]
 - **Context**: [When/where it happened]
 - **Root cause**: [Why it failed]
@@ -147,8 +153,10 @@ Before defining contracts:
 ```
 
 **Example:**
+
 ```markdown
 #### Contract Changed Mid-Development
+
 - **What went wrong**: Developer modified contract after UI implementation started
 - **Context**: Week 2, adding email field to UserSeam
 - **Root cause**: Didn't understand contract immutability principle
@@ -161,11 +169,13 @@ Before defining contracts:
 
 ### What We'd Do Differently
 
-*To be filled during development*
+_To be filled during development_
 
 **Template for entries:**
+
 ```markdown
 #### [Decision/Approach]
+
 - **What we did**: [Original approach]
 - **What we learned**: [Insight gained]
 - **What we'd do instead**: [Better approach]
@@ -178,7 +188,7 @@ Before defining contracts:
 
 ### Decision Log
 
-*Document significant technical decisions using this template*
+_Document significant technical decisions using this template_
 
 #### Decision: [Name]
 
@@ -226,11 +236,13 @@ Before defining contracts:
 
 ### Contract Design
 
-*To be filled as contracts are defined*
+_To be filled as contracts are defined_
 
 **Template:**
+
 ```markdown
 #### [Seam Name]
+
 - **Challenge**: [What was hard about defining this contract]
 - **Solution**: [How we solved it]
 - **Pattern**: [Contract structure we settled on]
@@ -241,11 +253,13 @@ Before defining contracts:
 
 ### Mock Development
 
-*To be filled as mocks are implemented*
+_To be filled as mocks are implemented_
 
 **Template:**
+
 ```markdown
 #### [Mock Service Name]
+
 - **Challenge**: [Difficulty in mocking]
 - **Approach**: [What we tried]
 - **Result**: [What worked]
@@ -253,8 +267,10 @@ Before defining contracts:
 ```
 
 **Example:**
+
 ```markdown
 #### MockGrokImageService
+
 - **Challenge**: How to mock image generation without real AI calls
 - **Approach**: Used placeholder images from Lorem Picsum API with deterministic IDs
 - **Result**: Realistic mock that generates unique "images" for each card
@@ -265,11 +281,13 @@ Before defining contracts:
 
 ### Integration Challenges
 
-*To be filled during integration phase*
+_To be filled during integration phase_
 
 **Template:**
+
 ```markdown
 #### [Integration Issue]
+
 - **Issue**: [What broke during integration]
 - **Root Cause**: [Why it broke]
 - **Contract Problem**: [Was the contract wrong or implementation?]
@@ -283,54 +301,64 @@ Before defining contracts:
 
 ### Working with Claude
 
-*To be filled as we use Claude for development*
+_To be filled as we use Claude for development_
 
 **What works well:**
+
 - [Patterns that Claude handles effectively]
 
 **What doesn't work:**
+
 - [Areas where Claude struggles]
 
 **Best practices:**
+
 - [How to get best results from Claude]
 
 ---
 
 ### Working with GitHub Copilot
 
-*To be filled as we use Copilot*
+_To be filled as we use Copilot_
 
 **What works well:**
+
 - [Patterns that Copilot handles effectively]
 
 **What doesn't work:**
+
 - [Areas where Copilot struggles]
 
 **Best practices:**
+
 - [How to get best results from Copilot]
 
 ---
 
 ### Working with Gemini
 
-*To be filled as we use Gemini*
+_To be filled as we use Gemini_
 
 **What works well:**
+
 - [Patterns that Gemini handles effectively]
 
 **What doesn't work:**
+
 - [Areas where Gemini struggles]
 
 **Best practices:**
+
 - [How to get best results from Gemini]
 
 ---
 
 ### Common AI Pitfalls
 
-*Document AI-specific issues encountered*
+_Document AI-specific issues encountered_
 
 **Template:**
+
 ```markdown
 - **Pitfall**: [What the AI did wrong]
 - **Why it happens**: [Root cause]
@@ -338,6 +366,7 @@ Before defining contracts:
 ```
 
 **Example:**
+
 ```markdown
 - **Pitfall**: AI modified contract during implementation
 - **Why it happens**: AI doesn't understand SDD contract immutability
@@ -350,11 +379,13 @@ Before defining contracts:
 
 ### Improvements to SDD Process
 
-*Document any adjustments we made to standard SDD*
+_Document any adjustments we made to standard SDD_
 
 **Template:**
+
 ```markdown
 #### [Improvement Name]
+
 - **Standard SDD approach**: [What the methodology says]
 - **Our modification**: [What we changed]
 - **Why we changed it**: [Rationale]
@@ -366,11 +397,13 @@ Before defining contracts:
 
 ### Tooling Gaps
 
-*What tools would have helped?*
+_What tools would have helped?_
 
 **Template:**
+
 ```markdown
 #### [Tool Name/Purpose]
+
 - **Gap**: [What was missing]
 - **Impact**: [How it slowed us down]
 - **Workaround**: [What we did instead]
@@ -379,8 +412,10 @@ Before defining contracts:
 ```
 
 **Example:**
+
 ```markdown
 #### Contract Validation Tool
+
 - **Gap**: No automated way to verify mocks match contracts
 - **Impact**: Manual verification was error-prone, caught issues late
 - **Workaround**: Wrote tests manually for each contract
@@ -394,9 +429,10 @@ Before defining contracts:
 
 ### Development Velocity
 
-*To be filled during and after development*
+_To be filled during and after development_
 
 **Metrics to track:**
+
 - Time to first integration: [TBD]
 - Integration success rate: [TBD]
 - Debugging time percentage: [TBD]
@@ -405,6 +441,7 @@ Before defining contracts:
 - Real service implementation time: [TBD]
 
 **Comparison to expectations:**
+
 - Expected: [Based on SDD metrics - 95% success rate, 70% faster integration]
 - Actual: [To be filled]
 - Analysis: [Why different, if at all]
@@ -413,15 +450,16 @@ Before defining contracts:
 
 ### Comparison to Previous Projects
 
-*If applicable - compare to non-SDD projects*
+_If applicable - compare to non-SDD projects_
 
 **Template:**
+
 ```markdown
-| Metric | Previous Project | TarotUpMyHeart (SDD) | Improvement |
-|--------|-----------------|----------------------|-------------|
-| Time to first integration | [X days] | [Y days] | [+/-Z%] |
-| Integration bugs | [X bugs] | [Y bugs] | [+/-Z%] |
-| Refactoring time | [X hours] | [Y hours] | [+/-Z%] |
+| Metric                    | Previous Project | TarotUpMyHeart (SDD) | Improvement |
+| ------------------------- | ---------------- | -------------------- | ----------- |
+| Time to first integration | [X days]         | [Y days]             | [+/-Z%]     |
+| Integration bugs          | [X bugs]         | [Y bugs]             | [+/-Z%]     |
+| Refactoring time          | [X hours]        | [Y hours]            | [+/-Z%]     |
 ```
 
 ---
@@ -430,26 +468,31 @@ Before defining contracts:
 
 ### Communication Patterns
 
-*How did we communicate around contracts?*
+_How did we communicate around contracts?_
 
 **What worked:**
+
 - [Effective communication patterns]
 
 **What didn't work:**
+
 - [Communication failures]
 
 **Recommendations:**
+
 - [Patterns to adopt for future]
 
 ---
 
 ### Handling Contract Disputes
 
-*When team disagreed on contract design*
+_When team disagreed on contract design_
 
 **Template:**
+
 ```markdown
 #### [Contract Name] Dispute
+
 - **Disagreement**: [What people disagreed on]
 - **Viewpoints**:
   - Option A: [Reasoning]
@@ -462,31 +505,36 @@ Before defining contracts:
 
 ### Onboarding New Developers
 
-*If we onboard anyone mid-project*
+_If we onboard anyone mid-project_
 
 **How easy was it?**
+
 - Time to productivity: [TBD]
 - What helped most: [Documentation, pairing, etc.]
 - What was confusing: [Areas that needed better docs]
 
 **Improvements needed:**
+
 - [What would make onboarding faster]
 
 ---
 
 ## Grok AI Integration Learnings
 
-*Specific insights about working with Grok API*
+_Specific insights about working with Grok API_
 
 ### Prompt Generation (grok-4-fast-reasoning)
 
 **What we learned:**
+
 - [Insights about the text model]
 
 **Best practices:**
+
 - [How to structure prompts for best results]
 
 **Gotchas:**
+
 - [Unexpected behaviors or limitations]
 
 ---
@@ -494,12 +542,15 @@ Before defining contracts:
 ### Image Generation (grok-image-generator)
 
 **What we learned:**
+
 - [Insights about the image model]
 
 **Best practices:**
+
 - [How to structure prompts for best results]
 
 **Gotchas:**
+
 - [Unexpected behaviors or limitations]
 
 ---
@@ -507,12 +558,15 @@ Before defining contracts:
 ### API Quirks
 
 **Differences from OpenAI/Anthropic:**
+
 - [Unique aspects of Grok API]
 
 **Cost optimization:**
+
 - [Strategies to reduce API costs]
 
 **Rate limiting:**
+
 - [How we handled rate limits]
 
 ---
@@ -528,7 +582,7 @@ Before defining contracts:
 
 ### For This Project (Phase 2)
 
-*What to add in next iteration*
+_What to add in next iteration_
 
 1. [Feature or improvement for this project]
 2. [Feature or improvement for this project]
@@ -539,11 +593,13 @@ Before defining contracts:
 
 ### Times We Used Emergency Protocols
 
-*Document any times integration failed*
+_Document any times integration failed_
 
 **Template:**
+
 ```markdown
 #### Incident: [Brief description]
+
 - **Date**: YYYY-MM-DD
 - **What failed**: [Integration that broke]
 - **Which protocol step caught it**: [Contract validation? Mock tests? etc.]
@@ -557,12 +613,15 @@ Before defining contracts:
 ### Protocol Effectiveness
 
 **Did the emergency protocols work?**
+
 - [Analysis of protocol effectiveness]
 
 **What's missing from the protocols?**
+
 - [Gaps we discovered]
 
 **Improvements to protocols:**
+
 - [Suggested additions]
 
 ---
@@ -571,23 +630,23 @@ Before defining contracts:
 
 ### "Aha!" Moments
 
-*Insights that changed our understanding*
+_Insights that changed our understanding_
 
-- *"[Quote or insight]"* - [Context: when, why it mattered]
+- _"[Quote or insight]"_ - [Context: when, why it mattered]
 
 ---
 
 ### "Oh No!" Moments
 
-*Things that went wrong and how we recovered*
+_Things that went wrong and how we recovered_
 
-- *"[What went wrong]"* - [Context: how we recovered, what we learned]
+- _"[What went wrong]"_ - [Context: how we recovered, what we learned]
 
 ---
 
 ### Funny Moments
 
-*Lighten the mood - development has humor too*
+_Lighten the mood - development has humor too_
 
 - [Funny bugs, interesting edge cases, etc.]
 
@@ -595,7 +654,7 @@ Before defining contracts:
 
 ## Metrics Summary
 
-*To be filled at project completion*
+_To be filled at project completion_
 
 ### SDD Effectiveness
 

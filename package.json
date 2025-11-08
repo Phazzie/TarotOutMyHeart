@@ -10,9 +10,9 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "test": "vitest run --passWithNoTests",
-    "test:contracts": "vitest run --testPathPattern=contracts --passWithNoTests",
-    "test:mocks": "vitest run --testPathPattern=mocks --passWithNoTests",
-    "test:integration": "vitest run --testPathPattern=integration --passWithNoTests",
+    "test:contracts": "vitest run tests/contracts --passWithNoTests",
+    "test:mocks": "vitest run tests/mocks --passWithNoTests",
+    "test:integration": "vitest run tests/integration --passWithNoTests",
     "test:all": "npm run test:contracts && npm run test:mocks && npm run test:integration",
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
@@ -27,11 +27,13 @@
     "@sveltejs/adapter-vercel": "^5.0.0",
     "@sveltejs/kit": "^2.0.0",
     "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "@types/node": "^24.10.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-svelte": "^2.35.1",
+    "jsdom": "^27.1.0",
     "prettier": "^3.2.0",
     "prettier-plugin-svelte": "^3.1.2",
     "svelte": "^5.0.0",
@@ -40,7 +42,6 @@
     "vite": "^5.0.0",
     "vitest": "^1.2.0"
   },
-  "dependencies": {},
   "engines": {
     "node": ">=20.0.0"
   }

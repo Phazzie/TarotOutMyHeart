@@ -10,23 +10,11 @@
 
 ### 1. Understand the Context
 
-**Root Documentation** (Original scaffolding):
 - [ ] Read `AGENTS.md` for project overview and coding standards
 - [ ] Read `seam-driven-development.md` to understand SDD methodology
-- [ ] **Read `lessonslearned.md` Section 8 - File Documentation Standards**
 - [ ] Check `SEAMSLIST.md` to see all existing seams
 - [ ] Check `CHANGELOG.md` to see recent changes
-- [ ] Check `lessonslearned.md` for project-specific patterns
-
-**Development Documents** (Planning folder):
-- [ ] Check `docs/planning/DATA-BOUNDARIES.md` for data boundary analysis
-- [ ] Check `docs/planning/RECOMMENDATIONS.md` for technical decisions
 - [ ] Review related issues/PRs if applicable
-
-**Documentation Structure Rule**:
-- Root files = original scaffolding (read-only structure)
-- `/docs/planning/` = development documents (your workspace)
-- New docs → always create in `/docs/planning/`
 
 ### 2. Identify the Task Type
 
@@ -44,26 +32,16 @@ What kind of task is this?
 
 ### Phase 1: Requirements & Planning
 
-**File Documentation Requirement**: All files created must include top-level comments:
-```typescript
-/**
- * @fileoverview [What this file does]
- * @purpose [Why it exists]
- * @dataFlow [How data flows]
- * @boundary [What seam it implements]
- */
-```
-Use blueprints: `docs/blueprints/CONTRACT-BLUEPRINT.md`, `docs/blueprints/STUB-BLUEPRINT.md`
-
 #### Step 1: Understand Requirements
+
 - [ ] Read the user story/requirement completely
-- [ ] **Review blueprint templates in `docs/blueprints/`**
 - [ ] Identify all inputs and outputs
 - [ ] List all user interactions
 - [ ] Identify edge cases and error scenarios
 - [ ] Ask clarifying questions if anything is unclear
 
 #### Step 2: Identify Seams
+
 - [ ] List ALL data boundaries for this feature
 - [ ] For each boundary, identify:
   - [ ] Source (where data comes from)
@@ -74,6 +52,7 @@ Use blueprints: `docs/blueprints/CONTRACT-BLUEPRINT.md`, `docs/blueprints/STUB-B
 - [ ] Document new seams needed in notes
 
 #### Step 3: Check for Existing Seams
+
 - [ ] Open `/SEAMSLIST.md`
 - [ ] Search for similar seams
 - [ ] If exists: Reuse existing seam (DO NOT create duplicate)
@@ -82,18 +61,16 @@ Use blueprints: `docs/blueprints/CONTRACT-BLUEPRINT.md`, `docs/blueprints/STUB-B
 ### Phase 2: Define Contracts (CRITICAL)
 
 #### Step 4: Create Contract File
-- [ ] **REFERENCE**: `/docs/blueprints/CONTRACT-BLUEPRINT.md` for complete template
+
 - [ ] Create `/contracts/[FeatureName].ts`
-- [ ] Add comprehensive file header with:
-  - [ ] `@fileoverview` - One-line description
-  - [ ] `PURPOSE` section - Why this exists (2-3 sentences)
-  - [ ] `DATA FLOW` section - Input → Transform → Output
-  - [ ] `DEPENDENCIES` section - What depends on what
-  - [ ] `@see` references to DATA-BOUNDARIES.md and SEAMSLIST.md
+- [ ] Add JSDoc comment with:
+  - [ ] `@purpose` - What this seam does
+  - [ ] `@requirement` - Link to requirement ID
   - [ ] `@updated` - Current date
 - [ ] Import common types from `/contracts/types/common.ts`
 
 #### Step 5: Define Input Contract
+
 ```typescript
 export interface [Feature]Input {
   // Define ALL input fields
@@ -103,6 +80,7 @@ export interface [Feature]Input {
   // Mark optional fields with '?'
 }
 ```
+
 - [ ] All input fields defined
 - [ ] All fields have types
 - [ ] All fields have comments
@@ -110,6 +88,7 @@ export interface [Feature]Input {
 - [ ] Optional fields marked with `?`
 
 #### Step 6: Define Output Contract
+
 ```typescript
 export interface [Feature]Output {
   // Define ALL output fields
@@ -118,23 +97,27 @@ export interface [Feature]Output {
   // Include metadata if needed
 }
 ```
+
 - [ ] All output fields defined
 - [ ] Matches expected data shape
 - [ ] Includes error states
 - [ ] Includes loading states (if async)
 
 #### Step 7: Define Service Interface
+
 ```typescript
 export interface I[Feature]Service {
   execute(input: [Feature]Input): Promise<ServiceResponse<[Feature]Output>>
 }
 ```
+
 - [ ] Service interface defined
 - [ ] Uses `ServiceResponse` wrapper
 - [ ] Method names are clear
 - [ ] Return type is correct
 
 #### Step 8: Define Error Cases
+
 ```typescript
 export enum [Feature]ErrorCode {
   VALIDATION_FAILED = 'VALIDATION_FAILED',
@@ -142,18 +125,21 @@ export enum [Feature]ErrorCode {
   // ... more error codes
 }
 ```
+
 - [ ] All error scenarios listed
 - [ ] Error codes defined
 - [ ] Error messages defined
 - [ ] Retryable flag considered
 
 #### Step 9: Validate Contract
+
 - [ ] Export contract from `/contracts/index.ts`
 - [ ] Run `npm run check` - Must pass with no errors
 - [ ] No `any` types in contract
 - [ ] All imports resolve correctly
 
 #### Step 10: Document in SEAMSLIST.md
+
 - [ ] Open `/SEAMSLIST.md`
 - [ ] Add new seam section using template
 - [ ] Fill in all details:
@@ -170,19 +156,13 @@ export enum [Feature]ErrorCode {
 ### Phase 3: Build Mock Service
 
 #### Step 11: Create Mock File
-- [ ] **REFERENCE**: `/docs/blueprints/STUB-BLUEPRINT.md` for complete template
+
 - [ ] Create `/services/mock/[Feature]Mock.ts`
-- [ ] Add comprehensive file header with:
-  - [ ] `@fileoverview` - One-line description
-  - [ ] `PURPOSE` section - Why this mock exists
-  - [ ] `DATA FLOW` section - Input → Mock Logic → Output
-  - [ ] `MOCK BEHAVIOR` section - How mock works
-  - [ ] `DEPENDENCIES` section
-  - [ ] `@updated` - Current date
 - [ ] Import contract from `/contracts`
 - [ ] Implement service interface
 
 #### Step 12: Implement Mock
+
 ```typescript
 import type { I[Feature]Service, [Feature]Input, [Feature]Output } from '$contracts/[Feature]'
 
@@ -195,6 +175,7 @@ export class [Feature]MockService implements I[Feature]Service {
   }
 }
 ```
+
 - [ ] Mock implements interface exactly
 - [ ] Returns realistic data
 - [ ] Simulates delay (`await new Promise(resolve => setTimeout(resolve, 200))`)
@@ -203,12 +184,14 @@ export class [Feature]MockService implements I[Feature]Service {
 - [ ] Data matches contract shape EXACTLY
 
 #### Step 13: Add to Mock Factory
+
 - [ ] Open `/services/factory.ts` (or create if doesn't exist)
 - [ ] Import mock service
 - [ ] Add to factory function
 - [ ] Ensure USE_MOCKS flag respected
 
 #### Step 14: Test Mock Data Shape
+
 - [ ] Create test file: `/tests/contracts/[Feature].test.ts`
 - [ ] Test: Mock returns correct shape
 - [ ] Test: All required fields present
@@ -219,11 +202,13 @@ export class [Feature]MockService implements I[Feature]Service {
 ### Phase 4: Build UI (If Applicable)
 
 #### Step 15: Create Component
+
 - [ ] Create component in `/src/lib/components/`
 - [ ] Import types from `/contracts`
 - [ ] Import service from `/services/factory`
 
 #### Step 16: Implement Component
+
 ```svelte
 <script lang="ts">
   import type { [Feature]Input, [Feature]Output } from '$contracts/[Feature]'
@@ -250,6 +235,7 @@ export class [Feature]MockService implements I[Feature]Service {
   }
 </script>
 ```
+
 - [ ] All props typed
 - [ ] All state typed
 - [ ] Handles loading state
@@ -258,6 +244,7 @@ export class [Feature]MockService implements I[Feature]Service {
 - [ ] Uses service from factory (respects USE_MOCKS)
 
 #### Step 17: Test with Mocks
+
 - [ ] Run `npm run dev`
 - [ ] Navigate to component
 - [ ] Test all success paths
@@ -268,19 +255,13 @@ export class [Feature]MockService implements I[Feature]Service {
 ### Phase 5: Implement Real Service
 
 #### Step 18: Create Real Service File
-- [ ] **REFERENCE**: `/docs/blueprints/STUB-BLUEPRINT.md` for complete template
+
 - [ ] Create `/services/real/[Feature]Service.ts`
-- [ ] Add comprehensive file header with:
-  - [ ] `@fileoverview` - One-line description
-  - [ ] `PURPOSE` section - Production implementation details
-  - [ ] `DATA FLOW` section - Input → API Call → Transform → Output
-  - [ ] `ERROR HANDLING` section - Retry logic, timeouts
-  - [ ] `DEPENDENCIES` section - External APIs, env vars
-  - [ ] `@updated` - Current date
 - [ ] Import contract from `/contracts`
 - [ ] Import API client or SDK
 
 #### Step 19: Implement Real Service
+
 ```typescript
 import type { I[Feature]Service, [Feature]Input, [Feature]Output } from '$contracts/[Feature]'
 
@@ -306,6 +287,7 @@ export class [Feature]Service implements I[Feature]Service {
   }
 }
 ```
+
 - [ ] Implements interface exactly (same as mock)
 - [ ] Makes real API calls
 - [ ] Handles authentication
@@ -316,12 +298,14 @@ export class [Feature]Service implements I[Feature]Service {
 - [ ] Provides user-friendly error messages
 
 #### Step 20: Add to Real Service Factory
+
 - [ ] Open `/services/factory.ts`
 - [ ] Import real service
 - [ ] Add to factory function
 - [ ] Ensure USE_MOCKS=false uses real service
 
 #### Step 21: Write Integration Tests
+
 - [ ] Create `/tests/integration/[Feature].test.ts`
 - [ ] Test real API calls (may need API key)
 - [ ] Test success scenarios
@@ -332,6 +316,7 @@ export class [Feature]Service implements I[Feature]Service {
 ### Phase 6: Integration
 
 #### Step 22: Pre-Integration Checklist
+
 - [ ] Run `npm run check` - Must pass
 - [ ] Run `npm run test:contracts` - Must pass
 - [ ] Run `npm run test:mocks` - Must pass
@@ -342,15 +327,18 @@ export class [Feature]Service implements I[Feature]Service {
 - [ ] CHANGELOG.md updated
 
 #### Step 23: Switch to Real Service
+
 - [ ] Set `USE_MOCKS=false` in `.env` or factory
 - [ ] Test feature end-to-end
 - [ ] Verify all paths work
 - [ ] Verify error handling works
 
 #### Step 24: If Integration Fails
+
 🚨 **STOP**: Integration should work first try if SDD followed correctly.
 
 Run Emergency Protocols:
+
 1. [ ] Check contract version mismatch
 2. [ ] Validate mock data matches contract
 3. [ ] Check for manual transformations
@@ -361,12 +349,14 @@ Run Emergency Protocols:
 ### Phase 7: Finalize
 
 #### Step 25: Update Documentation
+
 - [ ] Update `CHANGELOG.md` with new feature
 - [ ] Update `README.md` if user-facing
 - [ ] Update `lessonslearned.md` if new patterns discovered
 - [ ] Add code comments for complex logic
 
 #### Step 26: Create Pull Request
+
 - [ ] Commit changes with descriptive message
 - [ ] Push to feature branch
 - [ ] Create PR using template
@@ -380,18 +370,22 @@ Run Emergency Protocols:
 ### Phase 1: Understand the Bug
 
 #### Step 1: Reproduce the Bug
+
 - [ ] Read bug report completely
 - [ ] Identify steps to reproduce
 - [ ] Try to reproduce locally
 - [ ] Confirm bug exists
 
 #### Step 2: Identify the Seam
+
 - [ ] Which seam is affected?
 - [ ] Check `/SEAMSLIST.md` for seam details
 - [ ] Review contract: `/contracts/[Seam].ts`
 
 #### Step 3: Identify Root Cause
+
 Check in this order:
+
 - [ ] Is the contract wrong? (doesn't match requirements)
 - [ ] Is the mock wrong? (doesn't match contract)
 - [ ] Is the real service wrong? (doesn't match contract)
@@ -401,7 +395,9 @@ Check in this order:
 ### Phase 2: Fix the Bug
 
 #### If Contract is Wrong:
+
 ⚠️ **CRITICAL**: Contracts are immutable!
+
 - [ ] Can this be a non-breaking change (optional field)?
   - If yes: Add optional field to existing contract
   - If no: Create new contract version (V2)
@@ -411,16 +407,19 @@ Check in this order:
 - [ ] Update tests
 
 #### If Mock is Wrong:
+
 - [ ] Fix mock to match contract exactly
 - [ ] Update tests if needed
 - [ ] Run `npm run test:contracts` - Must pass
 
 #### If Real Service is Wrong:
+
 - [ ] Fix service to match contract exactly
 - [ ] Update tests if needed
 - [ ] Run `npm run test:integration` - Must pass
 
 #### If UI is Wrong:
+
 - [ ] Fix UI to use contract correctly
 - [ ] Handle all states (loading, success, error)
 - [ ] Update tests if needed
@@ -428,6 +427,7 @@ Check in this order:
 ### Phase 3: Verify Fix
 
 #### Step 4: Test the Fix
+
 - [ ] Reproduce original bug - Should be fixed
 - [ ] Test all related functionality
 - [ ] Test error cases
@@ -435,11 +435,13 @@ Check in this order:
 - [ ] Run type checking: `npm run check` - Must pass
 
 #### Step 5: Update Documentation
+
 - [ ] Update `CHANGELOG.md`
 - [ ] Update `lessonslearned.md` if new pattern
 - [ ] Add code comments explaining fix
 
 #### Step 6: Create Pull Request
+
 - [ ] Use bug fix PR template
 - [ ] Reference issue number
 - [ ] Describe root cause and fix
@@ -452,24 +454,29 @@ Check in this order:
 ### Phase 1: Plan Refactoring
 
 #### Step 1: Identify What to Refactor
+
 - [ ] Clearly define what needs refactoring
 - [ ] Identify affected seams
 - [ ] List files to be changed
 
 #### Step 2: Ensure No Contract Changes
+
 ⚠️ **CRITICAL**: Refactoring must NOT change contracts!
+
 - [ ] Verify contracts will remain unchanged
 - [ ] If contracts must change, this is NOT refactoring (it's a new feature)
 
 ### Phase 2: Refactor
 
 #### Step 3: Make Changes
+
 - [ ] Refactor implementation
 - [ ] Preserve all external interfaces
 - [ ] Preserve all contract implementations
 - [ ] Improve code quality without changing behavior
 
 #### Step 4: Verify Nothing Broke
+
 - [ ] Run `npm run test:all` - Must pass
 - [ ] Run `npm run check` - Must pass
 - [ ] Run `npm run lint` - Must pass
@@ -478,11 +485,13 @@ Check in this order:
 ### Phase 3: Finalize
 
 #### Step 5: Update Documentation
+
 - [ ] Update code comments if needed
 - [ ] Update `lessonslearned.md` if new pattern
 - [ ] Update `CHANGELOG.md` as "Changed" or "Code quality"
 
 #### Step 6: Create Pull Request
+
 - [ ] Use refactoring PR template
 - [ ] Emphasize no behavioral changes
 - [ ] Show before/after code
@@ -493,24 +502,28 @@ Check in this order:
 ## 📚 Documentation Workflow
 
 ### Step 1: Identify What Needs Documentation
+
 - [ ] New feature?
 - [ ] API documentation?
 - [ ] Architecture documentation?
 - [ ] User guide?
 
 ### Step 2: Write Documentation
+
 - [ ] Use clear, concise language
 - [ ] Include code examples
 - [ ] Include diagrams if helpful
 - [ ] Follow existing documentation style
 
 ### Step 3: Update Related Files
+
 - [ ] Update `README.md` if user-facing
 - [ ] Update `AGENTS.md` if affects AI development
 - [ ] Update `SEAMSLIST.md` if seam-related
 - [ ] Update `CHANGELOG.md` as "Documentation"
 
 ### Step 4: Review and Submit
+
 - [ ] Check for typos
 - [ ] Verify all links work
 - [ ] Ensure formatting is correct
@@ -521,6 +534,7 @@ Check in this order:
 ## 🧪 Testing Workflow
 
 ### Step 1: Identify Test Type Needed
+
 - [ ] Contract test (mock matches contract)
 - [ ] Mock test (mock behavior correct)
 - [ ] Integration test (real service works)
@@ -529,6 +543,7 @@ Check in this order:
 ### Step 2: Write Tests
 
 #### Contract Tests (`/tests/contracts/`)
+
 ```typescript
 import { describe, it, expect } from 'vitest'
 import type { Feature Output } from '$contracts/Feature'
@@ -546,43 +561,60 @@ describe('Feature Contract', () => {
   })
 })
 ```
+
 - [ ] Test mock matches contract shape
 - [ ] Test all required fields present
 - [ ] Test field types correct
 - [ ] Test no extra fields
 
 #### Mock Tests (`/tests/mocks/`)
+
 ```typescript
 describe('Feature Mock Service', () => {
-  it('handles success case', async () => { /* ... */ })
-  it('handles error case', async () => { /* ... */ })
-  it('validates input', async () => { /* ... */ })
+  it('handles success case', async () => {
+    /* ... */
+  })
+  it('handles error case', async () => {
+    /* ... */
+  })
+  it('validates input', async () => {
+    /* ... */
+  })
 })
 ```
+
 - [ ] Test all success paths
 - [ ] Test all error paths
 - [ ] Test input validation
 - [ ] Test edge cases
 
 #### Integration Tests (`/tests/integration/`)
+
 ```typescript
 describe('Feature Real Service', () => {
-  it('calls real API successfully', async () => { /* ... */ })
-  it('handles API errors', async () => { /* ... */ })
+  it('calls real API successfully', async () => {
+    /* ... */
+  })
+  it('handles API errors', async () => {
+    /* ... */
+  })
 })
 ```
+
 - [ ] Test real API calls (may need API key)
 - [ ] Test success scenarios
 - [ ] Test error handling
 - [ ] Test rate limiting
 
 ### Step 3: Run Tests
+
 - [ ] Run specific test: `npm test -- [filename]`
 - [ ] Run test type: `npm run test:contracts` or `test:mocks` or `test:integration`
 - [ ] Run all tests: `npm run test:all`
 - [ ] All tests must pass
 
 ### Step 4: Update Documentation
+
 - [ ] Update `CHANGELOG.md` if significant test coverage added
 
 ---
@@ -590,7 +622,9 @@ describe('Feature Real Service', () => {
 ## ⚠️ Common Mistakes to Avoid
 
 ### 1. Modifying Contracts During Implementation
+
 ❌ **NEVER DO THIS**
+
 ```typescript
 // Week 1: Original contract
 interface UserSeam {
@@ -602,11 +636,12 @@ interface UserSeam {
 interface UserSeam {
   id: string
   name: string
-  email: string  // Added later - BREAKS EVERYTHING
+  email: string // Added later - BREAKS EVERYTHING
 }
 ```
 
 ✅ **DO THIS INSTEAD**
+
 ```typescript
 // Week 1: Original contract
 interface UserSeamV1 {
@@ -621,13 +656,16 @@ interface UserSeamV2 extends UserSeamV1 {
 ```
 
 ### 2. Using `any` Type
+
 ❌ **NEVER DO THIS**
+
 ```typescript
 const data: any = response
 const user: any = await service.getUser()
 ```
 
 ✅ **DO THIS INSTEAD**
+
 ```typescript
 const data: unknown = response
 if (isValidData(data)) {
@@ -641,35 +679,40 @@ if (response.success) {
 ```
 
 ### 3. Manual Data Transformations
+
 ❌ **AVOID THIS**
+
 ```typescript
 function adaptBackendData(raw: any): User {
   return {
-    id: raw.user_id,  // Field name mismatch
-    name: raw.full_name,  // Field name mismatch
+    id: raw.user_id, // Field name mismatch
+    name: raw.full_name, // Field name mismatch
   }
 }
 ```
 
 ✅ **DO THIS INSTEAD**
+
 - Fix the backend to match the contract
 - OR isolate transformation in dedicated API gateway with its own tests
 
 ### 4. Mixing Mocks and Real Services
+
 ❌ **DON'T DO THIS**
+
 ```typescript
 const userService = USE_MOCKS ? new MockUserService() : new RealUserService()
-const authService = new RealAuthService()  // Mixed!
+const authService = new RealAuthService() // Mixed!
 ```
 
 ✅ **DO THIS INSTEAD**
+
 ```typescript
-const services = USE_MOCKS
-  ? MockServiceFactory.createAll()
-  : RealServiceFactory.createAll()
+const services = USE_MOCKS ? MockServiceFactory.createAll() : RealServiceFactory.createAll()
 ```
 
 ### 5. Skipping Contract Tests
+
 ❌ **DON'T SKIP**
 "I'll test it later" → Integration breaks
 
@@ -677,6 +720,7 @@ const services = USE_MOCKS
 Write contract tests immediately after creating mock
 
 ### 6. Not Documenting Seams
+
 ❌ **DON'T FORGET**
 Create seam but don't update SEAMSLIST.md
 
@@ -692,6 +736,7 @@ Update SEAMSLIST.md immediately after creating contract
 **Run this checklist in order:**
 
 #### Stage 1: Quick Checks (5 min)
+
 ```bash
 # 1. Check for type escapes
 git grep -n "as any" src/ contracts/ services/
@@ -704,6 +749,7 @@ npm run check
 ```
 
 #### Stage 2: Deep Dive (15 min)
+
 ```bash
 # 1. Check contract versions match
 # Compare versions in different parts of codebase
@@ -716,6 +762,7 @@ git grep -n -E "adapt|transform|convert" src/ services/
 ```
 
 #### Stage 3: Nuclear Option (30 min)
+
 ```bash
 # 1. Regenerate from contracts
 npm run check  # Fix all type errors
@@ -728,7 +775,9 @@ npm run test:all  # Rerun all tests
 ```
 
 #### Stage 4: Human Escalation
+
 If all automated checks pass but integration still fails:
+
 - [ ] Document the issue in `/lessonslearned.md`
 - [ ] Create detailed bug report
 - [ ] Tag for human review
@@ -741,6 +790,7 @@ If all automated checks pass but integration still fails:
 Run this checklist before EVERY commit:
 
 ### Code Quality
+
 - [ ] Run `npm run check` → Must pass
 - [ ] Run `npm run lint` → Must pass
 - [ ] Run `npm run test:all` → Must pass
@@ -749,17 +799,14 @@ Run this checklist before EVERY commit:
 - [ ] No commented-out code
 
 ### Documentation
+
 - [ ] `SEAMSLIST.md` updated (if new seam)
-- [ ] **`CHANGELOG.md` updated** ⚠️ UPDATE THIS FREQUENTLY, after every significant change!
+- [ ] `CHANGELOG.md` updated (if user-facing change)
 - [ ] `lessonslearned.md` updated (if new pattern)
 - [ ] Code comments added for complex logic
 
-**NOTE**: Don't batch CHANGELOG updates. Update it incrementally:
-- Contract defined? → Update CHANGELOG
-- Mock implemented? → Update CHANGELOG
-- Feature completed? → Update CHANGELOG
-
 ### SDD Compliance
+
 - [ ] No contracts modified (or new version created)
 - [ ] All mocks match contracts
 - [ ] All real services match contracts
@@ -768,6 +815,7 @@ Run this checklist before EVERY commit:
 - [ ] Mock tests pass
 
 ### Git
+
 - [ ] Descriptive commit message
 - [ ] Commits are focused (one logical change per commit)
 - [ ] No unrelated changes included
@@ -777,6 +825,7 @@ Run this checklist before EVERY commit:
 ## 📖 Quick Reference
 
 ### Essential Commands
+
 ```bash
 # Development
 npm run dev                    # Start dev server (with mocks)
@@ -810,6 +859,7 @@ npm run ci                     # Run all CI checks
 ```
 
 ### File Locations
+
 - Contracts: `/contracts/[Feature].ts`
 - Mock Services: `/services/mock/[Feature]Mock.ts`
 - Real Services: `/services/real/[Feature]Service.ts`
@@ -820,6 +870,7 @@ npm run ci                     # Run all CI checks
 - Pages: `/src/routes/`
 
 ### Key Documentation
+
 - **AGENTS.md** - AI agent instructions (READ THIS FIRST)
 - **seam-driven-development.md** - Complete SDD methodology
 - **SEAMSLIST.md** - All defined seams
@@ -827,6 +878,7 @@ npm run ci                     # Run all CI checks
 - **lessonslearned.md** - Project insights
 
 ### Path Aliases
+
 ```typescript
 import { utils } from '$lib/utils'
 import type { UserSeam } from '$contracts/User'
