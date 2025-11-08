@@ -340,8 +340,9 @@ describe('UserCoordination Contract', () => {
 
       const response = await coordination.getNotifications(true)
 
+      expect(response.data).toBeDefined()
       expect(response.data).toHaveLength(1)
-      expect(response.data![0].id).toBe(notif1.data!.id)
+      expect(response.data![0]!.id).toBe(notif1.data!.id)
     })
 
     it('should sort notifications by newest first', async () => {
@@ -361,8 +362,10 @@ describe('UserCoordination Contract', () => {
 
       const response = await coordination.getNotifications()
 
-      expect(response.data![0].id).toBe(notif2.data!.id)
-      expect(response.data![1].id).toBe(notif1.data!.id)
+      expect(response.data).toBeDefined()
+      expect(response.data!.length).toBeGreaterThanOrEqual(2)
+      expect(response.data![0]!.id).toBe(notif2.data!.id)
+      expect(response.data![1]!.id).toBe(notif1.data!.id)
     })
   })
 

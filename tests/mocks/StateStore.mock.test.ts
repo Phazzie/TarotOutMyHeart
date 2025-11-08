@@ -86,10 +86,12 @@ describe('StateStore Mock Behavior', () => {
         if (task) tasks.push(task)
       }
 
-      expect(tasks[0].priority).toBe(TaskPriority.URGENT)
-      expect(tasks[1].priority).toBe(TaskPriority.HIGH)
-      expect(tasks[2].priority).toBe(TaskPriority.MEDIUM)
-      expect(tasks[3].priority).toBe(TaskPriority.LOW)
+      expect(tasks).toBeDefined()
+      expect(tasks.length).toBeGreaterThanOrEqual(4)
+      expect(tasks[0]!.priority).toBe(TaskPriority.URGENT)
+      expect(tasks[1]!.priority).toBe(TaskPriority.HIGH)
+      expect(tasks[2]!.priority).toBe(TaskPriority.MEDIUM)
+      expect(tasks[3]!.priority).toBe(TaskPriority.LOW)
     })
   })
 
@@ -124,7 +126,8 @@ describe('StateStore Mock Behavior', () => {
 
       locks = await stateStore.getAllFileLocks()
       expect(locks).toHaveLength(1)
-      expect(locks[0].filePath).toBe('/test/file2.ts')
+      expect(locks).toBeDefined()
+      expect(locks[0]!.filePath).toBe('/test/file2.ts')
     })
 
     it('should handle concurrent lock attempts correctly', async () => {
@@ -287,8 +290,9 @@ describe('StateStore Mock Behavior', () => {
 
       const remaining = await stateStore.getAllTasks()
       expect(remaining).toHaveLength(1)
-      expect(remaining[0].id).toBe(task1.id)
-      expect(remaining[0].status).toBe(TaskStatus.IN_PROGRESS)
+      expect(remaining).toBeDefined()
+      expect(remaining[0]!.id).toBe(task1.id)
+      expect(remaining[0]!.status).toBe(TaskStatus.IN_PROGRESS)
     })
   })
 

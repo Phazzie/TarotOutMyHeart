@@ -178,8 +178,10 @@ describe('FileSystemCoordination Contract', () => {
 
       const response = await fs.getFileHistory('/test/order.ts')
 
-      expect(response.data![0].operation).toBe(FileOperation.WRITE)
-      expect(response.data![1].operation).toBe(FileOperation.CREATE)
+      expect(response.data).toBeDefined()
+      expect(response.data!.length).toBeGreaterThanOrEqual(2)
+      expect(response.data![0]!.operation).toBe(FileOperation.WRITE)
+      expect(response.data![1]!.operation).toBe(FileOperation.CREATE)
     })
 
     it('should include change descriptions', async () => {
@@ -187,7 +189,9 @@ describe('FileSystemCoordination Contract', () => {
 
       const response = await fs.getFileHistory('/test/desc.ts')
 
-      expect(response.data![0].description).toBe('Initial version')
+      expect(response.data).toBeDefined()
+      expect(response.data!.length).toBeGreaterThan(0)
+      expect(response.data![0]!.description).toBe('Initial version')
     })
 
     it('should track previous and new content', async () => {
@@ -271,7 +275,8 @@ describe('FileSystemCoordination Contract', () => {
           strategy: 'merge' as const,
         }
 
-        const resolveResponse = await fs.resolveConflict(conflict.id, resolution)
+        expect(conflict).toBeDefined()
+        const resolveResponse = await fs.resolveConflict(conflict!.id, resolution)
         expect(resolveResponse.success).toBe(true)
       }
     })

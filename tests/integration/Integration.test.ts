@@ -135,7 +135,8 @@ describe('AI Coordination Server Integration', () => {
 
       // 7. Apply resolution if conflict was detected
       if (conflicts.data && conflicts.data.length > 0) {
-        await fileSystem.resolveConflict(conflicts.data[0].id, {
+        expect(conflicts.data[0]).toBeDefined()
+        await fileSystem.resolveConflict(conflicts.data[0]!.id, {
           resolvedBy: 'user',
           resolvedAt: new Date(),
           finalContent: 'merged version',
