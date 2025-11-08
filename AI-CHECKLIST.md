@@ -10,11 +10,23 @@
 
 ### 1. Understand the Context
 
+**Root Documentation** (Original scaffolding):
 - [ ] Read `AGENTS.md` for project overview and coding standards
 - [ ] Read `seam-driven-development.md` to understand SDD methodology
+- [ ] **Read `lessonslearned.md` Section 8 - File Documentation Standards**
 - [ ] Check `SEAMSLIST.md` to see all existing seams
 - [ ] Check `CHANGELOG.md` to see recent changes
+- [ ] Check `lessonslearned.md` for project-specific patterns
+
+**Development Documents** (Planning folder):
+- [ ] Check `docs/planning/DATA-BOUNDARIES.md` for data boundary analysis
+- [ ] Check `docs/planning/RECOMMENDATIONS.md` for technical decisions
 - [ ] Review related issues/PRs if applicable
+
+**Documentation Structure Rule**:
+- Root files = original scaffolding (read-only structure)
+- `/docs/planning/` = development documents (your workspace)
+- New docs → always create in `/docs/planning/`
 
 ### 2. Identify the Task Type
 
@@ -32,8 +44,20 @@ What kind of task is this?
 
 ### Phase 1: Requirements & Planning
 
+**File Documentation Requirement**: All files created must include top-level comments:
+```typescript
+/**
+ * @fileoverview [What this file does]
+ * @purpose [Why it exists]
+ * @dataFlow [How data flows]
+ * @boundary [What seam it implements]
+ */
+```
+Use blueprints: `docs/blueprints/CONTRACT-BLUEPRINT.md`, `docs/blueprints/STUB-BLUEPRINT.md`
+
 #### Step 1: Understand Requirements
 - [ ] Read the user story/requirement completely
+- [ ] **Review blueprint templates in `docs/blueprints/`**
 - [ ] Identify all inputs and outputs
 - [ ] List all user interactions
 - [ ] Identify edge cases and error scenarios
@@ -58,10 +82,14 @@ What kind of task is this?
 ### Phase 2: Define Contracts (CRITICAL)
 
 #### Step 4: Create Contract File
+- [ ] **REFERENCE**: `/docs/blueprints/CONTRACT-BLUEPRINT.md` for complete template
 - [ ] Create `/contracts/[FeatureName].ts`
-- [ ] Add JSDoc comment with:
-  - [ ] `@purpose` - What this seam does
-  - [ ] `@requirement` - Link to requirement ID
+- [ ] Add comprehensive file header with:
+  - [ ] `@fileoverview` - One-line description
+  - [ ] `PURPOSE` section - Why this exists (2-3 sentences)
+  - [ ] `DATA FLOW` section - Input → Transform → Output
+  - [ ] `DEPENDENCIES` section - What depends on what
+  - [ ] `@see` references to DATA-BOUNDARIES.md and SEAMSLIST.md
   - [ ] `@updated` - Current date
 - [ ] Import common types from `/contracts/types/common.ts`
 
@@ -142,7 +170,15 @@ export enum [Feature]ErrorCode {
 ### Phase 3: Build Mock Service
 
 #### Step 11: Create Mock File
+- [ ] **REFERENCE**: `/docs/blueprints/STUB-BLUEPRINT.md` for complete template
 - [ ] Create `/services/mock/[Feature]Mock.ts`
+- [ ] Add comprehensive file header with:
+  - [ ] `@fileoverview` - One-line description
+  - [ ] `PURPOSE` section - Why this mock exists
+  - [ ] `DATA FLOW` section - Input → Mock Logic → Output
+  - [ ] `MOCK BEHAVIOR` section - How mock works
+  - [ ] `DEPENDENCIES` section
+  - [ ] `@updated` - Current date
 - [ ] Import contract from `/contracts`
 - [ ] Implement service interface
 
@@ -232,7 +268,15 @@ export class [Feature]MockService implements I[Feature]Service {
 ### Phase 5: Implement Real Service
 
 #### Step 18: Create Real Service File
+- [ ] **REFERENCE**: `/docs/blueprints/STUB-BLUEPRINT.md` for complete template
 - [ ] Create `/services/real/[Feature]Service.ts`
+- [ ] Add comprehensive file header with:
+  - [ ] `@fileoverview` - One-line description
+  - [ ] `PURPOSE` section - Production implementation details
+  - [ ] `DATA FLOW` section - Input → API Call → Transform → Output
+  - [ ] `ERROR HANDLING` section - Retry logic, timeouts
+  - [ ] `DEPENDENCIES` section - External APIs, env vars
+  - [ ] `@updated` - Current date
 - [ ] Import contract from `/contracts`
 - [ ] Import API client or SDK
 
@@ -706,9 +750,14 @@ Run this checklist before EVERY commit:
 
 ### Documentation
 - [ ] `SEAMSLIST.md` updated (if new seam)
-- [ ] `CHANGELOG.md` updated (if user-facing change)
+- [ ] **`CHANGELOG.md` updated** ⚠️ UPDATE THIS FREQUENTLY, after every significant change!
 - [ ] `lessonslearned.md` updated (if new pattern)
 - [ ] Code comments added for complex logic
+
+**NOTE**: Don't batch CHANGELOG updates. Update it incrementally:
+- Contract defined? → Update CHANGELOG
+- Mock implemented? → Update CHANGELOG
+- Feature completed? → Update CHANGELOG
 
 ### SDD Compliance
 - [ ] No contracts modified (or new version created)

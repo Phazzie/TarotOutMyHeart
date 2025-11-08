@@ -94,11 +94,12 @@ npm run dev
 ### Phase 1: Define Contract (REQUIRED FIRST STEP)
 
 ```bash
-# 1. Create contract file
-touch contracts/YourFeature.ts
+# 1. Use contract blueprint
+cp docs/blueprints/CONTRACT-BLUEPRINT.md contracts/YourFeature.ts
+# Edit and fill in all sections
 
 # 2. Define TypeScript interfaces
-# See existing contracts for examples
+# Follow the blueprint structure exactly
 
 # 3. Export from contracts/index.ts
 echo "export * from './YourFeature'" >> contracts/index.ts
@@ -115,11 +116,13 @@ npm run check
 ### Phase 2: Build Mock Service
 
 ```bash
-# 1. Create mock service
-touch services/mock/YourFeatureMock.ts
+# 1. Use stub blueprint
+cp docs/blueprints/STUB-BLUEPRINT.md services/mock/YourFeatureMock.ts
+# Edit and implement mock logic
 
 # 2. Implement contract interface
 # Mock must return realistic data matching contract exactly
+# Include top-level @fileoverview, @purpose, @dataFlow comments
 
 # 3. Add to mock service factory
 # Edit services/factory.ts
@@ -222,6 +225,46 @@ npm run format
 # Check formatting without changes
 npm run format:check
 ```
+
+## File Documentation Standards
+
+### CRITICAL: Every File Must Have Top-Level Comments
+
+**ALL files** (contracts, services, components, utilities) must begin with comprehensive documentation:
+
+```typescript
+/**
+ * @fileoverview [One-sentence description of what this file does]
+ * @purpose [Why this file exists - what problem it solves]
+ * @dataFlow [How data enters and exits this file]
+ * @boundary [What seam/boundary this implements, if applicable]
+ * @example
+ * // Brief usage example
+ * const result = await service.execute(input)
+ */
+```
+
+**Required for**:
+- ✅ Contract files (`/contracts/*.ts`)
+- ✅ Service implementations (`/services/mock/*.ts`, `/services/real/*.ts`)
+- ✅ Svelte components (`/src/lib/components/*.svelte`)
+- ✅ Utility modules (`/src/lib/utils/*.ts`)
+- ✅ Test files (`/tests/**/*.test.ts`)
+
+**Why this matters**:
+- AI agents can understand context without reading entire file
+- Humans can quickly grasp purpose and usage
+- Documentation enforces clear thinking about responsibilities
+- Reduces integration errors by making boundaries explicit
+
+**Blueprints Available**:
+- `/docs/blueprints/CONTRACT-BLUEPRINT.md` - Template for contract files
+- `/docs/blueprints/STUB-BLUEPRINT.md` - Template for service stubs
+- `/docs/blueprints/COMPONENT-BLUEPRINT.md` - Template for Svelte components
+
+See `/lessonslearned.md` Section 8 for complete standards.
+
+---
 
 ## Coding Standards
 
@@ -598,14 +641,28 @@ Escalate to human developer if:
 3. External API (Grok) behaves differently than documented
 4. Need to modify a frozen contract (requires team decision)
 
-## Important Files Reference
+## Documentation Structure
 
+### Root Documentation (Original Scaffolding)
 - **`/seam-driven-development.md`** - Complete SDD methodology guide
 - **`/SEAMSLIST.md`** - Catalog of all defined seams
 - **`/CHANGELOG.md`** - Version history
 - **`/lessonslearned.md`** - Project-specific insights and patterns
 - **`/README.md`** - Human-readable project overview
 - **`/.env.example`** - Environment variable template
+- **`/AGENTS.md`** - Universal AI agent instructions
+- **`/CLAUDE.md`** - Claude-specific instructions
+- **`/GEMINI.md`** - Gemini-specific instructions
+- **`/AI-CHECKLIST.md`** - Pre-flight checklist for AI agents
+- **`/prd.MD`** - Product Requirements Document
+
+### Development Documents (Created During Project)
+All documents created during development go in **`/docs/planning/`**:
+- **`docs/planning/DATA-BOUNDARIES.md`** - Data boundary analysis (IDENTIFY phase)
+- **`docs/planning/RECOMMENDATIONS.md`** - Technical decisions and recommendations
+- **Future**: Contract drafts, architecture diagrams, sprint retrospectives, etc.
+
+**Rule**: Original scaffolding docs stay at root. New development docs go in `/docs/planning/`
 
 ## What NOT to Do
 

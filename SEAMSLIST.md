@@ -1,8 +1,8 @@
 # Seams List - TarotUpMyHeart
 
 **Last Updated**: 2025-11-07
-**Total Seams**: TBD
-**Status**: ⚠️ Seams not yet defined - contracts pending
+**Total Seams**: 5 (AI Collaboration System)
+**Status**: ✅ Phase 1 Complete - Contracts defined for AI coordination seams
 
 ---
 
@@ -32,17 +32,558 @@ Boundaries between application services
 
 ## Seam Overview Table
 
+### AI Collaboration System Seams
+
 | # | Seam Name | Type | Priority | Contract Location | Mock Status | Real Status |
 |---|-----------|------|----------|-------------------|-------------|-------------|
-| - | *Not yet defined* | - | - | - | ⏸️ Pending | ⏸️ Pending |
+| 1 | Coordination Server ↔ Claude Code | Internal Service | Critical | `/contracts/CoordinationServer.ts` | ⏸️ Pending | ⏸️ Pending |
+| 2 | Coordination Server ↔ GitHub Copilot | Internal Service | Critical | `/contracts/CoordinationServer.ts` | ⏸️ Pending | ⏸️ Pending |
+| 3 | State Store ↔ Coordination Server | Internal Service | Critical | `/contracts/CoordinationServer.ts` | ⏸️ Pending | ⏸️ Pending |
+| 4 | User Interface ↔ Coordination Server | Internal Service | High | `/contracts/CoordinationServer.ts` | ⏸️ Pending | ⏸️ Pending |
+| 5 | File System ↔ Both AIs | Internal Service | Critical | `/contracts/CoordinationServer.ts` | ⏸️ Pending | ⏸️ Pending |
 
-> **Note**: This table will be populated during the IDENTIFY phase of SDD implementation.
+### TarotOutMyHeart Application Seams (Future)
+
+| # | Seam Name | Type | Priority | Contract Location | Mock Status | Real Status |
+|---|-----------|------|----------|-------------------|-------------|-------------|
+| - | *To be defined in Sprint 1* | - | - | - | ⏸️ Pending | ⏸️ Pending |
 
 ---
 
 ## Seam Details
 
-> **Instructions**: For each identified seam, add a section using the template below.
+### 1. Coordination Server ↔ Claude Code
+
+**Boundary**: Claude Code Agent → Coordination Server → Task Queue/Context Storage
+**Contract**: `/contracts/CoordinationServer.ts` (ClaudeCoordinationContract)
+**Purpose**: Enables Claude Code to register as an agent, claim tasks, report progress, and share conversation context with Copilot through the coordination server.
+**Priority**: Critical
+
+#### Input Contract
+
+```typescript
+// Task claiming
+interface ClaimTaskInput {
+  taskId: TaskId
+}
+
+// Progress reporting
+interface ReportProgressInput {
+  taskId: TaskId
+  progress: TaskProgress
+}
+
+// Task completion
+interface CompleteTaskInput {
+  taskId: TaskId
+  result: TaskResult
+}
+```
+
+#### Output Contract
+
+```typescript
+interface ClaudeCoordinationContract {
+  registerAgent(params: {...}): Promise<ServiceResponse<RegistrationToken>>
+  getAvailableTasks(capabilities: AgentCapability[]): Promise<ServiceResponse<Task[]>>
+  claimTask(taskId: TaskId): Promise<ServiceResponse<Task>>
+  reportProgress(taskId: TaskId, progress: TaskProgress): Promise<ServiceResponse<void>>
+  completeTask(taskId: TaskId, result: TaskResult): Promise<ServiceResponse<void>>
+  retrieveContext(contextId: ContextId): Promise<ServiceResponse<ConversationContext>>
+  saveContext(contextId: ContextId, context: ConversationContext): Promise<ServiceResponse<void>>
+  requestHandoff(params: {...}): Promise<ServiceResponse<HandoffId>>
+}
+```
+
+#### Dependencies
+
+- **Depends on**: Seam #3 (State Store) for persistence
+- **Used by**: Claude Code CLI, task orchestration logic
+
+#### Status Checklist
+
+- [x] Contract defined (`/contracts/CoordinationServer.ts`)
+- [ ] Contract compiles (TypeScript validation passes)
+- [ ] Mock service implemented
+- [ ] Contract tests written
+- [ ] Contract tests passing
+- [ ] Mock tests written
+- [ ] Mock tests passing
+- [ ] Real service implemented
+- [ ] Integration tests written
+- [ ] Integration tests passing
+- [x] Documented in SEAMSLIST.md
+
+#### Error Cases
+
+- **RegistrationError**: Agent already registered or invalid capabilities → `AGENT_ALREADY_REGISTERED` / `INVALID_CAPABILITIES`
+- **TaskClaimError**: Task doesn't exist or already claimed → `TASK_NOT_FOUND` / `TASK_ALREADY_CLAIMED`
+- **ProgressUpdateError**: Task not in progress → `INVALID_TASK_STATE`
+- **ContextNotFoundError**: Context ID doesn't exist → `CONTEXT_NOT_FOUND`
+
+#### Example Usage
+
+```typescript
+// Claude Code registers and claims a task
+const registration = await claudeService.registerAgent({
+  agentId: 'claude-code',
+  capabilities: ['typescript-development', 'contract-definition', 'testing'],
+  version: '1.0.0'
+})
+
+const tasks = await claudeService.getAvailableTasks(['typescript-development'])
+const task = await claudeService.claimTask(tasks.data[0].id)
+
+await claudeService.reportProgress(task.data.id, {
+  percentComplete: 50,
+  currentStep: 'Implementing mock service',
+  filesModified: ['/services/mock/Example.ts']
+})
+
+await claudeService.completeTask(task.data.id, {
+  success: true,
+  output: 'Mock service implemented successfully',
+  filesModified: ['/services/mock/Example.ts'],
+  testsRun: { total: 5, passed: 5, failed: 0, skipped: 0, duration: 1200 }
+})
+```
+
+#### Notes
+
+- Claude Code acts as primary orchestrator in orchestrator-worker mode
+- Full-featured API with progress tracking and context sharing
+- Supports handoff requests to transfer work to Copilot
+
+---
+
+### 2. Coordination Server ↔ GitHub Copilot
+
+**Boundary**: GitHub Copilot → MCP Tools → Coordination Server
+**Contract**: `/contracts/CoordinationServer.ts` (CopilotCoordinationContract)
+**Purpose**: Exposes coordination capabilities as MCP tools that GitHub Copilot can autonomously invoke to claim and complete tasks.
+**Priority**: Critical
+
+#### Input Contract
+
+```typescript
+// MCP Tool inputs
+interface CheckForTasksInput {
+  agentId: 'github-copilot'
+  capabilities: AgentCapability[]
+}
+
+interface ClaimTaskToolInput {
+  taskId: TaskId
+  agentId: 'github-copilot'
+}
+
+interface SubmitTaskResultInput {
+  taskId: TaskId
+  agentId: 'github-copilot'
+  success: boolean
+  output: string
+  filesModified?: string[]
+  error?: string
+}
+```
+
+#### Output Contract
+
+```typescript
+interface CopilotCoordinationContract {
+  checkForTasks(params: CheckForTasksInput): Promise<ServiceResponse<Task[]>>
+  claimTaskTool(params: ClaimTaskToolInput): Promise<ServiceResponse<Task>>
+  submitTaskResult(params: SubmitTaskResultInput): Promise<ServiceResponse<void>>
+  requestFileAccess(params: {...}): Promise<ServiceResponse<FileAccessGrant>>
+  releaseFileAccess(params: {...}): Promise<ServiceResponse<void>>
+  getCollaborationStatus(params: {...}): Promise<ServiceResponse<CollaborationStatus>>
+}
+```
+
+#### Dependencies
+
+- **Depends on**: Seam #3 (State Store), Seam #5 (File System coordination)
+- **Used by**: GitHub Copilot via MCP client in VS Code
+
+#### Status Checklist
+
+- [x] Contract defined (`/contracts/CoordinationServer.ts`)
+- [ ] Contract compiles (TypeScript validation passes)
+- [ ] Mock service implemented
+- [ ] Contract tests written
+- [ ] Contract tests passing
+- [ ] Mock tests written
+- [ ] Mock tests passing
+- [ ] Real MCP server implemented
+- [ ] MCP tool registration configured
+- [ ] Integration tests with Copilot
+- [ ] Integration tests passing
+- [x] Documented in SEAMSLIST.md
+
+#### Error Cases
+
+- **TaskNotFoundError**: Task ID invalid → `TASK_NOT_FOUND`
+- **FileAccessDeniedError**: File already locked by other agent → `FILE_LOCKED`
+- **InvalidAgentError**: Agent ID not 'github-copilot' → `INVALID_AGENT`
+
+#### Example Usage
+
+```typescript
+// Copilot autonomously calls MCP tools
+const tasks = await checkForTasks({
+  agentId: 'github-copilot',
+  capabilities: ['svelte-development', 'testing']
+})
+
+const task = await claimTaskTool({
+  taskId: tasks.data[0].id,
+  agentId: 'github-copilot'
+})
+
+const fileAccess = await requestFileAccess({
+  path: '/src/components/Example.svelte',
+  operation: 'write',
+  agentId: 'github-copilot'
+})
+
+// Copilot implements feature...
+
+await submitTaskResult({
+  taskId: task.data.id,
+  agentId: 'github-copilot',
+  success: true,
+  output: 'Svelte component implemented',
+  filesModified: ['/src/components/Example.svelte']
+})
+
+await releaseFileAccess({
+  lockToken: fileAccess.data.lockToken,
+  agentId: 'github-copilot'
+})
+```
+
+#### Notes
+
+- Designed for autonomous invocation (no user approval per call after setup)
+- Simpler interface than Claude's (Copilot optimized for execution, not orchestration)
+- MCP tools auto-discovered by Copilot in VS Code
+
+---
+
+### 3. State Store ↔ Coordination Server
+
+**Boundary**: Coordination Server → Persistence Layer (SQLite/Redis/Memory)
+**Contract**: `/contracts/CoordinationServer.ts` (StateStoreContract)
+**Purpose**: Abstract persistence layer for task queue, file locks, and conversation context. Allows swapping between SQLite (local), Redis (distributed), or in-memory (testing).
+**Priority**: Critical
+
+#### Input Contract
+
+```typescript
+// Task operations
+interface EnqueueTaskInput {
+  task: Omit<Task, 'id'>  // ID generated by store
+}
+
+interface UpdateTaskStatusInput {
+  taskId: TaskId
+  status: TaskStatus
+}
+
+// Lock operations
+interface AcquireLockInput {
+  path: string
+  owner: AgentId
+}
+
+// Context operations
+interface SaveContextInput {
+  contextId: ContextId
+  context: ConversationContext
+}
+```
+
+#### Output Contract
+
+```typescript
+interface StateStoreContract {
+  // Task Queue
+  enqueueTask(task: Omit<Task, 'id'>): Promise<ServiceResponse<TaskId>>
+  dequeueTask(capabilities: AgentCapability[]): Promise<ServiceResponse<Task | null>>
+  getTask(taskId: TaskId): Promise<ServiceResponse<Task | null>>
+  updateTaskStatus(taskId: TaskId, status: TaskStatus): Promise<ServiceResponse<void>>
+  updateTaskResult(taskId: TaskId, result: TaskResult): Promise<ServiceResponse<void>>
+  getSessionTasks(sessionId: SessionId): Promise<ServiceResponse<Task[]>>
+
+  // File Locks
+  acquireLock(path: string, owner: AgentId): Promise<ServiceResponse<LockToken>>
+  releaseLock(lockToken: LockToken): Promise<ServiceResponse<void>>
+  isLocked(path: string): Promise<ServiceResponse<FileLock | null>>
+  getAllLocks(): Promise<ServiceResponse<FileLock[]>>
+  releaseAllLocksForAgent(owner: AgentId): Promise<ServiceResponse<number>>
+
+  // Context
+  saveContext(contextId: ContextId, context: ConversationContext): Promise<ServiceResponse<void>>
+  loadContext(contextId: ContextId): Promise<ServiceResponse<ConversationContext | null>>
+  appendMessage(contextId: ContextId, message: Message): Promise<ServiceResponse<void>>
+}
+```
+
+#### Dependencies
+
+- **Depends on**: File system (for SQLite file), network (for Redis)
+- **Used by**: Coordination Server (Seams #1, #2, #4)
+
+#### Status Checklist
+
+- [x] Contract defined (`/contracts/CoordinationServer.ts`)
+- [ ] Contract compiles (TypeScript validation passes)
+- [ ] Mock service implemented (in-memory)
+- [ ] Contract tests written
+- [ ] Contract tests passing
+- [ ] Mock tests written
+- [ ] Mock tests passing
+- [ ] Real service implemented (SQLite)
+- [ ] Integration tests written
+- [ ] Integration tests passing
+- [x] Documented in SEAMSLIST.md
+
+#### Error Cases
+
+- **LockError**: File already locked → `FILE_ALREADY_LOCKED`
+- **TaskNotFoundError**: Task ID doesn't exist → `TASK_NOT_FOUND`
+- **ContextNotFoundError**: Context ID doesn't exist → `CONTEXT_NOT_FOUND`
+- **DatabaseError**: Persistence layer failure → `DB_ERROR` (retryable: true)
+
+#### Example Usage
+
+```typescript
+// Enqueue task
+const taskId = await stateStore.enqueueTask({
+  type: 'implement-feature',
+  description: 'Build user authentication',
+  priority: 'high',
+  context: { files: [], conversationHistory: [], requirements: '...' },
+  status: 'queued',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  sessionId: sessionId
+})
+
+// Acquire file lock
+const lockToken = await stateStore.acquireLock('/src/auth/Login.svelte', 'claude-code')
+
+// Save context
+await stateStore.saveContext(contextId, {
+  id: contextId,
+  messages: [...],
+  sharedState: { currentFeature: 'authentication' },
+  lastUpdated: new Date()
+})
+```
+
+#### Notes
+
+- Three implementations planned: MockStateStore (memory), SQLiteStateStore, RedisStateStore
+- All three must satisfy identical contract
+- Lock expiration prevents deadlocks from crashed agents
+
+---
+
+### 4. User Interface ↔ Coordination Server
+
+**Boundary**: User (CLI/Web UI) → Coordination Server → Session Management
+**Contract**: `/contracts/CoordinationServer.ts` (UserCoordinationContract)
+**Purpose**: Allows users to start collaboration sessions, monitor progress, resolve conflicts, and control AI teamwork.
+**Priority**: High
+
+#### Input Contract
+
+```typescript
+interface StartCollaborationInput {
+  task: string
+  preferredLead?: AgentId | 'auto'
+  mode: CollaborationMode
+  contextId?: ContextId
+}
+
+interface ResolveConflictInput {
+  conflictId: ConflictId
+  resolution: ConflictResolution
+}
+```
+
+#### Output Contract
+
+```typescript
+interface UserCoordinationContract {
+  startCollaboration(params: StartCollaborationInput): Promise<ServiceResponse<CollaborationSession>>
+  pauseCollaboration(sessionId: SessionId): Promise<ServiceResponse<void>>
+  resumeCollaboration(sessionId: SessionId): Promise<ServiceResponse<void>>
+  cancelCollaboration(sessionId: SessionId): Promise<ServiceResponse<void>>
+  getCollaborationStatus(sessionId: SessionId): Promise<ServiceResponse<CollaborationStatus>>
+  resolveConflict(conflictId: ConflictId, resolution: ConflictResolution): Promise<ServiceResponse<void>>
+  subscribeToUpdates(sessionId: SessionId): AsyncIterable<CollaborationEvent>
+}
+```
+
+#### Dependencies
+
+- **Depends on**: Seam #3 (State Store), Seam #1 and #2 (agent connections)
+- **Used by**: CLI interface, optional web UI dashboard
+
+#### Status Checklist
+
+- [x] Contract defined (`/contracts/CoordinationServer.ts`)
+- [ ] Contract compiles (TypeScript validation passes)
+- [ ] Mock service implemented
+- [ ] Contract tests written
+- [ ] Contract tests passing
+- [ ] Mock tests written
+- [ ] Mock tests passing
+- [ ] Real service implemented
+- [ ] CLI interface implemented
+- [ ] Web UI dashboard (optional)
+- [ ] Integration tests written
+- [ ] Integration tests passing
+- [x] Documented in SEAMSLIST.md
+
+#### Error Cases
+
+- **SessionNotFoundError**: Session ID invalid → `SESSION_NOT_FOUND`
+- **InvalidModeError**: Collaboration mode not supported → `INVALID_MODE`
+- **ConflictNotFoundError**: Conflict ID doesn't exist → `CONFLICT_NOT_FOUND`
+
+#### Example Usage
+
+```typescript
+// User starts collaboration
+const session = await userService.startCollaboration({
+  task: 'Implement user authentication with email/password',
+  preferredLead: 'claude-code',
+  mode: 'orchestrator-worker'
+})
+
+// Monitor progress
+for await (const event of userService.subscribeToUpdates(session.data.id)) {
+  console.log(`[${event.type}]`, event.data)
+}
+
+// Check status
+const status = await userService.getCollaborationStatus(session.data.id)
+console.log(`Progress: ${status.data.progress.percentComplete}%`)
+
+// Resolve conflict if needed
+await userService.resolveConflict(conflictId, {
+  strategy: 'claude-wins',
+  mergeInstructions: 'Use Claude\'s implementation for auth logic'
+})
+```
+
+#### Notes
+
+- CLI provides `claude collab start "task description"` command
+- Optional web dashboard for visual monitoring
+- Real-time event stream for progress updates
+
+---
+
+### 5. File System ↔ Both AIs
+
+**Boundary**: AI Agents (Claude + Copilot) → File Access Coordinator → Codebase Files
+**Contract**: `/contracts/CoordinationServer.ts` (FileSystemCoordinationContract)
+**Purpose**: Prevent race conditions and conflicts when multiple AIs work on the same codebase simultaneously through advisory file locking.
+**Priority**: Critical
+
+#### Input Contract
+
+```typescript
+interface RequestFileAccessInput {
+  path: string
+  operation: 'read' | 'write' | 'delete'
+  agentId: AgentId
+}
+
+interface ReleaseFileAccessInput {
+  grant: FileAccessGrant
+}
+
+interface BatchFileAccessInput {
+  requests: FileAccessRequest[]
+}
+```
+
+#### Output Contract
+
+```typescript
+interface FileSystemCoordinationContract {
+  requestFileAccess(params: RequestFileAccessInput): Promise<ServiceResponse<FileAccessGrant>>
+  releaseFileAccess(grant: FileAccessGrant): Promise<ServiceResponse<void>>
+  detectConflicts(path: string): Promise<ServiceResponse<FileConflict[]>>
+  requestBatchFileAccess(requests: FileAccessRequest[]): Promise<ServiceResponse<FileAccessGrant[]>>
+}
+```
+
+#### Dependencies
+
+- **Depends on**: Seam #3 (State Store for lock tracking)
+- **Used by**: Both AI agents before file operations
+
+#### Status Checklist
+
+- [x] Contract defined (`/contracts/CoordinationServer.ts`)
+- [ ] Contract compiles (TypeScript validation passes)
+- [ ] Mock service implemented
+- [ ] Contract tests written
+- [ ] Contract tests passing
+- [ ] Mock tests written
+- [ ] Mock tests passing
+- [ ] Real service implemented
+- [ ] Integration tests written
+- [ ] Integration tests passing
+- [x] Documented in SEAMSLIST.md
+
+#### Error Cases
+
+- **FileAccessError**: Access denied due to lock → `FILE_LOCKED`
+- **FileNotFoundError**: File doesn't exist → `FILE_NOT_FOUND`
+- **BatchAccessError**: Some files granted, others denied → `PARTIAL_GRANT`
+
+#### Example Usage
+
+```typescript
+// Claude requests write access
+const grant = await fileCoordination.requestFileAccess({
+  path: '/src/services/AuthService.ts',
+  operation: 'write',
+  agentId: 'claude-code'
+})
+
+if (grant.data.granted) {
+  // Perform file operations
+  await editFile('/src/services/AuthService.ts', {...})
+
+  // Release when done
+  await fileCoordination.releaseFileAccess(grant.data)
+} else {
+  console.log(`File locked: ${grant.data.reason}`)
+}
+
+// Batch request for atomic multi-file operations
+const grants = await fileCoordination.requestBatchFileAccess([
+  { path: '/src/auth/Login.svelte', operation: 'write', agentId: 'copilot' },
+  { path: '/src/auth/Signup.svelte', operation: 'write', agentId: 'copilot' }
+])
+```
+
+#### Notes
+
+- Advisory locking (not enforced by OS - agents must check before editing)
+- Supports batch requests for atomic multi-file operations
+- Read operations allow multiple readers, write operations exclusive
+- Lock expiration prevents deadlocks from crashed agents
+
+---
 
 ### Template for Each Seam:
 

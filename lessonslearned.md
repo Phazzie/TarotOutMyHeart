@@ -15,6 +15,98 @@
 
 ## SDD Application Insights
 
+### Lesson #1: Don't Skip the IDENTIFY Phase! 🚨
+
+**Date**: 2025-11-07  
+**Phase**: Sprint 1 Start  
+**What happened**: Almost jumped straight to defining contracts without doing proper data boundary analysis first.
+
+**What we learned**:
+- The 8-step SDD process exists for a reason!
+- Step 2 (IDENTIFY) is critical - can't define good contracts without identifying ALL data boundaries first
+- Creating a `DATA-BOUNDARIES.md` document BEFORE writing any contracts helps ensure nothing is missed
+- Also need to create a "Contract Blueprint" template to ensure consistency across all contracts
+
+**What we did**:
+1. Created `DATA-BOUNDARIES.md` to document:
+   - All 10 data boundaries identified from user flow
+   - Open questions to resolve before defining contracts
+   - Contract blueprint template for consistency
+2. Mapped user flow → data boundaries systematically
+3. Identified 7 primary seams + 3 secondary seams
+
+**Reusable pattern**:
+```
+Before defining contracts:
+1. Read PRD completely
+2. Map user flow step-by-step
+3. Identify EVERY data boundary (where data crosses system/component/layer)
+4. Document open questions
+5. Create contract blueprint template
+6. THEN start defining contracts
+```
+
+**Prevention**:
+- Add "Create DATA-BOUNDARIES.md" as first item in Sprint 1 checklist
+- Reference this in AI-CHECKLIST.md before contract definition
+- Don't let urgency skip the IDENTIFY phase!
+
+---
+
+### Lesson #2: Every File Needs Top-Level Documentation! 📝
+
+**Date**: 2025-11-07  
+**Phase**: Contract Definition Preparation  
+**What happened**: Started creating contract and stub files without establishing documentation standards first.
+
+**What we learned**:
+- Every file should have comprehensive top-level comments explaining:
+  - **What**: What this file does
+  - **Why**: Purpose and business context
+  - **How**: Data flow direction and transformation
+  - **Dependencies**: What it depends on and what depends on it
+- Without this, contracts become "black boxes" that are hard to understand
+- Documentation should be part of the blueprint template, not an afterthought
+- Makes onboarding, debugging, and maintenance dramatically easier
+
+**What we did**:
+1. Created contract blueprint template with required documentation sections
+2. Created stub blueprint template for mock and real implementations
+3. Added file documentation standards to lessons learned
+4. Will enforce this pattern for ALL files (contracts, services, components, utilities)
+
+**Required file header format**:
+```typescript
+/**
+ * @fileoverview [One-line description of file purpose]
+ * @module [Module name if applicable]
+ * 
+ * PURPOSE:
+ * [2-3 sentences explaining why this file exists and what problem it solves]
+ * 
+ * DATA FLOW:
+ * [Describe how data enters and exits this module]
+ * Input: [What comes in and from where]
+ * Transform: [What this file does to the data]
+ * Output: [What goes out and to where]
+ * 
+ * DEPENDENCIES:
+ * - Depends on: [List files/modules this file imports]
+ * - Used by: [List files/modules that import this file]
+ * 
+ * @see Related documentation or contracts
+ * @updated YYYY-MM-DD
+ */
+```
+
+**Prevention**:
+- Add file documentation checklist to contract definition phase
+- Include documentation templates in all blueprints
+- AI agents must follow documentation template for every file created
+- Pre-commit hook to warn on missing file documentation (future)
+
+---
+
 ### What Worked Well
 
 *To be filled during development*

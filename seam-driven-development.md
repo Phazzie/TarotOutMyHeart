@@ -9,13 +9,18 @@ Seam-Driven Development is a methodology where you identify and define all data 
 ### The 8-Step Process
 
 1. **UNDERSTAND** - Parse requirements/PRD/user stories
-2. **IDENTIFY** - Extract ALL data boundaries between components
-3. **DEFINE** - Create TypeScript interfaces for every seam
+2. **IDENTIFY** - Extract ALL data boundaries between components (create DATA-BOUNDARIES.md)
+3. **DEFINE** - Create TypeScript interfaces for every seam (use CONTRACT-BLUEPRINT.md)
 4. **TEST CONTRACTS** - Validate contract compilation and completeness
-5. **BUILD UI** - Implement frontend with mock data
+5. **BUILD UI** - Implement frontend with mock data (use STUB-BLUEPRINT.md for mocks)
 6. **TEST MOCKS** - Verify mock data matches contracts exactly
-7. **IMPLEMENT** - Build backend services matching contracts
+7. **IMPLEMENT** - Build backend services matching contracts (use STUB-BLUEPRINT.md for real services)
 8. **INTEGRATE** - Switch from mocks to real services (works immediately)
+
+**📖 Blueprint Templates**:
+- `/docs/blueprints/CONTRACT-BLUEPRINT.md` - Contract definition template
+- `/docs/blueprints/STUB-BLUEPRINT.md` - Mock and real service templates
+- `/docs/planning/DATA-BOUNDARIES.md` - Example boundary analysis
 
 ### Key Principles
 

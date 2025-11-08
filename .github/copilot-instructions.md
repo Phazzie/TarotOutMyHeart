@@ -447,8 +447,19 @@ npm run format
 5. **Test contracts** - Mocks must match contracts exactly
 6. **Documentation** - Update SEAMSLIST.md when adding seams
 
-## Questions?
+## Documentation Structure
 
-- See `/AGENTS.md` for complete AI agent instructions
-- See `/seam-driven-development.md` for SDD methodology
-- See `/SEAMSLIST.md` for project seams
+### Root Files (Original Scaffolding)
+- `/AGENTS.md` - Complete AI agent instructions
+- `/seam-driven-development.md` - SDD methodology
+- `/SEAMSLIST.md` - Project seams catalog
+- `/prd.MD` - Product requirements
+- `/lessonslearned.md` - Project insights
+
+### Development Documents
+All new planning documents go in `/docs/planning/`:
+- `docs/planning/DATA-BOUNDARIES.md` - Data boundary analysis
+- `docs/planning/RECOMMENDATIONS.md` - Technical decisions
+- Future: Contract drafts, diagrams, retrospectives
+
+**Rule**: Root = original structure. Planning folder = development workspace.
