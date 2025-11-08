@@ -1,6 +1,6 @@
 /**
  * Copilot Coordination Mock Implementation
- * 
+ *
  * Mock implementation of ICopilotCoordination for testing and development
  */
 
@@ -9,7 +9,7 @@ import type {
   CopilotTaskRequest,
   CopilotTaskResult,
   CopilotAgentStatus,
-  ServiceResponse
+  ServiceResponse,
 } from '../../contracts'
 
 import { CopilotStatus, CopilotTaskType } from '../../contracts'
@@ -25,13 +25,13 @@ export class CopilotCoordinationMock implements ICopilotCoordination {
 
   async assignTask(request: CopilotTaskRequest): Promise<ServiceResponse<{ taskId: string }>> {
     const taskId = `copilot-task-${this.taskIdCounter++}`
-    
+
     this.pendingTasks.add(taskId)
     this.currentStatus = CopilotStatus.BUSY
     this.currentTaskInfo = {
       taskId,
       taskType: request.taskType,
-      startedAt: new Date()
+      startedAt: new Date(),
     }
 
     // Simulate async task completion
@@ -43,13 +43,13 @@ export class CopilotCoordinationMock implements ICopilotCoordination {
         suggestedPath: request.filePath,
         confidence: 0.85,
         metadata: { originalPrompt: request.prompt },
-        completedAt: new Date()
+        completedAt: new Date(),
       }
-      
+
       this.tasks.set(taskId, result)
       this.pendingTasks.delete(taskId)
       this.completedCount++
-      
+
       if (this.pendingTasks.size === 0) {
         this.currentStatus = CopilotStatus.IDLE
         this.currentTaskInfo = undefined
@@ -58,7 +58,7 @@ export class CopilotCoordinationMock implements ICopilotCoordination {
 
     return {
       success: true,
-      data: { taskId }
+      data: { taskId },
     }
   }
 
@@ -68,44 +68,44 @@ export class CopilotCoordinationMock implements ICopilotCoordination {
       currentTask: this.currentTaskInfo,
       completedTasks: this.completedCount,
       failedTasks: this.failedCount,
-      lastActive: new Date()
+      lastActive: new Date(),
     }
 
     return {
       success: true,
-      data: status
+      data: status,
     }
   }
 
   async getTaskResult(taskId: string): Promise<ServiceResponse<CopilotTaskResult>> {
     const result = this.tasks.get(taskId)
-    
+
     if (!result) {
       return {
         success: false,
         error: {
           code: 'TASK_NOT_FOUND',
           message: `Task ${taskId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
     return {
       success: true,
-      data: result
+      data: result,
     }
   }
 
   async cancelTask(taskId: string): Promise<ServiceResponse<void>> {
     if (this.pendingTasks.has(taskId)) {
       this.pendingTasks.delete(taskId)
-      
+
       if (this.currentTaskInfo?.taskId === taskId) {
         this.currentTaskInfo = undefined
         this.currentStatus = CopilotStatus.IDLE
       }
-      
+
       return { success: true }
     }
 
@@ -114,8 +114,8 @@ export class CopilotCoordinationMock implements ICopilotCoordination {
       error: {
         code: 'TASK_NOT_FOUND',
         message: `Task ${taskId} not found or already completed`,
-        retryable: false
-      }
+        retryable: false,
+      },
     }
   }
 
@@ -130,7 +130,7 @@ export class CopilotCoordinationMock implements ICopilotCoordination {
 
     return {
       success: true,
-      data: pending
+      data: pending,
     }
   }
 

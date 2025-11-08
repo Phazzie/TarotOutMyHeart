@@ -32,25 +32,25 @@ Seam-Driven Development is a methodology where you identify and define all data 
 interface FeatureSeam {
   request: {
     // Exact fields UI sends
-    userId: string;
-    filters?: FilterOptions;
-  };
+    userId: string
+    filters?: FilterOptions
+  }
   response: {
     // Exact fields backend returns
-    data: Item[];
-    pagination: PaginationMeta;
-  };
+    data: Item[]
+    pagination: PaginationMeta
+  }
 }
 
 // Wrapper for all API responses
 interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
+  success: boolean
+  data?: T
   error?: {
-    code: string;
-    message: string;
-    field?: string;
-  };
+    code: string
+    message: string
+    field?: string
+  }
 }
 ```
 
@@ -65,9 +65,7 @@ Most AI-assisted development hits a wall at ~70% completion when integration fai
 ```typescript
 // Critical pattern: Mock services must be dependency-injected
 export class DataService {
-  constructor(
-    private api: IApiClient = USE_MOCKS ? new MockApiClient() : new RealApiClient()
-  ) {}
+  constructor(private api: IApiClient = USE_MOCKS ? new MockApiClient() : new RealApiClient()) {}
 }
 ```
 
@@ -93,7 +91,7 @@ export const SEAMS = {
     fetch: DataFetchSeam,
     update: DataUpdateSeam,
   },
-} as const;
+} as const
 ```
 
 ### 5. Error Boundary Contracts
@@ -102,10 +100,10 @@ Every seam needs explicit error cases:
 
 ```typescript
 interface SeamErrors {
-  VALIDATION: { fields: Record<string, string> };
-  AUTHENTICATION: { redirect: string };
-  NETWORK: { retry: boolean };
-  BUSINESS_LOGIC: { code: string; userMessage: string };
+  VALIDATION: { fields: Record<string, string> }
+  AUTHENTICATION: { redirect: string }
+  NETWORK: { retry: boolean }
+  BUSINESS_LOGIC: { code: string; userMessage: string }
 }
 ```
 
@@ -115,10 +113,10 @@ Don't just define API seams - define state synchronization points:
 
 ```typescript
 interface StateSeam {
-  trigger: Event;
-  beforeState: StateShape;
-  afterState: StateShape;
-  sideEffects?: string[];
+  trigger: Event
+  beforeState: StateShape
+  afterState: StateShape
+  sideEffects?: string[]
 }
 ```
 
@@ -134,8 +132,12 @@ Start with simple static mocks, gradually add:
 ### 8. Contract Versioning Strategy
 
 ```typescript
-interface SeamV1 { /* ... */ }
-interface SeamV2 extends SeamV1 { /* new fields */ }
+interface SeamV1 {
+  /* ... */
+}
+interface SeamV2 extends SeamV1 {
+  /* new fields */
+}
 // Never modify V1 once in use
 ```
 
@@ -159,11 +161,11 @@ interface SeamV2 extends SeamV1 { /* new fields */ }
 ```typescript
 // Pattern we evolved to handle all async operations
 interface AsyncSeam<T> {
-  loading: boolean;
-  data?: T;
-  error?: Error;
-  lastFetch?: Date;
-  invalidate: () => void;
+  loading: boolean
+  data?: T
+  error?: Error
+  lastFetch?: Date
+  invalidate: () => void
 }
 ```
 
@@ -185,7 +187,7 @@ generateContractTests(SEAMS.auth.login)
 ```typescript
 interface LoginSeam {
   // @requirement AUTH-001: User login with email
-  request: { email: string; password: string; };
+  request: { email: string; password: string }
 }
 ```
 
@@ -202,9 +204,13 @@ Before switching from mocks to real services, run:
 
 ```typescript
 // Start simple
-interface V1 { basic: string; }
+interface V1 {
+  basic: string
+}
 // Add complexity only when needed
-interface V2 extends V1 { advanced?: ComplexType; }
+interface V2 extends V1 {
+  advanced?: ComplexType
+}
 ```
 
 #### Discovery: Mock Data Generators
@@ -214,7 +220,7 @@ Hand-writing mock data doesn't scale
 **Solution**: Generate from contracts
 
 ```typescript
-const mockData = generateFromContract(UserSeam, { count: 100 });
+const mockData = generateFromContract(UserSeam, { count: 100 })
 ```
 
 ### Failed Approaches (What NOT to Do)
@@ -274,19 +280,19 @@ When integration fails despite SDD:
 // Minimum viable SDD tool needs:
 interface SDDTool {
   // 1. Contract definition system
-  defineSeam<T>(name: string, shape: T): Seam<T>;
+  defineSeam<T>(name: string, shape: T): Seam<T>
 
   // 2. Mock generator
-  generateMock<T>(seam: Seam<T>): MockService<T>;
+  generateMock<T>(seam: Seam<T>): MockService<T>
 
   // 3. Contract validator
-  validateContract<T>(seam: Seam<T>, data: unknown): boolean;
+  validateContract<T>(seam: Seam<T>, data: unknown): boolean
 
   // 4. Integration tester
-  testIntegration<T>(mock: MockService<T>, real: Service<T>): TestResult;
+  testIntegration<T>(mock: MockService<T>, real: Service<T>): TestResult
 
   // 5. Documentation generator
-  generateDocs(seams: Seam<any>[]): Documentation;
+  generateDocs(seams: Seam<any>[]): Documentation
 }
 ```
 
@@ -304,13 +310,11 @@ interface SDDTool {
 
 ```typescript
 // DON'T: Half-mock
-const userService = USE_MOCKS ? new MockUserService() : new RealUserService();
-const authService = new RealAuthService(); // ❌ breaks dependency chain
+const userService = USE_MOCKS ? new MockUserService() : new RealUserService()
+const authService = new RealAuthService() // ❌ breaks dependency chain
 
 // DO: All or nothing per feature boundary
-const services = USE_MOCKS
-  ? MockServiceFactory.createAll()
-  : RealServiceFactory.createAll();
+const services = USE_MOCKS ? MockServiceFactory.createAll() : RealServiceFactory.createAll()
 ```
 
 **Impact**: Integration success rate jumped from 60% → 95%.
@@ -327,10 +331,10 @@ const services = USE_MOCKS
 
 ```typescript
 interface ButtonStateSeam {
-  idle: { enabled: boolean; text: string };
-  loading: { spinner: boolean; text: string; disabled: true };
-  success: { icon: string; text: string; timeout: number };
-  error: { message: string; retryable: boolean };
+  idle: { enabled: boolean; text: string }
+  loading: { spinner: boolean; text: string; disabled: true }
+  success: { icon: string; text: string; timeout: number }
+  error: { message: string; retryable: boolean }
 }
 ```
 
@@ -351,22 +355,31 @@ interface ButtonStateSeam {
 
 ```typescript
 // v1: Just the data (broke immediately)
-interface DataSeam { data: User[]; }
+interface DataSeam {
+  data: User[]
+}
 
 // v2: Added loading (still broke)
-interface DataSeam { data?: User[]; loading: boolean; }
+interface DataSeam {
+  data?: User[]
+  loading: boolean
+}
 
 // v3: Added error (getting there)
-interface DataSeam { data?: User[]; loading: boolean; error?: Error; }
+interface DataSeam {
+  data?: User[]
+  loading: boolean
+  error?: Error
+}
 
 // v4: FINAL - Complete async lifecycle
 interface AsyncSeam<T> {
-  loading: boolean;
-  data?: T;
-  error?: Error;
-  lastFetch?: Date;
-  isStale: () => boolean;
-  invalidate: () => void;
+  loading: boolean
+  data?: T
+  error?: Error
+  lastFetch?: Date
+  isStale: () => boolean
+  invalidate: () => void
 }
 ```
 
@@ -392,17 +405,16 @@ interface AsyncSeam<T> {
 function generateContractTests(seam: TypeDef) {
   describe(`${seam.name} Contract`, () => {
     it('mock matches contract shape', () => {
-      const mockData = mockService.getData();
-      expect(mockData).toMatchTypeShape(seam.output);
-    });
+      const mockData = mockService.getData()
+      expect(mockData).toMatchTypeShape(seam.output)
+    })
 
     it('no extra fields in mock', () => {
-      const mockData = mockService.getData();
-      const extraFields = Object.keys(mockData)
-        .filter(k => !(k in seam.output));
-      expect(extraFields).toEqual([]);
-    });
-  });
+      const mockData = mockService.getData()
+      const extraFields = Object.keys(mockData).filter(k => !(k in seam.output))
+      expect(extraFields).toEqual([])
+    })
+  })
 }
 ```
 
@@ -419,11 +431,11 @@ function generateContractTests(seam: TypeDef) {
 ```typescript
 interface UserSeam {
   // @requirement AUTH-001: User login with email
-  email: string;
+  email: string
 
   // @requirement PROF-015: Allow users to set contact preferences
   // @deprecated 2024-02-15: Feature removed per JIRA-4521
-  preferredContactTime?: string;
+  preferredContactTime?: string
 }
 ```
 
@@ -455,13 +467,13 @@ export async function validateIntegrationReadiness() {
     benchmarkResponseTimes(),
     testErrorScenarios(),
     verifyAuthFlow(),
-  ];
+  ]
 
-  const results = await Promise.all(checks);
-  const passed = results.filter(r => r.passed).length;
+  const results = await Promise.all(checks)
+  const passed = results.filter(r => r.passed).length
 
   if (passed < checks.length) {
-    throw new Error(`Integration not ready: ${passed}/${checks.length} checks passed`);
+    throw new Error(`Integration not ready: ${passed}/${checks.length} checks passed`)
   }
 }
 ```
@@ -470,11 +482,11 @@ Run this before:
 
 ```typescript
 // Before
-const USE_MOCKS = false; // 💥 cross fingers
+const USE_MOCKS = false // 💥 cross fingers
 
 // After
-await validateIntegrationReadiness();
-const USE_MOCKS = false; // 🎯 confident
+await validateIntegrationReadiness()
+const USE_MOCKS = false // 🎯 confident
 ```
 
 **Impact**: Prevented 8 production incidents in first month.
@@ -490,26 +502,27 @@ const USE_MOCKS = false; // 🎯 confident
 ```typescript
 // Week 1: MVP
 interface UserSeam {
-  id: string;
-  name: string;
+  id: string
+  name: string
 }
 
 // Week 3: Added auth
 interface UserSeam {
-  id: string;
-  name: string;
-  roles: string[]; // NEW
+  id: string
+  name: string
+  roles: string[] // NEW
 }
 
 // Week 5: Added preferences
 interface UserSeam {
-  id: string;
-  name: string;
-  roles: string[];
-  preferences?: { // Optional, non-breaking
-    theme: 'light' | 'dark';
-    notifications: boolean;
-  };
+  id: string
+  name: string
+  roles: string[]
+  preferences?: {
+    // Optional, non-breaking
+    theme: 'light' | 'dark'
+    notifications: boolean
+  }
 }
 ```
 
@@ -544,10 +557,7 @@ const mockUsers = generateFromContract(UserSeam, {
 **Tooling**: Built `contractMockGenerator`:
 
 ```typescript
-function generateFromContract<T>(
-  contract: TypeDef<T>,
-  options: GenerateOptions
-): T[] {
+function generateFromContract<T>(contract: TypeDef<T>, options: GenerateOptions): T[] {
   // Introspect contract, generate realistic data
   // Respects constraints (email format, enum values, etc.)
 }
@@ -566,7 +576,7 @@ function adaptBackendData(raw: any): User {
     id: raw.user_id,
     name: raw.full_name,
     email: raw.email_address,
-  };
+  }
 }
 ```
 
@@ -658,10 +668,10 @@ If all checks pass and it still breaks: **You found a bug in SDD itself.** File 
 ```typescript
 // ❌ Mixes user data + order data
 interface UserAndOrdersSeam {
-  userId: string;
-  userName: string;
-  orders: Order[];
-  totalSpent: number;
+  userId: string
+  userName: string
+  orders: Order[]
+  totalSpent: number
 }
 ```
 
@@ -676,20 +686,20 @@ interface UserAndOrdersSeam {
 ```typescript
 // ✅ Separate concerns
 interface UserSeam {
-  id: string;
-  name: string;
+  id: string
+  name: string
 }
 
 interface OrderSeam {
-  id: string;
-  userId: string;
-  total: number;
+  id: string
+  userId: string
+  total: number
 }
 
 // Compose when needed
 interface UserWithOrdersViewModel {
-  user: UserSeam;
-  orders: OrderSeam[];
+  user: UserSeam
+  orders: OrderSeam[]
 }
 ```
 
@@ -703,7 +713,7 @@ interface UserWithOrdersViewModel {
 
 ```typescript
 interface UsersSeam {
-  users: User[];
+  users: User[]
 }
 ```
 
@@ -717,17 +727,17 @@ interface UsersSeam {
 
 ```typescript
 interface UsersSeam {
-  users: User[]; // Never null, can be []
+  users: User[] // Never null, can be []
   pagination: {
-    page: number;
-    pageSize: number;
-    total: number;
-    hasMore: boolean;
-  };
+    page: number
+    pageSize: number
+    total: number
+    hasMore: boolean
+  }
   metadata: {
-    loadedAt: Date;
-    fromCache: boolean;
-  };
+    loadedAt: Date
+    fromCache: boolean
+  }
 }
 ```
 
@@ -740,15 +750,15 @@ interface UsersSeam {
 ```typescript
 // mock-service.ts
 interface MockUser {
-  id: string;
-  name: string;
+  id: string
+  name: string
 }
 
 // real-service.ts
 interface RealUser {
-  id: number; // 💥 different type!
-  name: string;
-  email: string; // 💥 missing in mock!
+  id: number // 💥 different type!
+  name: string
+  email: string // 💥 missing in mock!
 }
 ```
 
@@ -770,14 +780,14 @@ import { UserSeam } from '@contracts/user.seam';
 
 **Measured Results Across 8 Projects**:
 
-| Metric | Traditional Dev | SDD |
-|--------|----------------|-----|
-| Time to First Integration | 2-3 weeks | 3-5 days |
-| Integration Success Rate | 45-60% | 95%+ |
-| Debugging Time | 40% of dev time | 5% of dev time |
-| Parallel Work Enabled | No (blocked) | Yes (mocks) |
-| Requirement Changes | 3-5 day delay | < 1 day (just contract) |
-| Onboarding New Devs | 2 weeks | 3 days (contracts explain everything) |
+| Metric                    | Traditional Dev | SDD                                   |
+| ------------------------- | --------------- | ------------------------------------- |
+| Time to First Integration | 2-3 weeks       | 3-5 days                              |
+| Integration Success Rate  | 45-60%          | 95%+                                  |
+| Debugging Time            | 40% of dev time | 5% of dev time                        |
+| Parallel Work Enabled     | No (blocked)    | Yes (mocks)                           |
+| Requirement Changes       | 3-5 day delay   | < 1 day (just contract)               |
+| Onboarding New Devs       | 2 weeks         | 3 days (contracts explain everything) |
 
 **Most Surprising**: SDD is FASTER, not slower. Upfront contract work pays back 5x in integration time saved.
 

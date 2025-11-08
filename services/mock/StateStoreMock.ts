@@ -1,15 +1,10 @@
 /**
  * State Store Mock Implementation
- * 
+ *
  * Mock implementation of IStateStore for testing and development
  */
 
-import type {
-  IStateStore,
-  Task,
-  FileLock,
-  AgentContext
-} from '../../contracts'
+import type { IStateStore, Task, FileLock, AgentContext } from '../../contracts'
 
 import { TaskStatus } from '../../contracts'
 
@@ -25,7 +20,7 @@ export class StateStoreMock implements IStateStore {
       ...task,
       id: `task-${this.taskIdCounter++}`,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     }
     this.tasks.push(newTask)
     return newTask
@@ -68,7 +63,7 @@ export class StateStoreMock implements IStateStore {
     ttlMs?: number
   ): Promise<boolean> {
     const existing = this.fileLocks.get(filePath)
-    
+
     // Check if lock exists and hasn't expired
     if (existing) {
       if (!existing.expiresAt || existing.expiresAt > new Date()) {
@@ -80,9 +75,9 @@ export class StateStoreMock implements IStateStore {
       filePath,
       lockedBy: agent,
       lockedAt: new Date(),
-      expiresAt: ttlMs ? new Date(Date.now() + ttlMs) : undefined
+      expiresAt: ttlMs ? new Date(Date.now() + ttlMs) : undefined,
     }
-    
+
     this.fileLocks.set(filePath, lock)
     return true
   }
@@ -99,26 +94,26 @@ export class StateStoreMock implements IStateStore {
   async isFileLocked(filePath: string): Promise<boolean> {
     const lock = this.fileLocks.get(filePath)
     if (!lock) return false
-    
+
     // Check if expired
     if (lock.expiresAt && lock.expiresAt <= new Date()) {
       this.fileLocks.delete(filePath)
       return false
     }
-    
+
     return true
   }
 
   async getFileLock(filePath: string): Promise<FileLock | undefined> {
     const lock = this.fileLocks.get(filePath)
     if (!lock) return undefined
-    
+
     // Check if expired
     if (lock.expiresAt && lock.expiresAt <= new Date()) {
       this.fileLocks.delete(filePath)
       return undefined
     }
-    
+
     return lock
   }
 
@@ -126,7 +121,7 @@ export class StateStoreMock implements IStateStore {
     // Filter out expired locks
     const now = new Date()
     const activeLocks: FileLock[] = []
-    
+
     for (const [filePath, lock] of this.fileLocks.entries()) {
       if (!lock.expiresAt || lock.expiresAt > now) {
         activeLocks.push(lock)
@@ -134,7 +129,7 @@ export class StateStoreMock implements IStateStore {
         this.fileLocks.delete(filePath)
       }
     }
-    
+
     return activeLocks
   }
 
@@ -149,7 +144,7 @@ export class StateStoreMock implements IStateStore {
       value,
       setBy: agent,
       timestamp: new Date(),
-      persistent
+      persistent,
     }
     this.contexts.set(key, context)
   }
@@ -173,12 +168,12 @@ export class StateStoreMock implements IStateStore {
         this.contexts.delete(key)
       }
     }
-    
+
     // Clear completed and failed tasks
     this.tasks = this.tasks.filter(
       t => t.status === TaskStatus.PENDING || t.status === TaskStatus.IN_PROGRESS
     )
-    
+
     // Clear expired locks
     const now = new Date()
     for (const [filePath, lock] of this.fileLocks.entries()) {

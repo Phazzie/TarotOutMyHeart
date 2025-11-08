@@ -24,6 +24,7 @@ Which seam does this bug affect? (Check `/SEAMSLIST.md` for all seams)
 - [ ] Other (specify below)
 
 **Seam Details**:
+
 <!-- If "Other", specify the seam name and contract location -->
 
 ## To Reproduce
@@ -54,15 +55,18 @@ Paste error messages here
 ## Environment
 
 **Browser** (if applicable):
+
 - Browser: [e.g., Chrome, Firefox, Safari]
 - Version: [e.g., 120.0]
 
 **System**:
+
 - OS: [e.g., macOS 14, Windows 11, Ubuntu 22.04]
 - Node version: [e.g., 20.10.0]
 - npm version: [e.g., 10.2.3]
 
 **Deployment**:
+
 - [ ] Local development (`npm run dev`)
 - [ ] Preview deployment (Vercel)
 - [ ] Production deployment
@@ -72,12 +76,14 @@ Paste error messages here
 <!-- Help us understand if this is a contract issue -->
 
 **Contract Compliance**:
+
 - [ ] Mock service works correctly (if using mocks)
 - [ ] Real service fails (if using real services)
 - [ ] Both mock and real services fail
 - [ ] UI issue (not related to services)
 
 **Type Safety**:
+
 - [ ] TypeScript error in console/terminal
 - [ ] Runtime type error
 - [ ] No type errors
@@ -99,6 +105,7 @@ Paste error messages here
 ## For Maintainers
 
 **Root Cause Analysis** (to be filled by maintainer):
+
 - [ ] Contract issue (contract doesn't match requirements)
 - [ ] Mock implementation issue
 - [ ] Real service implementation issue
@@ -107,6 +114,7 @@ Paste error messages here
 - [ ] External API issue (Grok)
 
 **Fix Approach** (to be filled by maintainer):
+
 - [ ] Fix contract (breaking change - requires new version)
 - [ ] Fix mock service
 - [ ] Fix real service

@@ -24,11 +24,7 @@ const config = {
       config(config) {
         return {
           ...config,
-          include: [
-            ...config.include,
-            '../contracts/**/*.ts',
-            '../services/**/*.ts',
-          ],
+          include: [...config.include, '../contracts/**/*.ts', '../services/**/*.ts'],
         }
       },
     },

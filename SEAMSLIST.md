@@ -17,24 +17,28 @@ A **seam** is any boundary where data crosses between systems, components, or la
 ## Seam Categories
 
 ### 1. External API Seams
+
 Boundaries between our application and external services (Grok AI, image generation APIs, etc.)
 
 ### 2. Data Input Seams
+
 Boundaries where user input enters the application (forms, file uploads, etc.)
 
 ### 3. State Management Seams
+
 Boundaries between UI state and component logic
 
 ### 4. Internal Service Seams
+
 Boundaries between application services
 
 ---
 
 ## Seam Overview Table
 
-| # | Seam Name | Type | Priority | Contract Location | Mock Status | Real Status |
-|---|-----------|------|----------|-------------------|-------------|-------------|
-| - | *Not yet defined* | - | - | - | ⏸️ Pending | ⏸️ Pending |
+| #   | Seam Name         | Type | Priority | Contract Location | Mock Status | Real Status |
+| --- | ----------------- | ---- | -------- | ----------------- | ----------- | ----------- |
+| -   | _Not yet defined_ | -    | -        | -                 | ⏸️ Pending  | ⏸️ Pending  |
 
 > **Note**: This table will be populated during the IDENTIFY phase of SDD implementation.
 
@@ -46,7 +50,7 @@ Boundaries between application services
 
 ### Template for Each Seam:
 
-```markdown
+````markdown
 ### [Number]. [Seam Name]
 
 **Boundary**: [Source] → [Destination]
@@ -62,6 +66,7 @@ interface [SeamName]Input {
   // Fields that cross this boundary
 }
 ```
+````
 
 #### Output Contract
 
@@ -108,6 +113,7 @@ Document expected error scenarios:
 
 - [Any special considerations, gotchas, or implementation details]
 - [Links to relevant requirements or design docs]
+
 ```
 
 ---
@@ -117,20 +123,24 @@ Document expected error scenarios:
 > **Status**: To be created once seams are defined
 
 ```
+
 [Placeholder for dependency graph]
 [Use Mermaid, ASCII art, or link to diagram]
+
 ```
 
 **Example Format**:
 
 ```
+
 User Input Seam ────┐
-                    ├──→ Grok Prompt Generation Seam ──→ Deck State Seam
-Image Upload Seam ──┘                                           │
-                                                                 │
-                                                                 ↓
+├──→ Grok Prompt Generation Seam ──→ Deck State Seam
+Image Upload Seam ──┘ │
+│
+↓
 Reference Selection Seam ──→ Grok Image Generation Seam ──→ Deck State Seam
-```
+
+````
 
 ---
 
@@ -216,11 +226,12 @@ echo "export * from './[FeatureName]'" >> contracts/index.ts
 
 # Validate contract compiles
 npm run check
-```
+````
 
 ### Step 3: Document in This File
 
 Add a new section using the template above with:
+
 - Seam number (increment from last)
 - Clear boundary description
 - Input/output contracts
@@ -300,6 +311,7 @@ Per Seam-Driven Development methodology:
 Once a contract is defined and implementation begins, it is **frozen**.
 
 **Rules**:
+
 - ❌ NEVER modify existing contract interfaces
 - ✅ Create new versions (V2, V3) if breaking changes needed
 - ✅ Add optional fields for non-breaking enhancements
@@ -312,7 +324,7 @@ Once a contract is defined and implementation begins, it is **frozen**.
 interface UserSeam {
   id: string
   name: string
-  email: string  // Added later - BREAKS EVERYTHING
+  email: string // Added later - BREAKS EVERYTHING
 }
 
 // ✅ CORRECT: Create new version
@@ -329,7 +341,7 @@ interface UserSeamV2 extends UserSeamV1 {
 interface UserSeam {
   id: string
   name: string
-  email?: string  // Optional addition is safe
+  email?: string // Optional addition is safe
 }
 ```
 
@@ -351,6 +363,7 @@ interface UserSeam {
 ### Regeneration Over Debugging
 
 If integration fails:
+
 1. Fix the contract (it was wrong)
 2. Regenerate both mock and real services
 3. Integration should now work
@@ -372,6 +385,7 @@ interface LoginSeam {
 ```
 
 This allows:
+
 - Finding orphan fields (no requirement)
 - Finding missing features (requirement without seam)
 - Impact analysis when requirements change
@@ -464,8 +478,8 @@ interface FormSubmissionSeam<TInput, TOutput> {
 
 ## Change Log
 
-| Date | Author | Change |
-|------|--------|--------|
+| Date       | Author        | Change                        |
+| ---------- | ------------- | ----------------------------- |
 | 2025-11-07 | Initial Setup | Created SEAMSLIST.md template |
 
 ---

@@ -1,6 +1,6 @@
 /**
  * File System Coordination Mock Implementation
- * 
+ *
  * Mock implementation of IFileSystemCoordination for testing and development
  */
 
@@ -9,7 +9,7 @@ import type {
   FileChange,
   FileConflict,
   FileMetadata,
-  ServiceResponse
+  ServiceResponse,
 } from '../../contracts'
 
 import { FileOperation } from '../../contracts'
@@ -21,17 +21,20 @@ export class FileSystemCoordinationMock implements IFileSystemCoordination {
   private changeIdCounter = 1
   private conflictIdCounter = 1
 
-  async readFile(filePath: string, agent: 'claude' | 'copilot' | 'user'): Promise<ServiceResponse<string>> {
+  async readFile(
+    filePath: string,
+    agent: 'claude' | 'copilot' | 'user'
+  ): Promise<ServiceResponse<string>> {
     const content = this.files.get(filePath)
-    
+
     if (content === undefined) {
       return {
         success: false,
         error: {
           code: 'FILE_NOT_FOUND',
           message: `File ${filePath} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -40,7 +43,7 @@ export class FileSystemCoordinationMock implements IFileSystemCoordination {
 
     return {
       success: true,
-      data: content
+      data: content,
     }
   }
 
@@ -52,7 +55,7 @@ export class FileSystemCoordinationMock implements IFileSystemCoordination {
   ): Promise<ServiceResponse<void>> {
     const previousContent = this.files.get(filePath)
     this.files.set(filePath, content)
-    
+
     this.recordChange(filePath, FileOperation.WRITE, agent, previousContent, content, description)
 
     return { success: true }
@@ -70,8 +73,8 @@ export class FileSystemCoordinationMock implements IFileSystemCoordination {
         error: {
           code: 'FILE_ALREADY_EXISTS',
           message: `File ${filePath} already exists`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -87,20 +90,27 @@ export class FileSystemCoordinationMock implements IFileSystemCoordination {
     description?: string
   ): Promise<ServiceResponse<void>> {
     const previousContent = this.files.get(filePath)
-    
+
     if (!previousContent) {
       return {
         success: false,
         error: {
           code: 'FILE_NOT_FOUND',
           message: `File ${filePath} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
     this.files.delete(filePath)
-    this.recordChange(filePath, FileOperation.DELETE, agent, previousContent, undefined, description)
+    this.recordChange(
+      filePath,
+      FileOperation.DELETE,
+      agent,
+      previousContent,
+      undefined,
+      description
+    )
 
     return { success: true }
   }
@@ -108,21 +118,21 @@ export class FileSystemCoordinationMock implements IFileSystemCoordination {
   async fileExists(filePath: string): Promise<ServiceResponse<boolean>> {
     return {
       success: true,
-      data: this.files.has(filePath)
+      data: this.files.has(filePath),
     }
   }
 
   async getFileMetadata(filePath: string): Promise<ServiceResponse<FileMetadata>> {
     const content = this.files.get(filePath)
-    
+
     if (content === undefined) {
       return {
         success: false,
         error: {
           code: 'FILE_NOT_FOUND',
           message: `File ${filePath} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -137,12 +147,12 @@ export class FileSystemCoordinationMock implements IFileSystemCoordination {
       lastModified: lastChange?.timestamp || new Date(),
       lastModifiedBy: lastChange?.changedBy,
       locked: false, // Mock doesn't track locks here
-      contentHash: this.simpleHash(content)
+      contentHash: this.simpleHash(content),
     }
 
     return {
       success: true,
-      data: metadata
+      data: metadata,
     }
   }
 
@@ -153,31 +163,29 @@ export class FileSystemCoordinationMock implements IFileSystemCoordination {
 
     return {
       success: true,
-      data: history
+      data: history,
     }
   }
 
   async getAllChanges(sinceMs?: number): Promise<ServiceResponse<FileChange[]>> {
     let changes = [...this.changes]
-    
+
     if (sinceMs) {
       const cutoff = new Date(Date.now() - sinceMs)
       changes = changes.filter(c => c.timestamp >= cutoff)
     }
-    
+
     changes.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
 
     return {
       success: true,
-      data: changes
+      data: changes,
     }
   }
 
   async detectConflicts(): Promise<ServiceResponse<FileConflict[]>> {
     // Simple conflict detection: find files modified by different agents within 1 minute
-    const recentChanges = this.changes.filter(
-      c => Date.now() - c.timestamp.getTime() < 60000
-    )
+    const recentChanges = this.changes.filter(c => Date.now() - c.timestamp.getTime() < 60000)
 
     const fileChanges = new Map<string, FileChange[]>()
     for (const change of recentChanges) {
@@ -199,7 +207,7 @@ export class FileSystemCoordinationMock implements IFileSystemCoordination {
             filePath,
             change1: changes[0],
             change2: changes[1],
-            resolved: false
+            resolved: false,
           }
           this.conflicts.set(conflictId, conflict)
         }
@@ -208,7 +216,7 @@ export class FileSystemCoordinationMock implements IFileSystemCoordination {
 
     return {
       success: true,
-      data: Array.from(this.conflicts.values())
+      data: Array.from(this.conflicts.values()),
     }
   }
 
@@ -217,15 +225,15 @@ export class FileSystemCoordinationMock implements IFileSystemCoordination {
     resolution: FileConflict['resolution']
   ): Promise<ServiceResponse<void>> {
     const conflict = this.conflicts.get(conflictId)
-    
+
     if (!conflict) {
       return {
         success: false,
         error: {
           code: 'CONFLICT_NOT_FOUND',
           message: `Conflict ${conflictId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -245,21 +253,21 @@ export class FileSystemCoordinationMock implements IFileSystemCoordination {
 
     return {
       success: true,
-      data: pending
+      data: pending,
     }
   }
 
   async revertChange(changeId: string): Promise<ServiceResponse<void>> {
     const change = this.changes.find(c => c.id === changeId)
-    
+
     if (!change) {
       return {
         success: false,
         error: {
           code: 'CHANGE_NOT_FOUND',
           message: `Change ${changeId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -289,7 +297,7 @@ export class FileSystemCoordinationMock implements IFileSystemCoordination {
       timestamp: new Date(),
       previousContent,
       newContent,
-      description
+      description,
     }
     this.changes.push(change)
   }
@@ -299,7 +307,7 @@ export class FileSystemCoordinationMock implements IFileSystemCoordination {
     let hash = 0
     for (let i = 0; i < content.length; i++) {
       const char = content.charCodeAt(i)
-      hash = ((hash << 5) - hash) + char
+      hash = (hash << 5) - hash + char
       hash = hash & hash // Convert to 32bit integer
     }
     return hash.toString(16)

@@ -8,29 +8,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Seams will be identified and documented in SEAMSLIST.md
 - Mock services will be implemented for development
 - UI components for deck generation workflow
 - Real Grok API integrations
 
 ### Changed
+
 - TBD
 
 ### Deprecated
+
 - TBD
 
 ### Removed
+
 - TBD
 
 ### Fixed
+
 - TBD
 
 ### Security
+
 - TBD
 
 ## [0.0.1] - 2025-11-07
 
 ### Added
+
 - Initial project scaffolding with Seam-Driven Development (SDD) structure
 - Complete documentation framework:
   - AGENTS.md - Universal AI agent instructions
@@ -69,6 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This is the initial scaffolding release. No functional code yet - only project structure and documentation following Seam-Driven Development methodology.
 
 **Next Steps**:
+
 1. Define seams in SEAMSLIST.md (IDENTIFY phase)
 2. Create contracts in `/contracts` (DEFINE phase)
 3. Implement mock services (BUILD UI phase)

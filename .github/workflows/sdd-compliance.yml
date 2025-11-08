@@ -206,7 +206,8 @@ jobs:
   sdd-summary:
     name: SDD Compliance Summary
     runs-on: ubuntu-latest
-    needs: [contract-immutability, no-any-types, seams-documented, no-manual-transforms, mock-coverage]
+    needs:
+      [contract-immutability, no-any-types, seams-documented, no-manual-transforms, mock-coverage]
     if: always()
     steps:
       - name: Check compliance status

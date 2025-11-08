@@ -31,6 +31,7 @@ So that [benefit/value]
 <!-- Describe the user experience / user flow -->
 
 ### User Flow:
+
 1. User does X
 2. System responds with Y
 3. User sees Z
@@ -120,16 +121,19 @@ So that [benefit/value]
 ## For Maintainers
 
 **Implementation Estimate** (to be filled by maintainer):
+
 - Estimated complexity: [ Simple | Medium | Complex | Very Complex ]
 - Estimated time: [X days/weeks]
 - Dependencies: [List any blockers]
 
 **SDD Impact** (to be filled by maintainer):
+
 - Number of new seams: [X]
 - Number of modified seams: [X]
 - Contract changes required: [Breaking | Non-breaking | None]
 
 **Decision**:
+
 - [ ] Approved - will implement
 - [ ] Approved - future roadmap
 - [ ] Need more information

@@ -28,6 +28,7 @@ assignees: ''
 **Requirement ID**: [e.g., FEAT-123, USER-STORY-45]
 
 **User Story**:
+
 ```
 As a [type of user]
 I want [goal]
@@ -72,10 +73,11 @@ interface I[SeamName]Service {
 
 <!-- Document expected error scenarios -->
 
-| Error Type | Error Code | Description | Retryable? | User Message |
-|------------|-----------|-------------|------------|--------------|
-| Validation Error | VALIDATION_FAILED | Invalid input data | No | "Please check your input" |
-| Network Error | NETWORK_ERROR | API call failed | Yes | "Connection issue, please retry" |
+| Error Type       | Error Code        | Description        | Retryable? | User Message                     |
+| ---------------- | ----------------- | ------------------ | ---------- | -------------------------------- |
+| Validation Error | VALIDATION_FAILED | Invalid input data | No         | "Please check your input"        |
+| Network Error    | NETWORK_ERROR     | API call failed    | Yes        | "Connection issue, please retry" |
+
 <!-- Add more error cases -->
 
 ## Dependencies
@@ -109,6 +111,7 @@ interface I[SeamName]Service {
 Following SDD methodology:
 
 ### Phase 1: Define Contract
+
 - [ ] Create `/contracts/[SeamName].ts`
 - [ ] Define input interface
 - [ ] Define output interface
@@ -118,12 +121,14 @@ Following SDD methodology:
 - [ ] Validate contract compiles (`npm run check`)
 
 ### Phase 2: Document
+
 - [ ] Add to `/SEAMSLIST.md` with full details
 - [ ] Document dependencies
 - [ ] Document example usage
 - [ ] Update `/CHANGELOG.md`
 
 ### Phase 3: Build Mock
+
 - [ ] Create `/services/mock/[SeamName]Mock.ts`
 - [ ] Implement service interface
 - [ ] Return realistic mock data
@@ -131,6 +136,7 @@ Following SDD methodology:
 - [ ] Add to mock service factory
 
 ### Phase 4: Test Contract
+
 - [ ] Create `/tests/contracts/[SeamName].test.ts`
 - [ ] Test mock matches contract shape
 - [ ] Test all required fields present
@@ -138,6 +144,7 @@ Following SDD methodology:
 - [ ] All contract tests pass
 
 ### Phase 5: Test Mock
+
 - [ ] Create `/tests/mocks/[SeamName].test.ts`
 - [ ] Test mock behavior
 - [ ] Test error scenarios
@@ -145,12 +152,14 @@ Following SDD methodology:
 - [ ] All mock tests pass
 
 ### Phase 6: Build UI (if applicable)
+
 - [ ] Create UI components
 - [ ] Use mock service via factory
 - [ ] Handle all states (loading, success, error)
 - [ ] Manual testing with mocks
 
 ### Phase 7: Implement Real Service
+
 - [ ] Create `/services/real/[SeamName]Service.ts`
 - [ ] Implement service interface (must match contract exactly)
 - [ ] Add to real service factory
@@ -158,12 +167,14 @@ Following SDD methodology:
 - [ ] Handle rate limiting (if needed)
 
 ### Phase 8: Test Integration
+
 - [ ] Create `/tests/integration/[SeamName].test.ts`
 - [ ] Test real service against contract
 - [ ] Test with real API/service
 - [ ] Integration tests pass
 
 ### Phase 9: Integrate
+
 - [ ] Switch from mock to real in service factory
 - [ ] Run integration readiness check
 - [ ] Verify no `any` type escapes

@@ -234,7 +234,8 @@ function processUser(user: UserSeam): ProcessedUser {
 }
 
 // ❌ WRONG: Implicit any
-function processUser(user) {  // Error: Parameter 'user' implicitly has 'any' type
+function processUser(user) {
+  // Error: Parameter 'user' implicitly has 'any' type
   return { id: user.id, name: user.name }
 }
 
@@ -247,18 +248,14 @@ function processData(data: unknown): ValidData {
 }
 
 // ❌ WRONG: Using 'any' escape hatch
-function processData(data: any): ValidData {  // NEVER USE 'any'
+function processData(data: any): ValidData {
+  // NEVER USE 'any'
   return data as ValidData
 }
 
 // ✅ CORRECT: Type guards
 function isUser(value: unknown): value is UserSeam {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'id' in value &&
-    'name' in value
-  )
+  return typeof value === 'object' && value !== null && 'id' in value && 'name' in value
 }
 ```
 
@@ -298,7 +295,7 @@ export async function load() {
 interface UserSeam {
   id: string
   name: string
-  email: string  // ← Adding field breaks existing code!
+  email: string // ← Adding field breaks existing code!
 }
 
 // ✅ DO THIS: Create new version
@@ -315,7 +312,7 @@ interface UserSeamV2 extends UserSeamV1 {
 interface UserSeam {
   id: string
   name: string
-  email?: string  // Optional = safe to add
+  email?: string // Optional = safe to add
 }
 ```
 
@@ -325,7 +322,7 @@ interface UserSeam {
 // ✅ CORRECT: Injectable dependency
 export class FeatureService {
   constructor(
-    private api: IApiClient = getApiClient()  // Factory provides mock or real
+    private api: IApiClient = getApiClient() // Factory provides mock or real
   ) {}
 
   async getData() {
@@ -340,7 +337,7 @@ function getApiClient(): IApiClient {
 
 // ❌ WRONG: Hard-coded dependency
 export class FeatureService {
-  private api = new RealApiClient()  // Can't mock for testing!
+  private api = new RealApiClient() // Can't mock for testing!
 
   async getData() {
     return this.api.fetch('/data')
@@ -551,14 +548,14 @@ npm run test
 interface UserSeam {
   id: string
   name: string
-  email: string  // Added to contract but not mock
+  email: string // Added to contract but not mock
 }
 
 // Solution: Update mock
 const mockUser: UserSeam = {
   id: '1',
   name: 'Test User',
-  email: 'test@example.com'  // Add missing field
+  email: 'test@example.com', // Add missing field
 }
 ```
 
@@ -567,14 +564,14 @@ const mockUser: UserSeam = {
 ```typescript
 // Problem: Assuming data always exists
 const user = await userService.getUser(id)
-console.log(user.name)  // Error if user is undefined
+console.log(user.name) // Error if user is undefined
 
 // Solution: Handle undefined case
 const user = await userService.getUser(id)
 if (!user) {
   throw new Error('User not found')
 }
-console.log(user.name)  // Safe
+console.log(user.name) // Safe
 ```
 
 **Issue: Integration works with mocks, breaks with real API**
@@ -619,27 +616,27 @@ Escalate to human developer if:
 // Create v2 instead
 
 // ❌ Using 'any' type
-const data: any = response  // FORBIDDEN
+const data: any = response // FORBIDDEN
 
 // ❌ Manual data transformations
 function adapt(raw: any) {
-  return { id: raw.user_id }  // Creates drift
+  return { id: raw.user_id } // Creates drift
 }
 
 // ❌ Mixing mocks and real services
 const userService = new MockUserService()
-const authService = new RealAuthService()  // Don't mix!
+const authService = new RealAuthService() // Don't mix!
 
 // ❌ Skipping contract tests
 // "I'll test it later" = integration breaks
 
 // ❌ Type assertions to bypass errors
-const user = data as UserSeam  // Hiding real problem
+const user = data as UserSeam // Hiding real problem
 
 // ❌ Optional fields everywhere
 interface UserSeam {
-  id?: string    // Makes everything optional
-  name?: string  // Defeats type safety
+  id?: string // Makes everything optional
+  name?: string // Defeats type safety
   email?: string
 }
 ```

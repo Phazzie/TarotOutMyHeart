@@ -1,6 +1,6 @@
 /**
  * User Coordination Mock Implementation
- * 
+ *
  * Mock implementation of IUserCoordination for testing and development
  */
 
@@ -9,7 +9,7 @@ import type {
   UserRequest,
   UserResponse,
   UserNotification,
-  ServiceResponse
+  ServiceResponse,
 } from '../../contracts'
 
 import { UserRequestStatus } from '../../contracts'
@@ -27,34 +27,34 @@ export class UserCoordinationMock implements IUserCoordination {
       ...request,
       id: `request-${this.requestIdCounter++}`,
       status: UserRequestStatus.PENDING,
-      createdAt: new Date()
+      createdAt: new Date(),
     }
-    
+
     this.requests.set(newRequest.id, newRequest)
-    
+
     return {
       success: true,
-      data: newRequest
+      data: newRequest,
     }
   }
 
   async getRequest(requestId: string): Promise<ServiceResponse<UserRequest>> {
     const request = this.requests.get(requestId)
-    
+
     if (!request) {
       return {
         success: false,
         error: {
           code: 'REQUEST_NOT_FOUND',
           message: `Request ${requestId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
     return {
       success: true,
-      data: request
+      data: request,
     }
   }
 
@@ -62,24 +62,24 @@ export class UserCoordinationMock implements IUserCoordination {
     const pending = Array.from(this.requests.values())
       .filter(r => r.status === UserRequestStatus.PENDING)
       .filter(r => !r.expiresAt || r.expiresAt > new Date())
-    
+
     return {
       success: true,
-      data: pending
+      data: pending,
     }
   }
 
   async respondToRequest(response: UserResponse): Promise<ServiceResponse<void>> {
     const request = this.requests.get(response.requestId)
-    
+
     if (!request) {
       return {
         success: false,
         error: {
           code: 'REQUEST_NOT_FOUND',
           message: `Request ${response.requestId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -89,14 +89,12 @@ export class UserCoordinationMock implements IUserCoordination {
         error: {
           code: 'REQUEST_ALREADY_RESPONDED',
           message: `Request ${response.requestId} has already been responded to`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
-    request.status = response.approved 
-      ? UserRequestStatus.APPROVED 
-      : UserRequestStatus.REJECTED
+    request.status = response.approved ? UserRequestStatus.APPROVED : UserRequestStatus.REJECTED
 
     return { success: true }
   }
@@ -108,66 +106,66 @@ export class UserCoordinationMock implements IUserCoordination {
       ...notification,
       id: `notification-${this.notificationIdCounter++}`,
       read: false,
-      createdAt: new Date()
+      createdAt: new Date(),
     }
-    
+
     this.notifications.set(newNotification.id, newNotification)
-    
+
     return {
       success: true,
-      data: newNotification
+      data: newNotification,
     }
   }
 
   async getNotifications(unreadOnly = false): Promise<ServiceResponse<UserNotification[]>> {
     let notifications = Array.from(this.notifications.values())
-    
+
     if (unreadOnly) {
       notifications = notifications.filter(n => !n.read)
     }
-    
+
     // Sort by newest first
     notifications.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    
+
     return {
       success: true,
-      data: notifications
+      data: notifications,
     }
   }
 
   async markNotificationRead(notificationId: string): Promise<ServiceResponse<void>> {
     const notification = this.notifications.get(notificationId)
-    
+
     if (!notification) {
       return {
         success: false,
         error: {
           code: 'NOTIFICATION_NOT_FOUND',
           message: `Notification ${notificationId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
     notification.read = true
-    
+
     return { success: true }
   }
 
   async clearOldNotifications(olderThanMs: number): Promise<ServiceResponse<number>> {
     const cutoffTime = new Date(Date.now() - olderThanMs)
     let cleared = 0
-    
+
     for (const [id, notification] of this.notifications.entries()) {
       if (notification.createdAt < cutoffTime) {
         this.notifications.delete(id)
         cleared++
       }
     }
-    
+
     return {
       success: true,
-      data: cleared
+      data: cleared,
     }
   }
 }

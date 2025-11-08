@@ -1,6 +1,6 @@
 /**
  * Claude Coordination Mock Implementation
- * 
+ *
  * Mock implementation of IClaudeCoordination for testing and development
  */
 
@@ -9,7 +9,7 @@ import type {
   ClaudeTaskRequest,
   ClaudeTaskResult,
   ClaudeAgentStatus,
-  ServiceResponse
+  ServiceResponse,
 } from '../../contracts'
 
 import { ClaudeStatus, ClaudeTaskType } from '../../contracts'
@@ -25,13 +25,13 @@ export class ClaudeCoordinationMock implements IClaudeCoordination {
 
   async assignTask(request: ClaudeTaskRequest): Promise<ServiceResponse<{ taskId: string }>> {
     const taskId = `claude-task-${this.taskIdCounter++}`
-    
+
     this.pendingTasks.add(taskId)
     this.currentStatus = ClaudeStatus.BUSY
     this.currentTaskInfo = {
       taskId,
       taskType: request.taskType,
-      startedAt: new Date()
+      startedAt: new Date(),
     }
 
     // Simulate async task completion
@@ -42,13 +42,13 @@ export class ClaudeCoordinationMock implements IClaudeCoordination {
         content: this.generateMockContent(request),
         modifiedFiles: request.contextFiles,
         metadata: { originalPrompt: request.prompt },
-        completedAt: new Date()
+        completedAt: new Date(),
       }
-      
+
       this.tasks.set(taskId, result)
       this.pendingTasks.delete(taskId)
       this.completedCount++
-      
+
       if (this.pendingTasks.size === 0) {
         this.currentStatus = ClaudeStatus.IDLE
         this.currentTaskInfo = undefined
@@ -57,7 +57,7 @@ export class ClaudeCoordinationMock implements IClaudeCoordination {
 
     return {
       success: true,
-      data: { taskId }
+      data: { taskId },
     }
   }
 
@@ -67,44 +67,44 @@ export class ClaudeCoordinationMock implements IClaudeCoordination {
       currentTask: this.currentTaskInfo,
       completedTasks: this.completedCount,
       failedTasks: this.failedCount,
-      lastActive: new Date()
+      lastActive: new Date(),
     }
 
     return {
       success: true,
-      data: status
+      data: status,
     }
   }
 
   async getTaskResult(taskId: string): Promise<ServiceResponse<ClaudeTaskResult>> {
     const result = this.tasks.get(taskId)
-    
+
     if (!result) {
       return {
         success: false,
         error: {
           code: 'TASK_NOT_FOUND',
           message: `Task ${taskId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
     return {
       success: true,
-      data: result
+      data: result,
     }
   }
 
   async cancelTask(taskId: string): Promise<ServiceResponse<void>> {
     if (this.pendingTasks.has(taskId)) {
       this.pendingTasks.delete(taskId)
-      
+
       if (this.currentTaskInfo?.taskId === taskId) {
         this.currentTaskInfo = undefined
         this.currentStatus = ClaudeStatus.IDLE
       }
-      
+
       return { success: true }
     }
 
@@ -113,8 +113,8 @@ export class ClaudeCoordinationMock implements IClaudeCoordination {
       error: {
         code: 'TASK_NOT_FOUND',
         message: `Task ${taskId} not found or already completed`,
-        retryable: false
-      }
+        retryable: false,
+      },
     }
   }
 
@@ -129,7 +129,7 @@ export class ClaudeCoordinationMock implements IClaudeCoordination {
 
     return {
       success: true,
-      data: pending
+      data: pending,
     }
   }
 

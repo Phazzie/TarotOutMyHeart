@@ -50,7 +50,7 @@ function processUser(user: { id: string; name: string }) {
 const cards: MajorArcanaCard[] = getCards()
 
 // ❌ WRONG: Implicit any
-const cards = getCards()  // Type unclear
+const cards = getCards() // Type unclear
 
 // ✅ CORRECT: Type guards
 function isUser(value: unknown): value is UserSeam {
@@ -83,7 +83,7 @@ const user = data as UserSeam
 
 // ✅ CORRECT: Validate then narrow
 if (isValidUser(data)) {
-  const user: UserSeam = data  // Type is proven
+  const user: UserSeam = data // Type is proven
 }
 ```
 
@@ -152,7 +152,7 @@ let count = 0
 count++
 
 // ❌ NEVER use var
-var x = 10  // Forbidden
+var x = 10 // Forbidden
 ```
 
 ### Function Style
@@ -332,10 +332,7 @@ async function loadData() {
 // ✅ CORRECT: Validate with type guards
 function validateForm(data: unknown): data is FormData {
   return (
-    typeof data === 'object' &&
-    data !== null &&
-    'email' in data &&
-    typeof data.email === 'string'
+    typeof data === 'object' && data !== null && 'email' in data && typeof data.email === 'string'
   )
 }
 
