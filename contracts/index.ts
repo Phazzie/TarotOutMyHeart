@@ -12,6 +12,13 @@
 // Export common types
 export * from './types/common'
 
+// AI Coordination contracts
+export * from './StateStore'
+export * from './ClaudeCoordination'
+export * from './CopilotCoordination'
+export * from './UserCoordination'
+export * from './FileSystemCoordination'
+
 // Seam contracts will be exported here as they are defined
 // Example:
 // export * from './ImageUpload'
