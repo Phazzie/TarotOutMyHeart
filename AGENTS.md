@@ -124,17 +124,35 @@ cp docs/blueprints/STUB-BLUEPRINT.md services/mock/YourFeatureMock.ts
 # Mock must return realistic data matching contract exactly
 # Include top-level @fileoverview, @purpose, @dataFlow comments
 
-# 3. Add to mock service factory
+# 3. VALIDATE MOCK COMPILES (CRITICAL - DO NOT SKIP)
+npm run check                          # MUST pass with 0 errors
+git grep "as any" services/mock/       # MUST return nothing
+
+# 4. Add to mock service factory
 # Edit services/factory.ts
 
-# 4. Write contract tests
+# 5. Write contract tests
 touch tests/contracts/YourFeature.test.ts
 
-# 5. Run tests
+# 6. Run tests
 npm run test:contracts
 
-# Tests MUST pass before proceeding
+# Tests MUST pass before proceeding to Phase 3
+# DO NOT mark Phase 2 complete if npm run check fails
 ```
+
+**⚠️ Phase 2 Completion Checklist:**
+- [ ] Mock implements interface EXACTLY
+- [ ] `npm run check` passes with 0 TypeScript errors  
+- [ ] No `as any` type escapes
+- [ ] All interface methods implemented
+- [ ] Return types match contract exactly
+- [ ] Returns realistic mock data
+- [ ] Added to service factory
+- [ ] Contract tests written (if applicable)
+- [ ] Contract tests passing (if exist)
+
+**If any item fails, Phase 2 is NOT complete. Fix it before proceeding.**
 
 ### Phase 3: Build UI with Mocks
 

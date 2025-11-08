@@ -41,6 +41,75 @@ function processUser(user: { id: string; name: string }) {
 }
 ```
 
+### 🚨 CRITICAL: Mock Validation (Phase 3)
+
+**Mock services are NOT complete until they pass validation.** This is the #1 cause of SDD failures.
+
+#### Required Validation Steps:
+
+```bash
+# After creating/editing ANY mock service file:
+npm run check                          # MUST pass with 0 errors
+git grep "as any" services/mock/       # MUST return nothing
+
+# Before marking Phase 3 "complete":
+npm run check                          # Final verification
+npm run test:contracts                 # If tests exist, must pass
+```
+
+#### Mock Completion Checklist:
+
+A mock is complete when ALL of these are true:
+- [ ] Implements the contract interface EXACTLY
+- [ ] `npm run check` passes with 0 TypeScript errors
+- [ ] No `as any` type escapes
+- [ ] All interface methods implemented
+- [ ] Return types match contract exactly
+- [ ] No extra fields in outputs
+- [ ] No missing required fields
+- [ ] Returns realistic mock data
+- [ ] Includes delay simulation (100-300ms)
+
+#### Common Mock Errors:
+
+```typescript
+// ❌ WRONG: Enum imported as type but used as value
+import type { ErrorCode } from '$contracts/Feature'
+return { code: ErrorCode.INVALID }  // ERROR!
+
+// ✅ CORRECT: Import enums without 'type'
+import { ErrorCode } from '$contracts/Feature'
+return { code: ErrorCode.INVALID }  // Works!
+
+// ❌ WRONG: Missing required interface methods
+class FeatureMock implements IFeatureService {
+  method1() { }  // Missing method2, method3
+}
+
+// ✅ CORRECT: All methods implemented
+class FeatureMock implements IFeatureService {
+  method1() { }
+  method2() { }
+  method3() { }
+}
+
+// ❌ WRONG: Fields don't match contract
+interface Output { userId: string }
+return { user_id: '123' }  // Wrong field name!
+
+// ✅ CORRECT: Exact field match
+return { userId: '123' }
+```
+
+#### Why This Matters:
+
+- **UI development blocked**: TypeScript errors prevent compilation
+- **Integration will fail**: Mock shape ≠ contract shape ≠ real service shape
+- **SDD promise broken**: "Integration works first try" only works if mocks match contracts
+- **Wasted time**: Fixing 100+ type errors after the fact takes longer than validating as you go
+
+**Rule**: If `npm run check` fails, the mock is NOT done. Fix it immediately, don't proceed.
+
 ## TypeScript Standards
 
 ### Strict Mode Compliance

@@ -107,6 +107,96 @@ Before defining contracts:
 
 ---
 
+### Lesson #3: Mock Services MUST Be Validated Before "Complete" ⚠️
+
+**Date**: 2025-11-08  
+**Phase**: Phase 3 - Build Mock Service  
+**What happened**: Mock services were created but marked "complete" without running type checks. When `npm run check` was finally run, discovered **115 TypeScript errors** across all 7 mock services.
+
+**What went wrong**:
+1. AI agent saw mock files existed and assumed they were correct
+2. Marked mocks as "completed" without validation
+3. Didn't run `npm run check` to verify mocks compile
+4. Didn't test that mocks return data matching contracts exactly
+5. Moved to commit/push without ensuring Phase 3 was truly complete
+
+**Root cause**:
+- **AI-CHECKLIST.md Phase 3 is too permissive** - says "Build Mock Service" but doesn't enforce validation
+- No hard requirement to run `npm run check` before marking complete
+- Contract tests mentioned but not enforced (can skip without consequence)
+- "Test Mock Data Shape" is Step 14 but easy to skip if rushing
+
+**Why this is critical**:
+The entire SDD methodology is built on the principle that **mocks must match contracts exactly**. If this fails:
+- UI development will be blocked (type errors prevent compilation)
+- Integration will fail (mock shape ≠ contract shape ≠ real service shape)
+- The core SDD promise ("integration works first try") is violated
+- You lose all the benefits of contract-first development
+
+**Common errors found in our mocks**:
+1. **Import errors**: Enums imported as `import type` but used as values
+2. **Missing methods**: Mocks don't implement all interface methods
+3. **Field mismatches**: Mock outputs have wrong field names vs contract
+4. **Extra/missing fields**: Mocks return data not in contract or miss required fields
+5. **Type assertions**: Using `as any` to bypass type checking
+
+**What we should have done**:
+```bash
+# After creating EACH mock service file:
+npm run check              # Must pass with 0 errors
+npm run test:contracts     # Must pass (if tests exist)
+
+# Before marking Phase 3 "complete":
+npm run check              # One final verification
+git grep "as any" services/mock/  # Must return nothing
+```
+
+**Solution**:
+1. Update AI-CHECKLIST.md Phase 3 to be more strict:
+   - Make `npm run check` a hard requirement after Step 12
+   - Add explicit validation step: "Step 12.5: Validate Mock Compiles"
+   - Add pre-completion checklist that MUST pass
+2. Update AGENTS.md to emphasize: **Never mark mocks complete without validation**
+3. Add this lesson to lessonslearned.md as a critical pattern
+4. Consider pre-commit hook that fails if mocks have type errors
+
+**Prevention checklist** (add to Phase 3):
+```markdown
+### Step 12.5: Validate Mock Compiles (REQUIRED)
+
+- [ ] Run `npm run check` - **Must pass with 0 errors**
+- [ ] Search for type escapes: `git grep "as any" services/mock/[Feature]Mock.ts` - **Must be empty**
+- [ ] Verify all interface methods implemented
+- [ ] Verify return types match contract exactly
+- [ ] No extra fields in output
+- [ ] No missing required fields
+
+⚠️ **DO NOT PROCEED** if any check fails. Fix errors first.
+```
+
+**Reusable pattern**:
+- **Mocks are not "done" until they compile without errors**
+- Run type checking after creating EACH file, not at the end
+- Type errors compound - fix them immediately
+- "Looks right" ≠ "compiles correctly" - always verify
+
+**Impact**:
+- Lost time: ~30 minutes marking things "complete" that weren't
+- Technical debt: 115 errors to fix before proceeding
+- Broken SDD flow: Can't build UI (Phase 4) until Phase 3 is truly complete
+- Trust issue: Commits claimed "mocks implemented" when they weren't working
+
+**Key takeaway**:
+> **In SDD, a mock service is NOT complete until it:**
+> 1. Implements the interface exactly
+> 2. Compiles with zero type errors
+> 3. Passes contract tests (shape validation)
+> 4. Returns realistic data matching contract structure
+> 
+> **If npm run check fails, the mock is NOT done. Period.**
+
+---
+
 ### What Worked Well
 
 _To be filled during development_
