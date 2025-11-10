@@ -9,32 +9,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Contracts** (Phase 2 complete):
+- **AI Coordination Server** ✅ (Phase 3-4 complete - 2025-11-08):
+  - Full coordination server implementation in `/coordination-server/`
+  - **Phase 3**: Contracts + Mocks + Tests
+    - 5 contracts for Claude-Copilot collaboration
+    - Mock implementations with realistic behavior
+    - **Contract tests**: 5 test files (~53KB)
+    - **Mock tests**: 1 test file (StateStore, 13KB)
+    - **Integration tests**: 1 test file (15KB)
+  - **Phase 4**: Real Service Implementation
+    - StateStoreSQLite - Production SQLite persistence layer
+    - ClaudeCoordinationService - Full orchestration API
+    - CopilotCoordinationService - MCP tools implementation
+    - UserCoordinationService - User control interface
+    - FileSystemCoordinationService - File locking coordination
+    - Factory updated to support `USE_MOCKS=false` mode
+    - All services implement contracts exactly
+  - TypeScript strict mode compliance
+  - **MCP Server**: Complete MCP protocol implementation for Copilot
+  - **HTTP API**: Complete REST + WebSocket server for Claude
+  - **Status**: Phase 4 complete, Phase 5 (testing + docs) in progress
+
+- **Tarot App Contracts** (Phase 2 complete):
   - 7 core seam contracts defined in `/contracts/`
   - ImageUpload, StyleInput, PromptGeneration, ImageGeneration, DeckDisplay, CostCalculation, Download
   - All contracts exported from `contracts/index.ts`
   - Comprehensive JSDoc documentation for each contract
-  
-- **Mock Services** (Phase 3 in progress):
+
+- **Tarot App Mock Services** (Phase 3 blocked):
   - Mock implementations created for all 7 seams in `/services/mock/`
   - Service factory pattern for mock/real service switching
-  - **Status**: Mock files exist but have 115 TypeScript errors (not validated yet)
-  - **Blocking**: Must fix type errors before UI development can proceed
-
-- **AI Coordination Server** (separate subproject):
-  - Coordination server scaffolding in `/coordination-server/`
-  - Contracts for Claude-Copilot collaboration
-  - Mock implementations for 5 coordination seams
-  - MCP server foundation for Copilot integration
+  - **Status**: Mock files exist, TypeScript errors need fixing
+  - **Blocking**: Must fix type errors and write contract tests before UI development
 
 - **Documentation**:
-  - Updated SEAMSLIST.md with 7 tarot app seams + 5 coordination seams
-  - Created planning docs in `/docs/planning/`:
-    - DATA-BOUNDARIES.md (data boundary analysis)
-    - RECOMMENDATIONS.md (technical decisions)
+  - Updated SEAMSLIST.md with all seams
+  - Created planning docs in `/docs/planning/`
   - Created blueprint templates in `/docs/blueprints/`
   - Updated AGENTS.md with expanded SDD guidance
-  - Updated AI-CHECKLIST.md with detailed phase-by-phase workflow
+  - Updated AI-CHECKLIST.md with detailed workflows
+  - Updated lessonslearned.md with critical lessons
   - Product Requirements Document (PRD.md)
 
 ### Changed
@@ -49,19 +63,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Known Issues
 
-- ⚠️ **115 TypeScript errors in mock services** - mocks don't fully match contracts yet
-- Mock services not validated with `npm run check` before commit
-- Contract tests not yet written
-- Real services not yet implemented
+**AI Coordination Server:**
+- ⚠️ Minor TypeScript warnings (unused variables/imports - cosmetic only)
+- ⚠️ Missing behavior tests for 4 mocks (Claude, Copilot, User, FileSystem)
+- ⚠️ No MCP protocol tests
+- ⚠️ No integration guides (Copilot, Claude)
+- ⚠️ No deployment configuration
+
+**Tarot App:**
+- ⚠️ TypeScript errors in mock services
+- Contract tests not yet written for Tarot seams
 - UI components not yet built
 
 ### Next Steps
 
-1. **Immediate**: Fix 115 TypeScript errors in mock services (Phase 3 completion)
-2. Write contract tests to validate mocks match contracts
-3. Build UI components against validated mocks (Phase 4)
-4. Implement real Grok API services (Phase 5)
-5. Integration testing (Phase 6)
+**Priority 1: Complete AI Coordination Server (Phase 5)**
+1. Fix contract duplication (delete `/coordination-server/contracts/`)
+2. Write missing mock behavior tests (4 mocks)
+3. Write MCP protocol tests
+4. Create integration guides (Copilot + Claude)
+5. Create deployment configuration (Docker, .env.example)
+6. Update all documentation
+
+**Priority 2: Complete Tarot App**
+1. Fix TypeScript errors in Tarot mock services
+2. Write 7 contract tests for Tarot seams
+3. Build UI components against validated mocks
+4. Implement real Grok API services
+5. Integration testing
 
 ## [0.0.1] - 2025-11-07
 
