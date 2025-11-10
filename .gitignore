@@ -1,11 +1,13 @@
-# SvelteKit
+```````# SvelteKit
 .svelte-kit/
 build/
 .vercel/
 .output/
+.vercel_build_output/
 
 # Dependencies
 node_modules/
+.pnpm-store/
 
 # Environment Variables
 .env
@@ -50,11 +52,14 @@ Desktop.ini
 coverage/
 .nyc_output/
 *.lcov
+test-results/
+playwright-report/
 
 # Build Outputs
 dist/
 build/
 .output/
+*.tsbuildinfo
 
 # Temporary Files
 tmp/
@@ -68,3 +73,12 @@ pnpm-lock.yaml
 
 # Optional: Keep package-lock.json if using npm
 # Comment out the package-lock.json line above if you want to commit it
+
+# AI/MCP Server
+.claude/
+*.mcp-server.log
+
+# Session/Development Notes
+SESSION-NOTES.md
+.notes/
+scratch/

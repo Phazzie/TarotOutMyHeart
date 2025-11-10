@@ -23,12 +23,12 @@ import { CopilotCoordinationMock } from './mock/CopilotCoordinationMock'
 import { UserCoordinationMock } from './mock/UserCoordinationMock'
 import { FileSystemCoordinationMock } from './mock/FileSystemCoordinationMock'
 
-// Real implementations (to be added)
-// import { StateStoreSQLite } from './real/StateStoreSQLite'
-// import { ClaudeCoordinationService } from './real/ClaudeCoordinationService'
-// import { CopilotCoordinationService } from './real/CopilotCoordinationService'
-// import { UserCoordinationService } from './real/UserCoordinationService'
-// import { FileSystemCoordinationService } from './real/FileSystemCoordinationService'
+// Real implementations
+import { StateStoreSQLite } from './real/StateStoreSQLite'
+import { ClaudeCoordinationService } from './real/ClaudeCoordinationService'
+import { CopilotCoordinationService } from './real/CopilotCoordinationService'
+import { UserCoordinationService } from './real/UserCoordinationService'
+import { FileSystemCoordinationService } from './real/FileSystemCoordinationService'
 
 /**
  * Configuration options for service creation
@@ -99,10 +99,10 @@ export async function createServices(config: ServiceConfig = {}): Promise<Coordi
       stateStore = new StateStoreMock()
       console.log('[ServiceFactory] Using in-memory StateStoreMock')
     } else {
-      // TODO: Implement real state store
-      throw new Error('Real StateStore implementation not yet available')
-      // stateStore = new StateStoreSQLite(config.databasePath || './coordination.db')
-      // console.log(`[ServiceFactory] Using SQLite StateStore at ${config.databasePath}`)
+      const sqliteStore = new StateStoreSQLite(config.databasePath || './coordination.db')
+      await sqliteStore.initialize()
+      stateStore = sqliteStore
+      console.log(`[ServiceFactory] Using SQLite StateStore at ${config.databasePath || './coordination.db'}`)
     }
 
     // Create file system coordination
@@ -112,9 +112,8 @@ export async function createServices(config: ServiceConfig = {}): Promise<Coordi
       fileSystem = new FileSystemCoordinationMock(stateStore)
       console.log('[ServiceFactory] Using FileSystemCoordinationMock')
     } else {
-      // TODO: Implement real file system coordination
-      throw new Error('Real FileSystemCoordination implementation not yet available')
-      // fileSystem = new FileSystemCoordinationService(stateStore)
+      fileSystem = new FileSystemCoordinationService(stateStore)
+      console.log('[ServiceFactory] Using FileSystemCoordinationService')
     }
 
     // Create Claude coordination service
@@ -124,9 +123,8 @@ export async function createServices(config: ServiceConfig = {}): Promise<Coordi
       claude = new ClaudeCoordinationMock(stateStore)
       console.log('[ServiceFactory] Using ClaudeCoordinationMock')
     } else {
-      // TODO: Implement real Claude coordination
-      throw new Error('Real ClaudeCoordination implementation not yet available')
-      // claude = new ClaudeCoordinationService(stateStore)
+      claude = new ClaudeCoordinationService(stateStore)
+      console.log('[ServiceFactory] Using ClaudeCoordinationService')
     }
 
     // Create Copilot coordination service
@@ -136,9 +134,8 @@ export async function createServices(config: ServiceConfig = {}): Promise<Coordi
       copilot = new CopilotCoordinationMock(stateStore, fileSystem)
       console.log('[ServiceFactory] Using CopilotCoordinationMock')
     } else {
-      // TODO: Implement real Copilot coordination
-      throw new Error('Real CopilotCoordination implementation not yet available')
-      // copilot = new CopilotCoordinationService(stateStore, fileSystem)
+      copilot = new CopilotCoordinationService(stateStore, fileSystem)
+      console.log('[ServiceFactory] Using CopilotCoordinationService')
     }
 
     // Create user coordination service
@@ -148,9 +145,8 @@ export async function createServices(config: ServiceConfig = {}): Promise<Coordi
       user = new UserCoordinationMock(stateStore)
       console.log('[ServiceFactory] Using UserCoordinationMock')
     } else {
-      // TODO: Implement real user coordination
-      throw new Error('Real UserCoordination implementation not yet available')
-      // user = new UserCoordinationService(stateStore)
+      user = new UserCoordinationService(stateStore)
+      console.log('[ServiceFactory] Using UserCoordinationService')
     }
 
     servicesInstance = {
