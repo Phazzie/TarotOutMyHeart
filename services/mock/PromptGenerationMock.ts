@@ -285,10 +285,10 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       id: crypto.randomUUID() as PromptId,
       cardNumber,
       cardName,
-      cardMeaning,
-      prompt,
+      traditionalMeaning: cardMeaning,
+      generatedPrompt: prompt,
+      confidence: 0.85 + Math.random() * 0.14, // Random confidence 0.85-0.99
       generatedAt: new Date(),
-      edited: false,
     }
   }
 

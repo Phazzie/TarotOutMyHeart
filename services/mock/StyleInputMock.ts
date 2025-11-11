@@ -26,8 +26,9 @@ import type {
   StyleInputsValidation,
   FieldValidation,
   StyleInputValidationError,
-  StyleInputErrorCode,
 } from '$contracts/StyleInput'
+
+import { StyleInputErrorCode } from '$contracts/StyleInput'
 
 import {
   CHAR_LIMITS,
