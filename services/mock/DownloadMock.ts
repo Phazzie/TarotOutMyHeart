@@ -81,7 +81,7 @@ export class DownloadMockService implements IDownloadService {
     // In mock, we don't actually create a ZIP or trigger download
     // Real implementation would use JSZip and trigger browser download
 
-    const filename = `${this.sanitizeFilename(deckName)}.zip`
+    const filename = `${this.sanitizeFilename(deckName || 'tarot-deck')}.zip`
     const mockSize = generatedCards.length * 1024 * 500 // Mock: ~500KB per card
 
     return {
