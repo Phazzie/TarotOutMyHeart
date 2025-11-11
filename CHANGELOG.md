@@ -173,5 +173,5 @@ Before 1.0.0, the project is in initial development. Anything may change at any 
 
 ---
 
-[Unreleased]: https://github.com/Phazzie/TarotUpMyHeart/compare/v0.0.1...HEAD
-[0.0.1]: https://github.com/Phazzie/TarotUpMyHeart/releases/tag/v0.0.1
+[Unreleased]: https://github.com/Phazzie/TarotOutMyHeart/compare/v0.0.1...HEAD
+[0.0.1]: https://github.com/Phazzie/TarotOutMyHeart/releases/tag/v0.0.1

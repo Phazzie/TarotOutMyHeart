@@ -1,4 +1,4 @@
-# GitHub Copilot Instructions - TarotUpMyHeart
+# GitHub Copilot Instructions - TarotOutMyHeart
 
 ## Project Summary
 

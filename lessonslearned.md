@@ -1,6 +1,6 @@
-# Lessons Learned - TarotUpMyHeart
+# Lessons Learned - TarotOutMyHeart
 
-_This document captures insights specific to applying Seam-Driven Development (SDD) to the TarotUpMyHeart project._
+_This document captures insights specific to applying Seam-Driven Development (SDD) to the TarotOutMyHeart project._
 
 ## Project Context
 
@@ -629,7 +629,7 @@ _If applicable - compare to non-SDD projects_
 **Template:**
 
 ```markdown
-| Metric                    | Previous Project | TarotUpMyHeart (SDD) | Improvement |
+| Metric                    | Previous Project | TarotOutMyHeart (SDD) | Improvement |
 | ------------------------- | ---------------- | -------------------- | ----------- |
 | Time to first integration | [X days]         | [Y days]             | [+/-Z%]     |
 | Integration bugs          | [X bugs]         | [Y bugs]             | [+/-Z%]     |

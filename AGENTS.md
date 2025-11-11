@@ -1,4 +1,4 @@
-# TarotUpMyHeart - AI Agent Instructions
+# TarotOutMyHeart - AI Agent Instructions
 
 ## Project Overview
 
@@ -72,8 +72,8 @@ git grep "as any"      # Must return nothing
 
 ```bash
 # Clone repository
-git clone https://github.com/Phazzie/TarotUpMyHeart.git
-cd TarotUpMyHeart
+git clone https://github.com/Phazzie/TarotOutMyHeart.git
+cd TarotOutMyHeart
 
 # Install dependencies
 npm install
@@ -517,7 +517,7 @@ PUBLIC_APP_URL=http://localhost:5173
 ```bash
 # First time: Connect repository to Vercel
 # Go to: https://vercel.com/new
-# Import: Phazzie/TarotUpMyHeart
+# Import: Phazzie/TarotOutMyHeart
 
 # Configure environment variables in Vercel dashboard:
 # - XAI_API_KEY (your Grok API key)

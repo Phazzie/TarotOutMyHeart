@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest a new feature for TarotUpMyHeart
+about: Suggest a new feature for TarotOutMyHeart
 title: '[FEATURE] '
 labels: enhancement
 assignees: ''

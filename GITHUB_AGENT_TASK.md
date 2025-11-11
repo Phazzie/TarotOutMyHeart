@@ -4,7 +4,7 @@
 Write contract validation tests for 7 Tarot application seams following the existing test patterns from AI Coordination tests. All mocks exist and need validation tests to prove they match contracts exactly per SDD Phase 3 requirements.
 
 ## Context
-- **Project**: TarotUpMyHeart - Seam-Driven Development (SDD) Tarot deck generator
+- **Project**: TarotOutMyHeart - Seam-Driven Development (SDD) Tarot deck generator
 - **Phase**: Phase 3 - Mock validation (REQUIRED before UI development)
 - **Methodology**: See `/seam-driven-development.md` and `/AGENTS.md`
 - **Test Framework**: Vitest
