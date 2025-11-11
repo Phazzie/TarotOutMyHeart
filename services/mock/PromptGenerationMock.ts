@@ -27,10 +27,10 @@ import type {
   PromptId,
   ApiUsage,
   PromptValidationError,
-  PromptGenerationErrorCode,
 } from '$contracts/PromptGeneration'
 
 import {
+  PromptGenerationErrorCode,
   MAJOR_ARCANA_NAMES,
   MAJOR_ARCANA_MEANINGS,
   GROK_MODELS,
@@ -66,19 +66,19 @@ export class PromptGenerationMockService implements IPromptGenerationService {
 
     // Simulate progress callbacks
     if (onProgress) {
-      onProgress({ progress: 0, total: 22, status: 'Analyzing reference images...' })
+      onProgress({ progress: 0, status: 'Analyzing reference images...', currentStep: 'analyzing' })
       await this.delay(800)
 
-      onProgress({ progress: 25, total: 22, status: 'Generating prompts for Fool through Lovers...' })
+      onProgress({ progress: 25, status: 'Generating prompts for Fool through Lovers...', currentStep: 'generating' })
       await this.delay(1000)
 
-      onProgress({ progress: 50, total: 22, status: 'Generating prompts for Chariot through Hanged Man...' })
+      onProgress({ progress: 50, status: 'Generating prompts for Chariot through Hanged Man...', currentStep: 'generating' })
       await this.delay(1000)
 
-      onProgress({ progress: 75, total: 22, status: 'Generating prompts for Death through World...' })
+      onProgress({ progress: 75, status: 'Generating prompts for Death through World...', currentStep: 'generating' })
       await this.delay(1000)
 
-      onProgress({ progress: 100, total: 22, status: 'Finalizing prompts...' })
+      onProgress({ progress: 100, status: 'Finalizing prompts...', currentStep: 'complete' })
       await this.delay(500)
     } else {
       // No progress callback, just simulate total generation time
@@ -105,7 +105,6 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       completionTokens: 2200, // ~100 tokens per card * 22
       totalTokens: 2650,
       estimatedCost: 0.0265, // Mock cost: $0.01 per 1K tokens
-      currency: 'USD',
     }
 
     return {
@@ -155,7 +154,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       cardNumbers.add(prompt.cardNumber)
 
       // Check prompt length
-      if (prompt.prompt.length < 50) {
+      if (prompt.generatedPrompt.length < 50) {
         errors.push({
           code: PromptGenerationErrorCode.PROMPT_TOO_SHORT,
           message: `Prompt for ${prompt.cardName} is too short`,
@@ -163,7 +162,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
           promptId: prompt.id,
         })
         invalidPrompts.push(prompt)
-      } else if (prompt.prompt.length > 2000) {
+      } else if (prompt.generatedPrompt.length > 2000) {
         errors.push({
           code: PromptGenerationErrorCode.PROMPT_TOO_LONG,
           message: `Prompt for ${prompt.cardName} is too long`,
@@ -220,7 +219,6 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       completionTokens: 100,
       totalTokens: 550,
       estimatedCost: 0.0055,
-      currency: 'USD',
     }
 
     return {
@@ -247,10 +245,10 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       id: promptId,
       cardNumber: 0 as CardNumber, // Would retrieve from storage
       cardName: 'The Fool', // Would retrieve from storage
-      cardMeaning: MAJOR_ARCANA_MEANINGS[0], // Would retrieve from storage
-      prompt: editedPrompt,
+      traditionalMeaning: MAJOR_ARCANA_MEANINGS[0], // Would retrieve from storage
+      generatedPrompt: editedPrompt,
+      confidence: 1.0, // Manual edit, so full confidence
       generatedAt: new Date(),
-      edited: true,
     }
 
     return {
@@ -265,6 +263,62 @@ export class PromptGenerationMockService implements IPromptGenerationService {
   // ============================================================================
   // PRIVATE HELPER METHODS
   // ============================================================================
+
+  /**
+   * Estimate cost for prompt generation
+   */
+  async estimateCost(
+    input: Omit<GeneratePromptsInput, 'onProgress'>
+  ): Promise<ServiceResponse<ApiUsage>> {
+    await this.delay(50)
+
+    const { referenceImageUrls, styleInputs } = input
+
+    // Validate inputs
+    if (!referenceImageUrls || referenceImageUrls.length === 0) {
+      return {
+        success: false,
+        error: {
+          code: 'NO_REFERENCE_IMAGES',
+          message: 'At least one reference image is required',
+          retryable: false,
+        },
+      }
+    }
+
+    // Estimate token usage based on inputs
+    const imageCount = referenceImageUrls.length
+    const descriptionLength = styleInputs.description?.length || 0
+    const conceptLength = styleInputs.concept?.length || 0
+    const charactersLength = styleInputs.characters?.length || 0
+
+    // Rough estimation: base prompt + image tokens + style input tokens
+    const basePromptTokens = 500 // System prompt and instructions
+    const imageTokens = imageCount * 500 // ~500 tokens per image
+    const styleTokens = Math.ceil((descriptionLength + conceptLength + charactersLength) / 4) // ~4 chars per token
+    const promptTokens = basePromptTokens + imageTokens + styleTokens
+
+    // Expected output: 22 prompts with ~200 tokens each
+    const completionTokens = 22 * 200
+
+    const totalTokens = promptTokens + completionTokens
+
+    // Cost calculation (based on Grok pricing from contract)
+    const inputCost = promptTokens * 0.000002 // $0.002 per 1K tokens
+    const outputCost = completionTokens * 0.000010 // $0.010 per 1K tokens
+    const estimatedCost = inputCost + outputCost
+
+    return {
+      success: true,
+      data: {
+        promptTokens,
+        completionTokens,
+        totalTokens,
+        estimatedCost,
+        model: GROK_MODELS.vision,
+      },
+    }
+  }
 
   /**
    * Generate a realistic prompt for a specific card
@@ -285,17 +339,17 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       id: crypto.randomUUID() as PromptId,
       cardNumber,
       cardName,
-      cardMeaning,
-      prompt,
+      traditionalMeaning: cardMeaning,
+      generatedPrompt: prompt,
+      confidence: 0.85 + Math.random() * 0.15, // 0.85-1.0
       generatedAt: new Date(),
-      edited: false,
     }
   }
 
   /**
    * Extract emotional keywords from card meaning
    */
-  private getEmotionalKeywords(meaning: string): string {
+  private getEmotionalKeywords(_meaning: string): string {
     // Simple keyword extraction for more varied prompts
     const keywords = [
       'wonder and curiosity',
@@ -309,7 +363,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
     ]
 
     // Return a random keyword set
-    return keywords[Math.floor(Math.random() * keywords.length)]
+    return keywords[Math.floor(Math.random() * keywords.length)] || 'mystery and wisdom'
   }
 
   /**
