@@ -26,10 +26,10 @@ import type {
   StyleInputsValidation,
   FieldValidation,
   StyleInputValidationError,
-  StyleInputErrorCode,
 } from '$contracts/StyleInput'
 
 import {
+  StyleInputErrorCode,
   CHAR_LIMITS,
   PREDEFINED_THEMES,
   PREDEFINED_TONES,
