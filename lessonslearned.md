@@ -281,6 +281,156 @@ git grep "as any" services/mock/  # Must return nothing
 
 ---
 
+### Lesson #5: Mocks Written Without Referencing Contracts = Technical Debt 💸
+
+**Date**: 2025-11-11
+**Phase**: Phase 3 - Fixing Mock Services
+**What happened**: Returned to Tarot app after 3 days. Ran `npm run check` expecting ~13 errors. Got **96 TypeScript errors** across all 6 mock files.
+
+**What went wrong**:
+1. Mock files were created in commit `316856f` but never validated against contracts
+2. Mocks have wrong field names (`cardMeaning` instead of `traditionalMeaning`, `prompt` instead of `generatedPrompt`)
+3. Mocks have extra fields not in contracts (`currency` in `ApiUsage`, `total` in `GenerationProgress`)
+4. Mocks are missing required fields from contracts
+5. Enums imported with `import type` keyword (can't be used as values)
+6. The initial "13 errors" was just truncated terminal output - real count was always 96
+
+**Root cause**:
+- **Mocks were written by AI without carefully reading contracts**
+- AI likely guessed field names instead of copying from contract definitions
+- No validation step before marking "complete"
+- No contract tests written to catch mismatches
+- The phrase "mock files exist" was confused with "mocks are correct"
+
+**Error distribution**:
+```
+24 errors: ImageGenerationMock.ts
+19 errors: PromptGenerationMock.ts  
+14 errors: DownloadMock.ts
+14 errors: DeckDisplayMock.ts
+10 errors: StyleInputMock.ts
+10 errors: CostCalculationMock.ts
+ 5 errors: factory.ts (fixed)
+---
+96 total errors
+```
+
+**Common pattern of errors**:
+```typescript
+// Contract defines:
+export interface CardPrompt {
+  generatedPrompt: string
+  traditionalMeaning: string
+  confidence: number
+}
+
+// Mock returns:
+return {
+  prompt: "...",           // ❌ Wrong field name!
+  cardMeaning: "...",      // ❌ Wrong field name!
+  // ❌ Missing confidence!
+}
+```
+
+**Why this is worse than Lesson #3**:
+- Lesson #3: Mocks created but not validated (type errors caught late)
+- Lesson #5: Mocks created **incorrectly** (didn't even read contracts!)
+- This is double failure: skipped validation AND didn't reference source of truth
+
+**What should have happened**:
+```bash
+# When creating mock:
+1. Open contract file side-by-side
+2. Read interface definition carefully
+3. Copy exact field names from contract
+4. Implement interface with exact types
+5. npm run check (MUST PASS)
+6. Write contract test to prove shape match
+7. npm run test:contracts (MUST PASS)
+```
+
+**Impact**:
+- **Cannot build UI** - TypeScript compilation blocked
+- **Lost 3 days** - Mocks marked "complete" but actually broken
+- **96 fixes required** - Each error must be manually corrected
+- **Trust broken** - Can't trust that mocks work without tests
+- **Integration will fail** - Even if we fix mocks, real services may have same issue
+
+**Solution implemented**:
+1. Created comprehensive `GITHUB_AGENT_TASK.md` with:
+   - List of all 7 missing contract tests
+   - Detailed test requirements for each seam
+   - Examples from working AI Coordination tests
+   - Success criteria (all tests pass, 0 TypeScript errors)
+2. Plan to fix all 96 mock errors systematically
+3. Deploy GitHub Coding Agent to write contract tests
+4. Use tests to validate fixes are correct
+
+**Prevention checklist** (add to AI-CHECKLIST.md Phase 3):
+```markdown
+### Step 11.5: Reference Contract While Coding (CRITICAL)
+
+⚠️ **NEVER write mock code without contract open in editor!**
+
+- [ ] Open contract file (`/contracts/[Feature].ts`)
+- [ ] Find the interface definition (e.g., `IFeatureService`)
+- [ ] Copy exact field names from contract types
+- [ ] Copy exact method signatures from interface
+- [ ] Use contract's type definitions, don't invent new ones
+- [ ] If contract has enum, import WITHOUT 'type' keyword
+
+**Rule**: Mock must be a pixel-perfect implementation of contract.
+```
+
+**Key differences from Lesson #3 vs #5**:
+
+| Aspect | Lesson #3 (Validation) | Lesson #5 (Implementation) |
+|--------|----------------------|---------------------------|
+| Problem | Skipped `npm run check` | Didn't read contract |
+| Symptom | Type errors on fields | Wrong field names |
+| Fix time | 15 minutes (validation) | 2+ hours (rewrite mocks) |
+| Prevention | Run type check | Reference contract |
+| Impact | Caught late | Fundamentally wrong |
+
+**Reusable pattern**:
+```
+Contract = Single Source of Truth
+  ↓
+Mock = Pixel-Perfect Copy of Contract
+  ↓
+Test = Proof Mock Matches Contract
+  ↓
+UI = Built Against Validated Mock
+  ↓
+Real Service = Drop-in Replacement
+  ↓
+Integration = Works First Try ✅
+
+❌ Break any step = SDD fails
+```
+
+**Key takeaway**:
+> **Three levels of SDD compliance:**
+> 1. ❌ **Bad**: Mocks written, not validated, don't match contracts (Lesson #5)
+> 2. ⚠️ **Better**: Mocks match contracts, but not validated (Lesson #3)  
+> 3. ✅ **Best**: Mocks match contracts, tests prove it (Lesson #4)
+>
+> **Always aim for level 3. Never accept level 1.**
+
+**Action items**:
+1. ✅ Fix critical TypeScript errors (env vars, imports) - DONE
+2. ⏳ Fix all 96 mock-contract mismatches - IN PROGRESS
+3. ⏳ Write 7 contract tests (via GitHub Coding Agent)
+4. ⏳ Validate all tests pass before marking Phase 3 complete
+
+**Success will look like**:
+- 0 TypeScript errors (down from 96)
+- 7 contract test files written
+- All tests passing (following AI Coordination pattern)
+- Ready to build UI with confidence
+
+---
+
 ### What Worked Well
 
 _To be filled during development_

@@ -74,27 +74,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ⚠️ Contract duplication (exists in both `/contracts/` and `/coordination-server/contracts/`)
 
 **Tarot App:**
-- ⚠️ TypeScript errors in mock services
+- ⚠️ 96 TypeScript errors in mock services (contract mismatches discovered 2025-11-11)
 - Contract tests not yet written for Tarot seams
 - SEAMSLIST.md not fully updated with Tarot seam details
 - UI components not yet built
 
+### Recent Work (2025-11-11)
+
+- **Fixed critical blocking errors**:
+  - ✅ Removed duplicate exports from `contracts/index.ts` (CoordinationServer conflict)
+  - ✅ Fixed unused CardPrompt import in `DeckDisplay.ts`
+  - ✅ Fixed ImageUploadMock enum import and undefined file handling
+  - ✅ Fixed environment variable access in `factory.ts` (bracket notation for strict mode)
+  - ✅ Cleaned up coordination-server contract duplication
+- **Discovered root issue**: Mock services don't match contracts
+  - 96 TypeScript errors across 6 mock files
+  - Wrong field names (e.g., `prompt` vs `generatedPrompt`, `cardMeaning` vs `traditionalMeaning`)
+  - Extra fields not in contracts
+  - Missing required fields
+  - Enums imported as types instead of values
+- **Created GITHUB_AGENT_TASK.md**:
+  - Comprehensive guide for writing 7 contract tests
+  - Detailed test requirements per seam
+  - Examples from AI Coordination tests
+  - Ready for GitHub Coding Agent deployment
+- **Documentation updates**:
+  - Added Lesson #5 to lessonslearned.md (mock-contract mismatches)
+  - Updated CHANGELOG.md with current status
+
 ### Next Steps
 
-**Priority 1: Complete AI Coordination Server (Phase 5)**
-1. Fix contract duplication (delete `/coordination-server/contracts/`)
-2. Write missing mock behavior tests (4 mocks)
-3. Write MCP protocol tests
-4. Create integration guides (Copilot + Claude)
-5. Create deployment configuration (Docker, .env.example)
-6. Update all documentation
+**Priority 1: Complete Tarot App Phase 3** (BLOCKED - must fix before UI)
+1. ✅ Fix critical TypeScript errors - DONE
+2. ⏳ Fix 96 mock-contract mismatches - IN PROGRESS
+3. ⏳ Deploy GitHub Coding Agent to write 7 contract tests
+4. ⏳ Validate all tests pass (following AI Coordination pattern)
+5. Update SEAMSLIST.md with Tarot seam details
+6. Mark Phase 3 complete when `npm run check` = 0 errors and all tests pass
 
-**Priority 2: Complete Tarot App**
-1. Fix TypeScript errors in Tarot mock services
-2. Write 7 contract tests for Tarot seams
-3. Build UI components against validated mocks
-4. Implement real Grok API services
-5. Integration testing
+**Priority 2: Complete AI Coordination Server (Phase 5)**
+1. Write missing mock behavior tests (4 mocks)
+2. Write MCP protocol tests
+3. Create integration guides (Copilot + Claude)
+4. Create deployment configuration (Docker, .env.example)
+5. Update all documentation
 
 ## [0.0.1] - 2025-11-07
 
