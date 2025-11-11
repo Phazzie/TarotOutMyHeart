@@ -13,15 +13,13 @@
  * ```
  */
 
-import type {
-  IImageUploadService,
-  IStyleInputService,
-  IPromptGenerationService,
-  IImageGenerationService,
-  IDeckDisplayService,
-  ICostCalculationService,
-  IDownloadService,
-} from '$contracts'
+import type { IImageUploadService } from '$contracts/ImageUpload'
+import type { IStyleInputService } from '$contracts/StyleInput'
+import type { IPromptGenerationService } from '$contracts/PromptGeneration'
+import type { IImageGenerationService } from '$contracts/ImageGeneration'
+import type { IDeckDisplayService } from '$contracts/DeckDisplay'
+import type { ICostCalculationService } from '$contracts/CostCalculation'
+import type { IDownloadService } from '$contracts/Download'
 
 // Import mock services
 import { imageUploadMockService } from './mock/ImageUploadMock'
@@ -53,7 +51,7 @@ import { downloadMockService } from './mock/DownloadMock'
  * 
  * Can be overridden by environment variable USE_MOCKS
  */
-const USE_MOCKS = process.env.USE_MOCKS !== 'false' // Default to true
+const USE_MOCKS = process.env['USE_MOCKS'] !== 'false' // Default to true
 
 /**
  * Log which services are being used
@@ -209,9 +207,9 @@ export function isUsingMocks(): boolean {
 export function getFactoryConfig() {
   return {
     useMocks: USE_MOCKS,
-    environment: process.env.NODE_ENV || 'development',
-    hasApiKey: !!process.env.XAI_API_KEY,
-    hasBlobToken: !!process.env.VERCEL_BLOB_TOKEN,
+    environment: process.env['NODE_ENV'] || 'development',
+    hasApiKey: !!process.env['XAI_API_KEY'],
+    hasBlobToken: !!process.env['VERCEL_BLOB_TOKEN'],
   }
 }
 

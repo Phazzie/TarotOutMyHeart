@@ -44,5 +44,8 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "notion-mcp-server": "^1.0.1"
   }
 }

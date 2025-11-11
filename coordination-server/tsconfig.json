@@ -20,15 +20,15 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@contracts": ["./contracts/index.ts"],
-      "@contracts/*": ["./contracts/*"],
+      "@contracts": ["../contracts/index.ts"],
+      "@contracts/*": ["../contracts/*"],
       "@services/*": ["./services/*"],
       "@utils/*": ["./src/utils/*"]
     }
   },
   "include": [
     "src/**/*",
-    "contracts/**/*",
+    "../contracts/**/*",
     "services/**/*",
     "tests/**/*"
   ],

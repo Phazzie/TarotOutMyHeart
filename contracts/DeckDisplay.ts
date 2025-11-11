@@ -15,7 +15,6 @@
 
 import type { ServiceResponse } from './types/common'
 import type { GeneratedCard } from './ImageGeneration'
-import type { CardPrompt } from './PromptGeneration'
 
 // ============================================================================
 // CONSTANTS

@@ -18,7 +18,8 @@ export * from './ClaudeCoordination'
 export * from './CopilotCoordination'
 export * from './UserCoordination'
 export * from './FileSystemCoordination'
-export * from './CoordinationServer'
+// Note: CoordinationServer.ts not exported to avoid type duplication
+// It duplicates types from StateStore, FileSystemCoordination, and types/common
 
 // Tarot Application Contracts (SDD Seams #1-7)
 export * from './ImageUpload'         // Seam #1: Upload reference images

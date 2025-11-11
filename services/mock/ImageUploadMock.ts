@@ -26,12 +26,11 @@ import type {
   ImageId,
   ImageMimeType,
   ImageValidationError,
-  ImageUploadErrorCode,
 } from '$contracts/ImageUpload'
 
 import {
+  ImageUploadErrorCode,
   MAX_IMAGE_SIZE_BYTES,
-  MIN_IMAGES,
   MAX_IMAGES,
   ALLOWED_IMAGE_TYPES,
 } from '$contracts/ImageUpload'
@@ -77,6 +76,8 @@ export class ImageUploadMockService implements IImageUploadService {
     // Validate and process each file
     for (let i = 0; i < files.length && uploadedImages.length < availableSlots; i++) {
       const file = files[i]
+      if (!file) continue // Skip if file is undefined
+      
       const validation = this.validateSingleFile(file)
 
       if (validation.errors.length > 0) {
@@ -357,9 +358,9 @@ export class ImageUploadMockService implements IImageUploadService {
    * Revoke a mock preview URL
    * In real implementation, this would use URL.revokeObjectURL(url)
    */
-  private revokeMockPreviewUrl(url: string): void {
+  private revokeMockPreviewUrl(_url: string): void {
     // Mock: No-op since we don't actually create object URLs
-    // Real implementation would use: URL.revokeObjectURL(url)
+    // Real implementation would use: URL.revokeObjectURL(_url)
   }
 
   /**
