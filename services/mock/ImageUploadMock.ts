@@ -362,6 +362,6 @@ export class ImageUploadMock implements IImageUploadService {
   private generateMockPreviewUrl(_file: File): string {
     // In real implementation, would use URL.createObjectURL(file)
     // For mock, generate a fake blob URL
-    return `blob:http://localhost:5173/${crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36)}`
+    return `blob:http://localhost:5173/${crypto.randomUUID?.() ?? Math.random().toString(36).substring(2)}`
   }
 }
