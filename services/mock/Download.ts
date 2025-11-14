@@ -24,6 +24,9 @@ import type {
   PrepareDownloadOutput,
   ServiceResponse,
   DeckMetadata,
+  GeneratedCard,
+  StyleInputs,
+  DownloadFormat,
 } from '../../contracts'
 
 import {
@@ -316,7 +319,13 @@ export class DownloadMock implements IDownloadService {
 
     // Check if all cards have imageUrls
     const hasInvalidCards = input.generatedCards.some(
-      (card: any) => !card.imageUrl
+      (card) => {
+        // Type guard: check if card has imageUrl property
+        if (typeof card === 'object' && card !== null && 'imageUrl' in card) {
+          return !card.imageUrl
+        }
+        return true // Invalid card structure
+      }
     )
     if (hasInvalidCards) {
       return {
@@ -326,7 +335,7 @@ export class DownloadMock implements IDownloadService {
     }
 
     // Check format if provided
-    if (input.format && !DOWNLOAD_FORMATS.includes(input.format as any)) {
+    if (input.format && !DOWNLOAD_FORMATS.includes(input.format as DownloadFormat)) {
       return {
         isValid: false,
         errorCode: DownloadErrorCode.INVALID_FORMAT,
@@ -348,8 +357,8 @@ export class DownloadMock implements IDownloadService {
    * - metadata.json (if includeMetadata is true)
    */
   private createMockZipContent(
-    cards: any[],
-    styleInputs: any,
+    cards: GeneratedCard[],
+    styleInputs: StyleInputs,
     deckName: string,
     includeMetadata: boolean
   ): string {

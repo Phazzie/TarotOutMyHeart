@@ -443,13 +443,17 @@ export class PromptGenerationMock implements IPromptGenerationService {
   /**
    * Check if style inputs are valid
    */
-  private isValidStyleInputs(styleInputs: any): boolean {
+  private isValidStyleInputs(styleInputs: unknown): boolean {
     return (
-      styleInputs &&
+      typeof styleInputs === 'object' &&
+      styleInputs !== null &&
+      'theme' in styleInputs &&
       typeof styleInputs.theme === 'string' &&
       styleInputs.theme.length > 0 &&
+      'tone' in styleInputs &&
       typeof styleInputs.tone === 'string' &&
       styleInputs.tone.length > 0 &&
+      'description' in styleInputs &&
       typeof styleInputs.description === 'string' &&
       styleInputs.description.length > 0
     )
@@ -481,7 +485,7 @@ export class PromptGenerationMock implements IPromptGenerationService {
    */
   private generateSingleCardPrompt(
     cardNumber: CardNumber,
-    styleInputs: any,
+    styleInputs: unknown,
     previousPrompt?: string,
     feedback?: string
   ): CardPrompt {
@@ -520,10 +524,14 @@ export class PromptGenerationMock implements IPromptGenerationService {
     cardNumber: CardNumber,
     cardName: string,
     traditionalMeaning: string,
-    styleInputs: any,
+    styleInputs: unknown,
     feedback?: string
   ): string {
-    const { theme, tone, description, concept, characters } = styleInputs
+    // Type guard ensures styleInputs is valid before accessing properties
+    if (!this.isValidStyleInputs(styleInputs)) {
+      throw new Error('Invalid style inputs')
+    }
+    const { theme, tone, description, concept, characters } = styleInputs as { theme: string; tone: string; description: string; concept?: string; characters?: string }
 
     // Build prompt with style elements
     const parts = [
