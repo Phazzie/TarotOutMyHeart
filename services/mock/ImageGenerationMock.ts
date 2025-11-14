@@ -1,15 +1,24 @@
 /**
- * @fileoverview Mock implementation of Image Generation service
- * @purpose Provide realistic Grok image API simulation for generating tarot card images
- * @dataFlow Card Prompts → Mock AI Image Generation → Base64 Images
- * @mockBehavior
- *   - Simulates 2-3 seconds per card generation
- *   - Generates mock base64 placeholder images
- *   - Reports progress for each card (0-22)
- *   - Simulates occasional failures and retries
- *   - Returns complete usage and cost data
- * @dependencies contracts/ImageGeneration.ts
- * @updated 2025-11-07
+ * @fileoverview Image Generation Mock Service
+ * @purpose Mock implementation of IImageGenerationService for testing and development
+ * @dataFlow CardPrompt[] → Mock image generation → GeneratedCard[] with URLs
+ * @boundary Seam #4: ImageGenerationSeam - Simulates Grok image API behavior
+ *
+ * Provides realistic simulation of image generation including:
+ * - Sequential generation with progress tracking
+ * - Session management for cancellation and status checks
+ * - Realistic delays and cost estimates
+ * - Error handling for all contract error codes
+ * - Support for both permanent storage (URLs) and temporary (data URLs)
+ *
+ * @example
+ * ```typescript
+ * const service = new ImageGenerationMock()
+ * const result = await service.generateImages({
+ *   prompts: cardPrompts,
+ *   onProgress: (progress) => console.log(`${progress.percentComplete}% complete`)
+ * })
+ * ```
  */
 
 import type {
@@ -18,188 +27,383 @@ import type {
   GenerateImagesOutput,
   RegenerateImageInput,
   RegenerateImageOutput,
+  CancelGenerationInput,
+  CancelGenerationOutput,
   GetGenerationStatusInput,
   GetGenerationStatusOutput,
+  EstimateImageCostOutput,
   GeneratedCard,
   GeneratedCardId,
-  GenerationStatus,
   ImageGenerationProgress,
-  TotalImageGenerationUsage,
   ImageGenerationUsage,
-} from '$contracts/ImageGeneration'
+  TotalImageGenerationUsage,
+} from '../../contracts/ImageGeneration'
 
-import { GROK_IMAGE_MODEL, IMAGE_GENERATION_CONFIG } from '$contracts/ImageGeneration'
-import type { ServiceResponse } from '$contracts/types/common'
-import type { CardNumber } from '$contracts/PromptGeneration'
+import { ImageGenerationErrorCode } from '../../contracts/ImageGeneration'
+
+import type { ServiceResponse } from '../../contracts/types/common'
+import type { CardNumber } from '../../contracts/PromptGeneration'
 
 /**
- * Mock implementation of ImageGenerationService
- * 
- * Simulates Grok image generation API with realistic delays and progress tracking.
+ * Internal session state for tracking generation
  */
-export class ImageGenerationMockService implements IImageGenerationService {
-  private generatedCards: Map<GeneratedCardId, GeneratedCard> = new Map()
+interface GenerationSession {
+  sessionId: string
+  startedAt: Date
+  completedAt?: Date
+  cards: GeneratedCard[]
+  progress: ImageGenerationProgress
+  isComplete: boolean
+  isCanceled: boolean
+  totalUsage: TotalImageGenerationUsage
+}
+
+/**
+ * Mock implementation of Image Generation Service
+ *
+ * Simulates Grok image API behavior with realistic delays and responses.
+ * All 22 Major Arcana cards are generated with mock image URLs or data URLs.
+ */
+export class ImageGenerationMock implements IImageGenerationService {
+  // Session storage
+  private sessions = new Map<string, GenerationSession>()
+  private sessionIdCounter = 1
+
+  // Mock configuration
+  private readonly COST_PER_IMAGE = 0.05 // $0.05 per image
+  private readonly GENERATION_TIME_PER_IMAGE = 10 // 10ms per image (fast for tests)
+  private readonly MAX_PROMPT_LENGTH = 2000
+  private readonly VALID_MODEL = 'grok-2-image-alpha'
 
   /**
-   * Generate all 22 card images
+   * Generate all 22 tarot card images
    */
   async generateImages(
     input: GenerateImagesInput
   ): Promise<ServiceResponse<GenerateImagesOutput>> {
-    const { prompts, onProgress } = input
+    // Validate input
+    const validationError = this.validateGenerateInput(input)
+    if (validationError) {
+      return validationError
+    }
+
+    // Create session
+    const sessionId = `session-${this.sessionIdCounter++}-${Date.now()}`
+    const startedAt = new Date()
+
+    const session: GenerationSession = {
+      sessionId,
+      startedAt,
+      cards: [],
+      progress: {
+        total: 22,
+        completed: 0,
+        failed: 0,
+        current: 0,
+        percentComplete: 0,
+        estimatedTimeRemaining: 22 * this.GENERATION_TIME_PER_IMAGE / 1000,
+        status: 'Starting generation...',
+      },
+      isComplete: false,
+      isCanceled: false,
+      totalUsage: {
+        totalImages: 22,
+        successfulImages: 0,
+        failedImages: 0,
+        estimatedCost: 0,
+        totalGenerationTime: 0,
+        usagePerCard: [],
+      },
+    }
+
+    this.sessions.set(sessionId, session)
+
+    // Generate images sequentially
     const generatedCards: GeneratedCard[] = []
     const usagePerCard: ImageGenerationUsage[] = []
-    let failed = 0
+    let totalGenerationTime = 0
 
-    const startTime = Date.now()
+    for (let i = 0; i < input.prompts.length; i++) {
+      // Check if canceled
+      if (session.isCanceled) {
+        break
+      }
 
-    for (let i = 0; i < prompts.length; i++) {
-      const prompt = prompts[i]
-      
-      // Report progress
-      if (onProgress) {
-        const progress: ImageGenerationProgress = {
-          total: prompts.length,
-          completed: i,
-          failed,
-          current: i,
-          percentComplete: Math.round((i / prompts.length) * 100),
-          estimatedTimeRemaining: (prompts.length - i) * 2.5,
-          status: `Generating ${prompt.cardName}...`,
-        }
-        onProgress(progress)
+      const prompt = input.prompts[i]!
+      const cardNumber = prompt.cardNumber
+
+      // Update progress
+      session.progress = {
+        total: 22,
+        completed: i,
+        failed: session.totalUsage.failedImages,
+        current: i,
+        percentComplete: Math.round((i / 22) * 100),
+        estimatedTimeRemaining: (22 - i) * this.GENERATION_TIME_PER_IMAGE / 1000,
+        status: `Generating ${prompt.cardName}...`,
+      }
+
+      // Call progress callback
+      if (input.onProgress) {
+        input.onProgress(session.progress)
       }
 
       // Simulate generation delay
-      await this.delay(2500 + Math.random() * 500)
+      await this.delay(this.GENERATION_TIME_PER_IMAGE)
 
-      // 10% chance of simulated failure on first attempt
-      const shouldFail = Math.random() < 0.1
+      // Generate image
+      const generationStart = Date.now()
+      const card = this.generateCard(prompt, input.saveToStorage ?? true)
+      const generationTime = Date.now() - generationStart
 
-      if (shouldFail && i < prompts.length - 1) {
-        // Simulate failure
-        const failedCard: GeneratedCard = {
-          id: crypto.randomUUID() as GeneratedCardId,
-          cardNumber: prompt.cardNumber,
-          cardName: prompt.cardName,
-          prompt: prompt.prompt,
-          generationStatus: 'failed',
-          retryCount: 1,
-          error: 'Simulated API error',
-        }
-        generatedCards.push(failedCard)
-        failed++
-
-        // Auto-retry
-        await this.delay(1000)
-        
-        // Retry succeeds
-        const retriedCard = await this.generateSingleCard(prompt.cardNumber, prompt.cardName, prompt.prompt)
-        generatedCards[generatedCards.length - 1] = retriedCard
-        failed--
-      } else {
-        // Success
-        const card = await this.generateSingleCard(prompt.cardNumber, prompt.cardName, prompt.prompt)
-        generatedCards.push(card)
-      }
+      generatedCards.push(card)
+      totalGenerationTime += generationTime
 
       // Track usage
-      usagePerCard.push({
-        cardNumber: prompt.cardNumber,
-        model: GROK_IMAGE_MODEL,
-        estimatedCost: 0.10, // $0.10 per image
-        generationTime: 2500,
-        requestId: `mock_img_${crypto.randomUUID()}`,
-      })
+      const usage: ImageGenerationUsage = {
+        cardNumber,
+        model: input.model || this.VALID_MODEL,
+        estimatedCost: this.COST_PER_IMAGE,
+        generationTime,
+        requestId: `req-${sessionId}-${i}`,
+      }
+      usagePerCard.push(usage)
 
-      this.generatedCards.set(generatedCards[generatedCards.length - 1].id, generatedCards[generatedCards.length - 1])
+      // Update session stats
+      if (card.generationStatus === 'completed') {
+        session.totalUsage.successfulImages++
+      } else if (card.generationStatus === 'failed') {
+        session.totalUsage.failedImages++
+      }
+
+      session.cards = generatedCards
+      session.totalUsage.usagePerCard = usagePerCard
     }
 
-    // Final progress
-    if (onProgress) {
-      onProgress({
-        total: prompts.length,
-        completed: prompts.length,
-        failed: 0,
-        current: prompts.length,
-        percentComplete: 100,
-        estimatedTimeRemaining: 0,
-        status: 'Complete!',
-      })
+    // Finalize session
+    const completedAt = new Date()
+    session.completedAt = completedAt
+    session.isComplete = true
+    session.totalUsage.totalGenerationTime = totalGenerationTime
+    session.totalUsage.estimatedCost = session.totalUsage.successfulImages * this.COST_PER_IMAGE
+
+    // Final progress update
+    session.progress = {
+      total: 22,
+      completed: session.totalUsage.successfulImages,
+      failed: session.totalUsage.failedImages,
+      current: 22,
+      percentComplete: 100,
+      estimatedTimeRemaining: 0,
+      status: session.isCanceled ? 'Canceled' : 'Complete',
     }
 
-    const totalTime = Date.now() - startTime
-
-    const totalUsage: TotalImageGenerationUsage = {
-      totalImages: prompts.length,
-      successfulImages: prompts.length - failed,
-      failedImages: failed,
-      estimatedCost: prompts.length * 0.10,
-      totalGenerationTime: totalTime,
-      usagePerCard,
+    if (input.onProgress) {
+      input.onProgress(session.progress)
     }
 
+    const fullySuccessful = session.totalUsage.successfulImages === 22
+
+    // Return result
     return {
       success: true,
       data: {
         generatedCards,
-        totalUsage,
-        startedAt: new Date(startTime),
-        completedAt: new Date(),
+        totalUsage: session.totalUsage,
+        sessionId,
+        startedAt,
+        completedAt,
+        fullySuccessful,
       },
     }
   }
 
   /**
-   * Regenerate a single card
+   * Regenerate a single failed image
    */
   async regenerateImage(
     input: RegenerateImageInput
   ): Promise<ServiceResponse<RegenerateImageOutput>> {
-    await this.delay(2500)
+    // Validate input
+    if (input.cardNumber < 0 || input.cardNumber > 21) {
+      return {
+        success: false,
+        error: {
+          code: ImageGenerationErrorCode.INVALID_PROMPTS,
+          message: 'Card number must be between 0 and 21',
+          retryable: false,
+        },
+      }
+    }
 
-    const { cardNumber, prompt } = input
-    const card = await this.generateSingleCard(cardNumber, prompt.cardName, prompt.prompt)
+    if (input.prompt.length > this.MAX_PROMPT_LENGTH) {
+      return {
+        success: false,
+        error: {
+          code: ImageGenerationErrorCode.PROMPT_TOO_LONG,
+          message: `Prompt exceeds maximum length of ${this.MAX_PROMPT_LENGTH}`,
+          retryable: false,
+        },
+      }
+    }
 
-    this.generatedCards.set(card.id, card)
+    // Simulate generation delay
+    await this.delay(this.GENERATION_TIME_PER_IMAGE)
+
+    const generationStart = Date.now()
+
+    // Generate card
+    const mockPrompt = {
+      cardNumber: input.cardNumber,
+      cardName: this.getCardName(input.cardNumber),
+      generatedPrompt: input.prompt,
+    }
+
+    const generatedCard = this.generateCard(mockPrompt, true, input.previousAttempts)
+    const generationTime = Date.now() - generationStart
 
     const usage: ImageGenerationUsage = {
-      cardNumber,
-      model: GROK_IMAGE_MODEL,
-      estimatedCost: 0.10,
-      generationTime: 2500,
-      requestId: `mock_regen_img_${crypto.randomUUID()}`,
+      cardNumber: input.cardNumber,
+      model: this.VALID_MODEL,
+      estimatedCost: this.COST_PER_IMAGE,
+      generationTime,
+      requestId: `regen-${Date.now()}`,
     }
 
     return {
       success: true,
       data: {
-        generatedCard: card,
+        generatedCard,
         usage,
       },
     }
   }
 
   /**
-   * Get generation status
+   * Cancel ongoing image generation
+   */
+  async cancelGeneration(
+    input: CancelGenerationInput
+  ): Promise<ServiceResponse<CancelGenerationOutput>> {
+    const session = this.sessions.get(input.sessionId)
+
+    if (!session) {
+      return {
+        success: false,
+        error: {
+          code: ImageGenerationErrorCode.SESSION_NOT_FOUND,
+          message: `Session ${input.sessionId} not found`,
+          retryable: false,
+        },
+      }
+    }
+
+    if (session.isComplete) {
+      return {
+        success: false,
+        error: {
+          code: ImageGenerationErrorCode.SESSION_ALREADY_COMPLETE,
+          message: 'Generation session is already complete',
+          retryable: false,
+        },
+      }
+    }
+
+    if (session.isCanceled) {
+      return {
+        success: false,
+        error: {
+          code: ImageGenerationErrorCode.SESSION_CANCELED,
+          message: 'Generation was already canceled',
+          retryable: false,
+        },
+      }
+    }
+
+    // Mark as canceled
+    session.isCanceled = true
+    session.isComplete = true
+    session.completedAt = new Date()
+
+    return {
+      success: true,
+      data: {
+        canceled: true,
+        completedBeforeCancel: session.totalUsage.successfulImages,
+        sessionId: input.sessionId,
+      },
+    }
+  }
+
+  /**
+   * Get status of ongoing generation
    */
   async getGenerationStatus(
     input: GetGenerationStatusInput
   ): Promise<ServiceResponse<GetGenerationStatusOutput>> {
-    await this.delay(50)
+    const session = this.sessions.get(input.sessionId)
 
-    const { cardIds } = input
-    const statuses: Record<GeneratedCardId, GenerationStatus> = {}
-
-    for (const cardId of cardIds) {
-      const card = this.generatedCards.get(cardId)
-      statuses[cardId] = card?.generationStatus || 'failed'
+    if (!session) {
+      return {
+        success: false,
+        error: {
+          code: ImageGenerationErrorCode.SESSION_NOT_FOUND,
+          message: `Session ${input.sessionId} not found`,
+          retryable: false,
+        },
+      }
     }
 
     return {
       success: true,
       data: {
-        statuses,
+        sessionId: input.sessionId,
+        progress: session.progress,
+        isComplete: session.isComplete,
+        isCanceled: session.isCanceled,
+      },
+    }
+  }
+
+  /**
+   * Estimate cost and time for generating images
+   */
+  async estimateCost(
+    input: { imageCount: number }
+  ): Promise<ServiceResponse<EstimateImageCostOutput>> {
+    // Validate input
+    if (input.imageCount <= 0) {
+      return {
+        success: false,
+        error: {
+          code: ImageGenerationErrorCode.INVALID_PROMPTS,
+          message: 'Image count must be greater than 0',
+          retryable: false,
+        },
+      }
+    }
+
+    if (input.imageCount > 100) {
+      return {
+        success: false,
+        error: {
+          code: ImageGenerationErrorCode.QUOTA_EXCEEDED,
+          message: 'Image count exceeds maximum allowed (100)',
+          retryable: false,
+        },
+      }
+    }
+
+    const totalEstimatedCost = input.imageCount * this.COST_PER_IMAGE
+    const estimatedTime = input.imageCount * (this.GENERATION_TIME_PER_IMAGE / 1000)
+
+    return {
+      success: true,
+      data: {
+        totalImages: input.imageCount,
+        costPerImage: this.COST_PER_IMAGE,
+        totalEstimatedCost,
+        estimatedTime,
       },
     }
   }
@@ -209,66 +413,150 @@ export class ImageGenerationMockService implements IImageGenerationService {
   // ============================================================================
 
   /**
-   * Generate a single card with mock image data
+   * Validate generateImages input
    */
-  private async generateSingleCard(
-    cardNumber: CardNumber,
-    cardName: string,
-    prompt: string
-  ): Promise<GeneratedCard> {
-    // Generate a mock base64 placeholder image
-    const imageDataUrl = this.createMockImageDataUrl(cardName)
-
-    return {
-      id: crypto.randomUUID() as GeneratedCardId,
-      cardNumber,
-      cardName,
-      prompt,
-      imageDataUrl,
-      generationStatus: 'completed',
-      generatedAt: new Date(),
-      retryCount: 0,
+  private validateGenerateInput(
+    input: GenerateImagesInput
+  ): ServiceResponse<never> | null {
+    // Check prompt count
+    if (input.prompts.length !== 22) {
+      return {
+        success: false,
+        error: {
+          code: ImageGenerationErrorCode.WRONG_PROMPT_COUNT,
+          message: `Must provide exactly 22 prompts, received ${input.prompts.length}`,
+          retryable: false,
+        },
+      }
     }
+
+    // Validate prompts structure
+    for (const prompt of input.prompts) {
+      if (!prompt.cardNumber && prompt.cardNumber !== 0) {
+        return {
+          success: false,
+          error: {
+            code: ImageGenerationErrorCode.INVALID_PROMPTS,
+            message: 'Invalid prompt structure: missing cardNumber',
+            retryable: false,
+          },
+        }
+      }
+
+      if (!prompt.generatedPrompt) {
+        return {
+          success: false,
+          error: {
+            code: ImageGenerationErrorCode.INVALID_PROMPTS,
+            message: 'Invalid prompt structure: missing generatedPrompt',
+            retryable: false,
+          },
+        }
+      }
+
+      if (prompt.generatedPrompt.length > this.MAX_PROMPT_LENGTH) {
+        return {
+          success: false,
+          error: {
+            code: ImageGenerationErrorCode.PROMPT_TOO_LONG,
+            message: `Prompt for ${prompt.cardName} exceeds maximum length`,
+            retryable: false,
+          },
+        }
+      }
+    }
+
+    // Validate model if provided
+    if (input.model && input.model !== this.VALID_MODEL) {
+      return {
+        success: false,
+        error: {
+          code: ImageGenerationErrorCode.INVALID_MODEL,
+          message: `Invalid model: ${input.model}. Use ${this.VALID_MODEL}`,
+          retryable: false,
+        },
+      }
+    }
+
+    return null
   }
 
   /**
-   * Create a mock base64 image data URL
-   * In real implementation, this would be actual generated image data
+   * Generate a single card with mock data
    */
-  private createMockImageDataUrl(cardName: string): string {
-    // Create a simple SVG placeholder as base64
-    const svg = `
-      <svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
-        <rect width="1024" height="1024" fill="#${this.randomColor()}"/>
-        <text x="512" y="512" text-anchor="middle" font-size="48" fill="white" font-family="Arial">
-          ${cardName}
-        </text>
-        <text x="512" y="572" text-anchor="middle" font-size="24" fill="white" font-family="Arial" opacity="0.7">
-          [Mock Generated Image]
-        </text>
-      </svg>
-    `
-    const base64 = Buffer.from(svg).toString('base64')
-    return `data:image/svg+xml;base64,${base64}`
+  private generateCard(
+    prompt: { cardNumber: CardNumber; cardName: string; generatedPrompt: string },
+    saveToStorage: boolean,
+    previousAttempts: number = 0
+  ): GeneratedCard {
+    const id = `card-${prompt.cardNumber}-${Date.now()}` as GeneratedCardId
+    const cardName = prompt.cardName || this.getCardName(prompt.cardNumber)
+
+    // Mock: 95% success rate
+    const isSuccess = Math.random() > 0.05
+
+    const card: GeneratedCard = {
+      id,
+      cardNumber: prompt.cardNumber,
+      cardName,
+      prompt: prompt.generatedPrompt,
+      generationStatus: isSuccess ? 'completed' : 'failed',
+      retryCount: previousAttempts || 0,
+    }
+
+    if (isSuccess) {
+      card.generatedAt = new Date()
+
+      if (saveToStorage) {
+        // Permanent storage URL (Vercel Blob)
+        card.imageUrl = this.generateMockImageUrl(prompt.cardNumber, cardName)
+      } else {
+        // Temporary base64 data URL
+        card.imageDataUrl = this.generateMockDataUrl(prompt.cardNumber)
+      }
+    } else {
+      card.error = 'Mock generation failure for testing'
+    }
+
+    return card
   }
 
   /**
-   * Generate a random color for mock images
+   * Generate mock image URL (simulates Vercel Blob storage)
    */
-  private randomColor(): string {
-    const colors = ['2C3E50', '8E44AD', '2980B9', '27AE60', 'F39C12', 'C0392B', '16A085']
-    return colors[Math.floor(Math.random() * colors.length)]
+  private generateMockImageUrl(cardNumber: CardNumber, cardName: string): string {
+    const slug = cardName.toLowerCase().replace(/\s+/g, '-')
+    return `https://mock-blob-storage.vercel.app/tarot/${slug}-${cardNumber}.png`
+  }
+
+  /**
+   * Generate mock base64 data URL
+   */
+  private generateMockDataUrl(_cardNumber: CardNumber): string {
+    // Mock: tiny 1x1 transparent PNG (same for all cards in mock)
+    const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+    return `data:image/png;base64,${base64}`
+  }
+
+  /**
+   * Get card name from card number
+   */
+  private getCardName(cardNumber: CardNumber): string {
+    const names = [
+      'The Fool', 'The Magician', 'The High Priestess', 'The Empress',
+      'The Emperor', 'The Hierophant', 'The Lovers', 'The Chariot',
+      'Strength', 'The Hermit', 'Wheel of Fortune', 'Justice',
+      'The Hanged Man', 'Death', 'Temperance', 'The Devil',
+      'The Tower', 'The Star', 'The Moon', 'The Sun',
+      'Judgement', 'The World'
+    ]
+    return names[cardNumber] || `Card ${cardNumber}`
   }
 
   /**
    * Simulate async delay
    */
   private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms))
+    return new Promise(resolve => setTimeout(resolve, ms))
   }
 }
-
-/**
- * Singleton instance for use throughout the application
- */
-export const imageGenerationMockService = new ImageGenerationMockService()

@@ -22,13 +22,22 @@ import type { ICostCalculationService } from '$contracts/CostCalculation'
 import type { IDownloadService } from '$contracts/Download'
 
 // Import mock services
-import { imageUploadMockService } from './mock/ImageUploadMock'
-import { styleInputMockService } from './mock/StyleInputMock'
-import { promptGenerationMockService } from './mock/PromptGenerationMock'
-import { imageGenerationMockService } from './mock/ImageGenerationMock'
-import { deckDisplayMockService } from './mock/DeckDisplayMock'
-import { costCalculationMockService } from './mock/CostCalculationMock'
-import { downloadMockService } from './mock/DownloadMock'
+import { ImageUploadMock } from './mock/ImageUploadMock'
+import { StyleInputMock } from './mock/StyleInputMock'
+import { PromptGenerationMock } from './mock/PromptGenerationMock'
+import { ImageGenerationMock } from './mock/ImageGenerationMock'
+import { DeckDisplayMock } from './mock/DeckDisplayMock'
+import { CostCalculationMock } from './mock/CostCalculation'
+import { DownloadMock } from './mock/Download'
+
+// Instantiate mock services
+const imageUploadMockService = new ImageUploadMock()
+const styleInputMockService = new StyleInputMock()
+const promptGenerationMockService = new PromptGenerationMock()
+const imageGenerationMockService = new ImageGenerationMock()
+const deckDisplayMockService = new DeckDisplayMock()
+const costCalculationMockService = new CostCalculationMock()
+const downloadMockService = new DownloadMock()
 
 // TODO: Import real services when implemented
 // import { ImageUploadService } from './real/ImageUploadService'
