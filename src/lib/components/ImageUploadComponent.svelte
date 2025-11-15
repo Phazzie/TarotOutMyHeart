@@ -27,14 +27,15 @@
 
 <script lang="ts">
 	import { appStore } from '$lib/stores/appStore.svelte';
-	import { ImageUploadMock } from '$services/mock/ImageUploadMock';
-	import type { ImageValidationError } from '../../../contracts/index';
+	import { imageUploadService } from '$services/factory';
+	import type { ImageValidationError, ImageId } from '$contracts/index';
+	import { ImageUploadErrorCode } from '$contracts/index';
 
 	// ==========================================================================
 	// SERVICE INITIALIZATION
 	// ==========================================================================
 
-	const uploadService = new ImageUploadMock();
+const uploadService = imageUploadService
 
 	// ==========================================================================
 	// STATE MANAGEMENT (Svelte 5 runes)
@@ -176,7 +177,7 @@
 	 */
 	async function removeImage(imageId: string): Promise<void> {
 		// Use the service to remove the image
-		const result = await uploadService.removeImage({ imageId: imageId as any });
+		const result = await uploadService.removeImage({ imageId: imageId as ImageId });
 
 		if (result.success && result.data) {
 			// Update store with remaining images
@@ -190,7 +191,7 @@
 		} else if (result.error) {
 			errors = [
 				{
-					code: result.error.code as any,
+					code: result.error.code as ImageUploadErrorCode,
 					message: result.error.message,
 					fileName: ''
 				}
@@ -232,7 +233,7 @@
 		if (imageCount + files.length > appStore.MAX_IMAGES) {
 			errors = [
 				{
-					code: 'TOO_MANY_FILES' as any,
+					code: ImageUploadErrorCode.TOO_MANY_FILES,
 					message: `Can only add ${remainingSlots} more image(s). Maximum is ${appStore.MAX_IMAGES} images.`,
 					fileName: ''
 				}
@@ -271,7 +272,7 @@
 				// Handle service error
 				errors = [
 					{
-						code: result.error.code as any,
+						code: result.error.code as ImageUploadErrorCode,
 						message: result.error.message,
 						fileName: ''
 					}
@@ -284,7 +285,7 @@
 			// Handle unexpected errors
 			errors = [
 				{
-					code: 'UPLOAD_FAILED' as any,
+					code: ImageUploadErrorCode.UPLOAD_FAILED,
 					message: error instanceof Error ? error.message : 'An unexpected error occurred',
 					fileName: ''
 				}

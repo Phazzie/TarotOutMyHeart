@@ -32,7 +32,7 @@
 
 <script lang="ts">
 	import { appStore } from '$lib/stores/appStore.svelte'
-	import { CostCalculationMock } from '$services/mock/CostCalculation'
+import { costCalculationService } from '$services/factory'
 	import type { CostEstimate, CostSummary } from '$contracts/index'
 	import { COST_THRESHOLDS } from '$contracts/CostCalculation'
 
@@ -91,7 +91,7 @@
 	// STATE
 	// ============================================================================
 
-	const costService = new CostCalculationMock()
+const costService = costCalculationService
 
 	/** Estimated cost before generation */
 	let estimatedCostData = $state<CostEstimate | null>(null)

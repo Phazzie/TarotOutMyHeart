@@ -31,14 +31,14 @@
 
 <script lang="ts">
 	import { appStore } from '$lib/stores/appStore.svelte'
-	import { PromptGenerationMock } from '$services/mock/PromptGenerationMock'
+import { promptGenerationService } from '$services/factory'
 	import type { CardNumber } from '$contracts/index'
 
 	// ============================================================================
 	// SERVICE INITIALIZATION
 	// ============================================================================
 
-	const promptService = new PromptGenerationMock()
+const promptService = promptGenerationService
 
 	// ============================================================================
 	// COMPONENT STATE

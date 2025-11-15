@@ -31,7 +31,7 @@
 
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { DeckDisplayMock } from '../../../services/mock/DeckDisplayMock';
+import { deckDisplayService } from '$services/factory'
 	import type {
 		GeneratedCard,
 		DisplayCard,
@@ -39,7 +39,7 @@
 		DisplayLayout,
 		CardSize,
 		SortOption
-	} from '../../../contracts';
+	} from '$contracts/index';
 
 	// ============================================================================
 	// PROPS
@@ -59,7 +59,7 @@
 	// SERVICE INITIALIZATION
 	// ============================================================================
 
-	const displayService = new DeckDisplayMock();
+const displayService = deckDisplayService
 
 	// ============================================================================
 	// COMPONENT STATE

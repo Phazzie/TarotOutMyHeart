@@ -24,7 +24,7 @@
 
 <script lang="ts">
 	import { appStore } from '$lib/stores/appStore.svelte';
-	import { StyleInputMock } from '$services/mock/StyleInputMock';
+import { styleInputService } from '$services/factory'
 	import type {
 		StyleInputs,
 		PredefinedTheme,
@@ -37,7 +37,7 @@
 	// SERVICE INITIALIZATION
 	// ============================================================================
 
-	const styleService = new StyleInputMock();
+const styleService = styleInputService
 
 	// ============================================================================
 	// STATE MANAGEMENT

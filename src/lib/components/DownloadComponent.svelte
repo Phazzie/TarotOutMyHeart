@@ -22,7 +22,7 @@
 
 <script lang="ts">
   import { appStore } from '$lib/stores/appStore.svelte'
-  import { DownloadMock } from '$services/mock/Download'
+import { downloadService as downloadServiceFactory } from '$services/factory'
   import type {
     DownloadDeckInput,
     DownloadCardInput,
@@ -38,7 +38,7 @@
    * Download service instance
    * Uses mock for development, will switch to real service in production
    */
-  const downloadService = new DownloadMock()
+const downloadService = downloadServiceFactory
 
   // ============================================================================
   // COMPONENT STATE (Svelte 5 $state runes)

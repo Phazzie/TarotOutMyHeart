@@ -84,7 +84,7 @@
 				<button
 					class="hamburger"
 					class:open={mobileMenuOpen}
-					on:click={toggleMobileMenu}
+					onclick={toggleMobileMenu}
 					aria-label="Toggle menu"
 					aria-expanded={mobileMenuOpen}
 				>
