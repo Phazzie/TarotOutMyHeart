@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Type Safety in Mock Services** (2025-11-15):
+  - Fixed `StyleInputMock.ts`: Changed `StyleInputErrorCode` from type import to value import (enums must be imported as values)
+  - Fixed `StyleInputMock.ts`: Removed unused `currentStyleInputs` private field
+  - Fixed `StyleInputMock.ts`: Added null safety check for `validationResult.data` before accessing nested properties
+  - Fixed `PromptGenerationMock.ts`: Changed `PromptGenerationErrorCode` from type import to value import
+  - Fixed `PromptGenerationMock.ts`: Added missing `estimateCost` method to fully implement `IPromptGenerationService` interface
+  - Fixed `PromptGenerationMock.ts`: Removed non-existent `total` property from `GenerationProgress` objects
+  - Fixed `PromptGenerationMock.ts`: Removed non-existent `currency` property from `ApiUsage` objects
+  - Fixed `PromptGenerationMock.ts`: Corrected field names: `prompt` → `generatedPrompt`, `cardMeaning` → `traditionalMeaning`
+  - Fixed `PromptGenerationMock.ts`: Added missing `confidence` field to `CardPrompt` objects
+  - All changes maintain backward compatibility with zero breaking changes
+  - Addresses review comments from PR#20 and PR#21
+
 ### Added
 
 - **GenerationProgressComponent** ✅ (Sprint 2, Component 4 - 2025-11-15):
@@ -226,7 +241,7 @@ Before 1.0.0, the project is in initial development. Anything may change at any 
 ---
 
 [Unreleased]: https://github.com/Phazzie/TarotUpMyHeart/compare/v0.0.1...HEAD
-[0.0.1]: https://github.com/Phazzie/TarotUpMyHeart/releases/tag/v0.0.1
+[0.0.1]: https://github.com/Phazzie/TarotOutMyHeart/releases/tag/v0.0.1
 
 ### Sprint 2 Complete: Full UI Implementation (2025-11-15)
 
@@ -463,4 +478,3 @@ See `lessonslearned.md` for new lessons #9-13:
 2. `4342ba8` - Fix code review issues: SDD compliance, type safety, accessibility
 
 **Sprint 2 Status**: ✅ **COMPLETE** - Ready for PR and Phase 4
-
