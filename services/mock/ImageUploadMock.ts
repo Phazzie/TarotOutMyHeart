@@ -1,18 +1,16 @@
 /**
- * @fileoverview ImageUpload Mock Service - Reference image upload and validation
- * @purpose Mock implementation of IImageUploadService for testing and development
- * @dataFlow File[] → Validation → In-memory storage → UploadedImage[] with preview URLs
- * @boundary Seam #1: ImageUploadSeam - Mock implementation for browser file upload
- * @updated 2025-11-14
- *
- * @example
- * ```typescript
- * const service = new ImageUploadMock()
- * const result = await service.uploadImages({ files: [file1, file2] })
- * if (result.success) {
- *   console.log(`Uploaded ${result.data.totalUploaded} images`)
- * }
- * ```
+ * @fileoverview Mock implementation of ImageUpload service
+ * @purpose Provide realistic image upload behavior for UI development without real file handling
+ * @dataFlow Browser Files → Validation → In-memory storage → Preview URLs
+ * @mockBehavior
+ *   - Validates file types (JPEG/PNG only)
+ *   - Validates file sizes (max 10MB)
+ *   - Validates count limits (1-5 images)
+ *   - Generates mock preview URLs
+ *   - Simulates 200ms upload delay
+ *   - Maintains in-memory image storage
+ * @dependencies contracts/ImageUpload.ts
+ * @updated 2025-11-07
  */
 
 import type {
@@ -25,174 +23,156 @@ import type {
   ValidateImagesOutput,
   GetUploadedImagesOutput,
   UploadedImage,
-  ImageValidationResult,
-  ImageValidationError,
   ImageId,
   ImageMimeType,
-  ServiceResponse,
-} from '../../contracts'
+  ImageValidationError,
+} from '$contracts/ImageUpload'
 
 import {
   ImageUploadErrorCode,
   MAX_IMAGE_SIZE_BYTES,
   MAX_IMAGES,
   ALLOWED_IMAGE_TYPES,
-  IMAGE_UPLOAD_ERROR_MESSAGES,
-} from '../../contracts'
+} from '$contracts/ImageUpload'
+
+import type { ServiceResponse } from '$contracts/types/common'
 
 /**
- * Mock implementation of IImageUploadService
- *
- * Simulates browser-based image upload with client-side storage.
- * Handles validation, duplicate detection, and capacity limits.
+ * Mock implementation of ImageUploadService
+ * 
+ * Simulates client-side image upload and validation without server.
+ * Stores images in memory and generates mock preview URLs.
  */
-export class ImageUploadMock implements IImageUploadService {
-  /**
-   * In-memory storage for uploaded images
-   */
-  private uploadedImages: UploadedImage[] = []
+export class ImageUploadMockService implements IImageUploadService {
+  private images: Map<ImageId, UploadedImage> = new Map()
+  private previewUrls: Map<ImageId, string> = new Map()
 
   /**
-   * Counter for generating unique IDs
-   */
-  private idCounter = 1
-
-  /**
-   * Track uploaded file objects to detect duplicates
-   */
-  private uploadedFiles: Set<File> = new Set()
-
-  // ==========================================================================
-  // PUBLIC INTERFACE METHODS
-  // ==========================================================================
-
-  /**
-   * Upload and validate one or more images
+   * Upload and validate images
    */
   async uploadImages(input: UploadImagesInput): Promise<ServiceResponse<UploadImagesOutput>> {
+    // Simulate network delay
+    await this.delay(200)
+
     const { files } = input
-
-    // Validate count constraints first
-    if (files.length === 0) {
-      return {
-        success: false,
-        error: {
-          code: ImageUploadErrorCode.TOO_FEW_FILES,
-          message: IMAGE_UPLOAD_ERROR_MESSAGES[ImageUploadErrorCode.TOO_FEW_FILES],
-          retryable: false,
-        },
-      }
-    }
-
-    if (files.length > MAX_IMAGES) {
-      return {
-        success: false,
-        error: {
-          code: ImageUploadErrorCode.TOO_MANY_FILES,
-          message: IMAGE_UPLOAD_ERROR_MESSAGES[ImageUploadErrorCode.TOO_MANY_FILES],
-          retryable: false,
-        },
-      }
-    }
-
-    // Check if already at max capacity
-    if (this.uploadedImages.length >= MAX_IMAGES) {
-      return {
-        success: false,
-        error: {
-          code: ImageUploadErrorCode.MAX_UPLOADS_REACHED,
-          message: IMAGE_UPLOAD_ERROR_MESSAGES[ImageUploadErrorCode.MAX_UPLOADS_REACHED],
-          retryable: false,
-        },
-      }
-    }
-
-    // Check if uploading would exceed max capacity
-    if (this.uploadedImages.length + files.length > MAX_IMAGES) {
-      return {
-        success: false,
-        error: {
-          code: ImageUploadErrorCode.TOO_MANY_FILES,
-          message: `Can only add ${MAX_IMAGES - this.uploadedImages.length} more image(s)`,
-          retryable: false,
-        },
-      }
-    }
-
-    // Validate and upload each file
     const uploadedImages: UploadedImage[] = []
     const failedImages: ImageValidationError[] = []
 
-    for (const file of files) {
-      const validationResult = this.validateSingleFile(file)
+    // Check if we can add any more images
+    const currentCount = this.images.size
+    const availableSlots = MAX_IMAGES - currentCount
 
-      if (validationResult.errors.length > 0) {
-        // File failed validation
-        failedImages.push(...validationResult.errors)
-      } else {
-        // File is valid, create UploadedImage
-        const uploadedImage = this.createUploadedImage(file)
-        uploadedImages.push(uploadedImage)
-        this.uploadedImages.push(uploadedImage)
-        this.uploadedFiles.add(file)
-      }
-    }
-
-    // Return response with partial success handling
-    const output: UploadImagesOutput = {
-      uploadedImages,
-      failedImages,
-      totalUploaded: uploadedImages.length,
-      totalFailed: failedImages.length,
-    }
-
-    // If all files failed, return failure response with data
-    if (uploadedImages.length === 0 && failedImages.length > 0) {
+    if (availableSlots === 0) {
       return {
         success: false,
-        data: output,
+        error: {
+          code: 'MAX_UPLOADS_REACHED',
+          message: 'Maximum of 5 images already uploaded',
+          retryable: false,
+        },
       }
     }
 
-    // Success (full or partial)
+    // Validate and process each file
+    for (let i = 0; i < files.length && uploadedImages.length < availableSlots; i++) {
+      const file = files[i]
+      if (!file) continue // Skip if file is undefined
+      
+      const validation = this.validateSingleFile(file)
+
+      if (validation.errors.length > 0) {
+        failedImages.push(...validation.errors)
+        continue
+      }
+
+      // Check for duplicates (same filename and size)
+      const isDuplicate = Array.from(this.images.values()).some(
+        (img) => img.fileName === file.name && img.fileSize === file.size
+      )
+
+      if (isDuplicate) {
+        failedImages.push({
+          code: ImageUploadErrorCode.DUPLICATE_IMAGE,
+          message: `${file.name} has already been uploaded`,
+          fileName: file.name,
+        })
+        continue
+      }
+
+      // Create uploaded image
+      const imageId = this.generateImageId()
+      const previewUrl = this.createMockPreviewUrl(file)
+      
+      const uploadedImage: UploadedImage = {
+        id: imageId,
+        file,
+        previewUrl,
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type as ImageMimeType,
+        uploadedAt: new Date(),
+      }
+
+      this.images.set(imageId, uploadedImage)
+      this.previewUrls.set(imageId, previewUrl)
+      uploadedImages.push(uploadedImage)
+    }
+
+    // Check if we had too many files
+    if (files.length > availableSlots) {
+      failedImages.push({
+        code: ImageUploadErrorCode.TOO_MANY_FILES,
+        message: `Can only add ${availableSlots} more image(s)`,
+        fileName: '',
+      })
+    }
+
     return {
       success: true,
-      data: output,
+      data: {
+        uploadedImages,
+        failedImages,
+        totalUploaded: uploadedImages.length,
+        totalFailed: failedImages.length,
+      },
     }
   }
 
   /**
-   * Remove a previously uploaded image
+   * Remove an uploaded image
    */
   async removeImage(input: RemoveImageInput): Promise<ServiceResponse<RemoveImageOutput>> {
+    await this.delay(100)
+
     const { imageId } = input
 
-    const index = this.uploadedImages.findIndex(img => img.id === imageId)
-
-    if (index === -1) {
+    if (!this.images.has(imageId)) {
       return {
         success: false,
         error: {
-          code: ImageUploadErrorCode.IMAGE_NOT_FOUND,
-          message: IMAGE_UPLOAD_ERROR_MESSAGES[ImageUploadErrorCode.IMAGE_NOT_FOUND],
+          code: 'IMAGE_NOT_FOUND',
+          message: 'Image not found - it may have been already removed',
           retryable: false,
         },
       }
     }
 
-    // Remove image
-    const [removedImage] = this.uploadedImages.splice(index, 1)
-    this.uploadedFiles.delete(removedImage!.file)
+    // Revoke preview URL to free memory
+    const previewUrl = this.previewUrls.get(imageId)
+    if (previewUrl) {
+      this.revokeMockPreviewUrl(previewUrl)
+      this.previewUrls.delete(imageId)
+    }
 
-    // In real implementation, would call URL.revokeObjectURL(removedImage.previewUrl)
-    const previewUrlRevoked = true
+    // Remove from storage
+    this.images.delete(imageId)
 
     return {
       success: true,
       data: {
         removedImageId: imageId,
-        remainingImages: [...this.uploadedImages],
-        previewUrlRevoked,
+        remainingImages: Array.from(this.images.values()),
+        previewUrlRevoked: true,
       },
     }
   }
@@ -200,43 +180,62 @@ export class ImageUploadMock implements IImageUploadService {
   /**
    * Validate images without uploading
    */
-  async validateImages(input: ValidateImagesInput): Promise<ServiceResponse<ValidateImagesOutput>> {
-    const { files } = input
+  async validateImages(
+    input: ValidateImagesInput
+  ): Promise<ServiceResponse<ValidateImagesOutput>> {
+    await this.delay(50)
 
-    // Check count constraints
-    if (files.length > MAX_IMAGES) {
+    const { files } = input
+    const validImages: { isValid: boolean; imageId?: ImageId; errors: ImageValidationError[] }[] = []
+    const invalidImages: ImageValidationError[] = []
+
+    // Check count
+    if (files.length === 0) {
       return {
-        success: false,
-        error: {
-          code: ImageUploadErrorCode.TOO_MANY_FILES,
-          message: IMAGE_UPLOAD_ERROR_MESSAGES[ImageUploadErrorCode.TOO_MANY_FILES],
-          retryable: false,
+        success: true,
+        data: {
+          validImages: [],
+          invalidImages: [
+            {
+              code: ImageUploadErrorCode.TOO_FEW_FILES,
+              message: 'Please select at least 1 image',
+              fileName: '',
+            },
+          ],
+          canProceed: false,
         },
       }
     }
 
+    const totalAfterUpload = this.images.size + files.length
+    if (totalAfterUpload > MAX_IMAGES) {
+      invalidImages.push({
+        code: ImageUploadErrorCode.TOO_MANY_FILES,
+        message: `Can only upload ${MAX_IMAGES - this.images.size} more image(s)`,
+        fileName: '',
+      })
+    }
+
     // Validate each file
-    const validImages: ImageValidationResult[] = []
-    const invalidImages: ImageValidationError[] = []
-
     for (const file of files) {
-      const validationResult = this.validateSingleFile(file)
-
-      if (validationResult.errors.length === 0) {
-        // File is valid
+      const validation = this.validateSingleFile(file)
+      
+      if (validation.errors.length > 0) {
+        invalidImages.push(...validation.errors)
+        validImages.push({
+          isValid: false,
+          errors: validation.errors,
+        })
+      } else {
         validImages.push({
           isValid: true,
           imageId: this.generateImageId(),
           errors: [],
         })
-      } else {
-        // File is invalid - only add to invalidImages
-        invalidImages.push(...validationResult.errors)
       }
     }
 
-    // Can proceed if at least one valid image exists
-    const canProceed = validImages.length > 0
+    const canProceed = invalidImages.length === 0 && totalAfterUpload <= MAX_IMAGES
 
     return {
       success: true,
@@ -252,14 +251,17 @@ export class ImageUploadMock implements IImageUploadService {
    * Get all currently uploaded images
    */
   async getUploadedImages(): Promise<ServiceResponse<GetUploadedImagesOutput>> {
-    const count = this.uploadedImages.length
+    await this.delay(50)
+
+    const images = Array.from(this.images.values())
+    const count = images.length
     const canAddMore = count < MAX_IMAGES
     const remainingSlots = MAX_IMAGES - count
 
     return {
       success: true,
       data: {
-        images: [...this.uploadedImages],
+        images,
         count,
         canAddMore,
         remainingSlots,
@@ -271,79 +273,67 @@ export class ImageUploadMock implements IImageUploadService {
    * Clear all uploaded images
    */
   async clearAllImages(): Promise<ServiceResponse<void>> {
-    // In real implementation, would revoke all preview URLs
-    // this.uploadedImages.forEach(img => URL.revokeObjectURL(img.previewUrl))
+    await this.delay(100)
 
-    this.uploadedImages = []
-    this.uploadedFiles.clear()
+    // Revoke all preview URLs
+    for (const previewUrl of this.previewUrls.values()) {
+      this.revokeMockPreviewUrl(previewUrl)
+    }
+
+    // Clear storage
+    this.images.clear()
+    this.previewUrls.clear()
 
     return {
       success: true,
+      data: undefined,
     }
   }
 
-  // ==========================================================================
+  // ============================================================================
   // PRIVATE HELPER METHODS
-  // ==========================================================================
+  // ============================================================================
 
   /**
    * Validate a single file
    */
-  private validateSingleFile(file: File): { errors: ImageValidationError[] } {
+  private validateSingleFile(file: File): { 
+    isValid: boolean; 
+    errors: ImageValidationError[] 
+  } {
     const errors: ImageValidationError[] = []
 
-    // Check for duplicate
-    if (this.uploadedFiles.has(file)) {
-      errors.push({
-        code: ImageUploadErrorCode.DUPLICATE_IMAGE,
-        message: IMAGE_UPLOAD_ERROR_MESSAGES[ImageUploadErrorCode.DUPLICATE_IMAGE],
-        fileName: file.name,
-      })
-    }
-
     // Check file type
-    if (!this.isValidMimeType(file.type)) {
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type as ImageMimeType)) {
       errors.push({
         code: ImageUploadErrorCode.INVALID_FILE_TYPE,
-        message: IMAGE_UPLOAD_ERROR_MESSAGES[ImageUploadErrorCode.INVALID_FILE_TYPE],
+        message: `${file.name} must be JPEG or PNG`,
         fileName: file.name,
       })
     }
 
     // Check file size
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2)
       errors.push({
         code: ImageUploadErrorCode.FILE_TOO_LARGE,
-        message: IMAGE_UPLOAD_ERROR_MESSAGES[ImageUploadErrorCode.FILE_TOO_LARGE],
+        message: `${file.name} (${sizeMB}MB) exceeds 10MB limit`,
         fileName: file.name,
       })
     }
 
-    return { errors }
-  }
-
-  /**
-   * Check if MIME type is valid
-   */
-  private isValidMimeType(mimeType: string): mimeType is ImageMimeType {
-    return (ALLOWED_IMAGE_TYPES as readonly string[]).includes(mimeType)
-  }
-
-  /**
-   * Create an UploadedImage from a File
-   */
-  private createUploadedImage(file: File): UploadedImage {
-    const id = this.generateImageId()
-    const previewUrl = this.generateMockPreviewUrl(file)
+    // Check if file is empty
+    if (file.size === 0) {
+      errors.push({
+        code: ImageUploadErrorCode.FILE_CORRUPTED,
+        message: `${file.name} is empty or corrupted`,
+        fileName: file.name,
+      })
+    }
 
     return {
-      id,
-      file,
-      previewUrl,
-      fileName: file.name,
-      fileSize: file.size,
-      mimeType: file.type as ImageMimeType,
-      uploadedAt: new Date(),
+      isValid: errors.length === 0,
+      errors,
     }
   }
 
@@ -351,17 +341,37 @@ export class ImageUploadMock implements IImageUploadService {
    * Generate a unique image ID
    */
   private generateImageId(): ImageId {
-    // In real implementation, would use crypto.randomUUID()
-    const id = `mock-image-${this.idCounter++}-${Date.now()}`
-    return id as ImageId
+    return crypto.randomUUID() as ImageId
   }
 
   /**
-   * Generate a mock preview URL
+   * Create a mock preview URL for a file
+   * In real implementation, this would use URL.createObjectURL(file)
    */
-  private generateMockPreviewUrl(_file: File): string {
-    // In real implementation, would use URL.createObjectURL(file)
-    // For mock, generate a fake blob URL
-    return `blob:http://localhost:5173/${crypto.randomUUID?.() ?? Math.random().toString(36).substring(2)}`
+  private createMockPreviewUrl(file: File): string {
+    // Mock: Generate a data URL pattern
+    // Real implementation would use: URL.createObjectURL(file)
+    return `mock://preview/${crypto.randomUUID()}/${encodeURIComponent(file.name)}`
+  }
+
+  /**
+   * Revoke a mock preview URL
+   * In real implementation, this would use URL.revokeObjectURL(url)
+   */
+  private revokeMockPreviewUrl(_url: string): void {
+    // Mock: No-op since we don't actually create object URLs
+    // Real implementation would use: URL.revokeObjectURL(_url)
+  }
+
+  /**
+   * Simulate async delay
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms))
   }
 }
+
+/**
+ * Singleton instance for use throughout the application
+ */
+export const imageUploadMockService = new ImageUploadMockService()
