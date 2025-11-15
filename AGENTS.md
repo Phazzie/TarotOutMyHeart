@@ -1,5 +1,23 @@
 # TarotUpMyHeart - AI Agent Instructions
 
+---
+
+## 🚨 **CRITICAL REMINDER FOR ALL AI AGENTS** 🚨
+
+**BEFORE ENDING YOUR SESSION:**
+1. ✅ **UPDATE `lessonslearned.md`** - Add new lessons from this session
+2. ✅ **UPDATE `CHANGELOG.md`** - Document all changes made
+3. ✅ **COMMIT AND PUSH** - Never leave uncommitted work
+
+**AFTER COMPLETING ANY MAJOR TASK:**
+- Document patterns that worked well
+- Document mistakes to avoid
+- Update both files IMMEDIATELY, not at end of session
+
+These files are the project's institutional memory. Keep them updated!
+
+---
+
 ## Project Overview
 
 Major Arcana tarot deck generator built with SvelteKit and TypeScript. Users upload 1-5 reference images, provide style inputs (theme/tone/description/concept/characters), and the app generates 22 unique tarot card designs using Grok AI (X.AI). Deployed on Vercel.

@@ -22,13 +22,49 @@ import type { ICostCalculationService } from '$contracts/CostCalculation'
 import type { IDownloadService } from '$contracts/Download'
 
 // Import mock services
-import { imageUploadMockService } from './mock/ImageUploadMock'
-import { styleInputMockService } from './mock/StyleInputMock'
-import { promptGenerationMockService } from './mock/PromptGenerationMock'
-import { imageGenerationMockService } from './mock/ImageGenerationMock'
-import { deckDisplayMockService } from './mock/DeckDisplayMock'
-import { costCalculationMockService } from './mock/CostCalculationMock'
-import { downloadMockService } from './mock/DownloadMock'
+import { ImageUploadMock } from './mock/ImageUploadMock'
+import { StyleInputMock } from './mock/StyleInputMock'
+import { PromptGenerationMock } from './mock/PromptGenerationMock'
+import { ImageGenerationMock } from './mock/ImageGenerationMock'
+import { DeckDisplayMock } from './mock/DeckDisplayMock'
+import { CostCalculationMock } from './mock/CostCalculation'
+import { DownloadMock } from './mock/Download'
+
+// ============================================================================
+// SINGLETON INSTANCES
+// ============================================================================
+
+/**
+ * Singleton mock service instances
+ * 
+ * NOTE: These singletons share state across all usages in the application.
+ * 
+ * For testing:
+ * - Tests that need isolated state should call the service's reset/cleanup methods
+ *   between test runs to avoid test pollution
+ * - Each mock service implements methods to clear its internal state
+ * - Example: imageUploadMockService.clearAll() resets uploaded images
+ * 
+ * For production:
+ * - Real services will be instantiated here when implemented
+ * - Real services will likely use external state management (database, API)
+ *   instead of in-memory state
+ * 
+ * @see ImageUploadMock.clearAll() - Clears uploaded images
+ * @see StyleInputMock (uses localStorage, automatically isolated per browser session)
+ * @see PromptGenerationMock (stateless, no cleanup needed)
+ * @see ImageGenerationMock.cancelAllSessions() - Clears generation sessions
+ * @see DeckDisplayMock (stateless, no cleanup needed)
+ * @see CostCalculationMock (stateless, no cleanup needed)
+ * @see DownloadMock (stateless, no cleanup needed)
+ */
+const imageUploadMockService = new ImageUploadMock()
+const styleInputMockService = new StyleInputMock()
+const promptGenerationMockService = new PromptGenerationMock()
+const imageGenerationMockService = new ImageGenerationMock()
+const deckDisplayMockService = new DeckDisplayMock()
+const costCalculationMockService = new CostCalculationMock()
+const downloadMockService = new DownloadMock()
 
 // TODO: Import real services when implemented
 // import { ImageUploadService } from './real/ImageUploadService'
