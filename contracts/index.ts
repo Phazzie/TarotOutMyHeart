@@ -1,7 +1,7 @@
 /**
  * Barrel export of all contracts
  *
- * This file exports all seam contracts for the TarotUpMyHeart application.
+ * This file exports all seam contracts for the TarotOutMyHeart application.
  * Import contracts using:
  *
  * ```typescript

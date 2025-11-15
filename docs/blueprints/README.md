@@ -1,6 +1,6 @@
 # Blueprint Templates
 
-This directory contains templates for creating consistent, well-documented code in the TarotUpMyHeart project.
+This directory contains templates for creating consistent, well-documented code in the TarotOutMyHeart project.
 
 ---
 

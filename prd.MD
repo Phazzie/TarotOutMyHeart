@@ -1196,5 +1196,5 @@ Out of Scope (Not Building)
 ❌ Video card generation
 ❌ Blockchain/NFT features
 ❌ Mobile native apps
-This PRD should be saved to /home/user/TarotUpMyHeart/PRD.md - want me to create it?
+This PRD should be saved to /home/user/TarotOutMyHeart/PRD.md - want me to create it?
 

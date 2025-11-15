@@ -1,10 +1,10 @@
 <script lang="ts">
-  // TarotUpMyHeart - Main Page
+  // TarotOutMyHeart - Main Page
   // This is a placeholder. Actual implementation will follow SDD methodology.
 </script>
 
 <main>
-  <h1>TarotUpMyHeart</h1>
+  <h1>TarotOutMyHeart</h1>
   <p>Major Arcana Deck Generator</p>
 
   <div class="placeholder">
@@ -23,7 +23,7 @@
 
     <h3>Documentation:</h3>
     <ul>
-      <li><a href="https://github.com/Phazzie/TarotUpMyHeart">GitHub Repository</a></li>
+      <li><a href="https://github.com/Phazzie/TarotOutMyHeart">GitHub Repository</a></li>
       <li>See <code>AGENTS.md</code> for AI agent instructions</li>
       <li>See <code>seam-driven-development.md</code> for methodology</li>
       <li>See <code>SEAMSLIST.md</code> for seams catalog</li>

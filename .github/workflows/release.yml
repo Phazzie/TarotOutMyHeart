@@ -71,7 +71,7 @@ jobs:
 
             ```bash
             git clone -b v${{ steps.version.outputs.version }} https://github.com/${{ github.repository }}.git
-            cd TarotUpMyHeart
+            cd TarotOutMyHeart
             npm install
             ```
 

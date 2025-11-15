@@ -1,4 +1,4 @@
-# Seams List - TarotUpMyHeart
+# Seams List - TarotOutMyHeart
 
 **Last Updated**: 2025-11-07
 **Total Seams**: 5 (AI Collaboration System)

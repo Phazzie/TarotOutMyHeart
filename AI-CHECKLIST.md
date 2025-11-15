@@ -1,4 +1,4 @@
-# AI Development Checklist - TarotUpMyHeart
+# AI Development Checklist - TarotOutMyHeart
 
 **Purpose**: This checklist ensures any AI agent working on this project follows Seam-Driven Development (SDD) methodology correctly.
 

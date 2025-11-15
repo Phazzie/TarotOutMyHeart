@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug in TarotUpMyHeart
+about: Report a bug in TarotOutMyHeart
 title: '[BUG] '
 labels: bug
 assignees: ''
