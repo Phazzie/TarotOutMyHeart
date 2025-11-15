@@ -431,6 +431,94 @@ Integration = Works First Try ✅
 
 ---
 
+### Lesson #6: Enum Imports Must Not Use 'import type' 🔧
+
+**Date**: 2025-11-15
+**Phase**: PR Review - Addressing Type Safety Issues
+**What happened**: PR review comments on PR#20 and PR#21 identified that enums were imported with `import type` but used as values, causing TypeScript errors.
+
+**The problem**:
+```typescript
+// ❌ WRONG: Enum imported as type
+import type { StyleInputErrorCode } from '$contracts/StyleInput'
+
+// This causes error because enum is used as value:
+errors.push({ code: StyleInputErrorCode.THEME_INVALID })
+//                   ^^^^^^^^^^^^^^^^^^^ Cannot use as value!
+```
+
+**Why this happens**:
+- TypeScript's `import type` is for **type-only imports** (interfaces, type aliases)
+- Enums are **runtime values** in JavaScript, not just compile-time types
+- When you import an enum with `import type`, TypeScript strips it from the output
+- At runtime, the enum reference becomes `undefined`, causing errors
+
+**The fix**:
+```typescript
+// ✅ CORRECT: Separate type and value imports
+import type {
+  IStyleInputService,
+  StyleInputValidationError,
+  // ... other types
+} from '$contracts/StyleInput'
+
+// Import enum separately as a value
+import { StyleInputErrorCode } from '$contracts/StyleInput'
+
+// Now this works:
+errors.push({ code: StyleInputErrorCode.THEME_INVALID }) // ✅
+```
+
+**Files affected**:
+- `StyleInputMock.ts`: `StyleInputErrorCode` import fixed
+- `PromptGenerationMock.ts`: `PromptGenerationErrorCode` import fixed
+
+**Related contract field fixes** (from same PR):
+- Changed `prompt` → `generatedPrompt` (correct field name per `CardPrompt` interface)
+- Changed `cardMeaning` → `traditionalMeaning` (correct field name per `CardPrompt` interface)
+- Removed `total` from `GenerationProgress` (field doesn't exist in contract)
+- Removed `currency` from `ApiUsage` (field doesn't exist in contract)
+- Added missing `confidence` field to `CardPrompt` objects
+- Added missing `estimateCost` method to `PromptGenerationMockService`
+
+**Prevention**:
+```markdown
+### When importing from contracts:
+
+✅ DO:
+- `import type { Interface, Type }` for interfaces and type aliases
+- `import { Enum, CONSTANT }` for enums and constants (no 'type' keyword)
+- Check contract: if it's defined with `enum`, import without 'type'
+
+❌ DON'T:
+- `import type { Enum }` - Enums are values!
+- Guess field names - copy exact names from contract
+- Add fields not in contract (like `currency`, `total`)
+- Miss required fields (like `confidence`)
+```
+
+**Rule of thumb**:
+> **If you can use it with a dot (`.`), don't import it with `import type`**
+> - `ErrorCode.INVALID` → import without 'type'
+> - `CONSTANTS.MAX_SIZE` → import without 'type'
+> - `UserType` (interface) → import with 'type'
+
+**Key takeaway**:
+> **Enums and constants are JavaScript runtime values that exist at runtime.**
+> **Types and interfaces are TypeScript compile-time constructs that disappear.**
+> **Import accordingly: values without 'type', types with 'type'.**
+
+**Testing validation**:
+- Ran `npm run check` - 0 TypeScript errors in fixed files ✅
+- All 143 tests passing ✅
+- CodeQL security scan - 0 vulnerabilities ✅
+
+**Documentation updated**:
+- Added to CHANGELOG.md under "Fixed" section
+- Created `docs/planning/PR20-REVIEW-FIXES.md` for PR#20 branch fixes
+
+---
+
 ### What Worked Well
 
 _To be filled during development_
