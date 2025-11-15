@@ -1,8 +1,22 @@
 # TarotOutMyHeart - Claude AI Instructions
 
-**Model**: Claude 3.5 Sonnet / Claude Sonnet 4.5  
-**Purpose**: Complete AI agent instructions optimized for Claude's capabilities  
+**Model**: Claude 3.5 Sonnet / Claude Sonnet 4.5
+**Purpose**: Complete AI agent instructions optimized for Claude's capabilities
 **Last Updated**: 2025-11-07
+
+---
+
+## 🚨 **CRITICAL REMINDER** 🚨
+
+**BEFORE ENDING ANY SESSION:**
+1. ✅ **UPDATE `lessonslearned.md`** - Add new lessons from this session
+2. ✅ **UPDATE `CHANGELOG.md`** - Document all changes made
+3. ✅ **COMMIT AND PUSH** - Never leave uncommitted work
+
+**AFTER COMPLETING ANY MAJOR TASK:**
+- Document patterns that worked well
+- Document mistakes to avoid
+- Update both files IMMEDIATELY, not at end of session
 
 ---
 
