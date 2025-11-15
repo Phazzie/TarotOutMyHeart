@@ -26,8 +26,9 @@ import type {
   StyleInputsValidation,
   FieldValidation,
   StyleInputValidationError,
-  StyleInputErrorCode,
 } from '$contracts/StyleInput'
+
+import { StyleInputErrorCode } from '$contracts/StyleInput'
 
 import {
   CHAR_LIMITS,
@@ -49,8 +50,6 @@ const DRAFT_STORAGE_KEY = 'tarot_style_inputs_draft'
  * Provides form validation and draft persistence simulation.
  */
 export class StyleInputMockService implements IStyleInputService {
-  private currentStyleInputs: StyleInputs | null = null
-
   /**
    * Validate style inputs
    */
@@ -177,6 +176,17 @@ export class StyleInputMockService implements IStyleInputService {
     // Validate before saving
     const validationResult = await this.validateStyleInputs(styleInputs)
     
+    if (!validationResult.success || !validationResult.data) {
+      return {
+        success: false,
+        error: validationResult.error || {
+          code: 'VALIDATION_FAILED',
+          message: 'Style inputs validation failed',
+          retryable: false,
+        },
+      }
+    }
+    
     if (!validationResult.data.validation.canProceed) {
       return {
         success: false,
@@ -187,9 +197,6 @@ export class StyleInputMockService implements IStyleInputService {
         },
       }
     }
-
-    // Save to memory
-    this.currentStyleInputs = styleInputs
 
     // Save to localStorage if requested
     let savedToDraft = false
@@ -231,7 +238,6 @@ export class StyleInputMockService implements IStyleInputService {
         const draftJson = localStorage.getItem(DRAFT_STORAGE_KEY)
         if (draftJson) {
           const draft = JSON.parse(draftJson) as StyleInputs
-          this.currentStyleInputs = draft
           return {
             success: true,
             data: {
@@ -295,7 +301,6 @@ export class StyleInputMockService implements IStyleInputService {
 
     try {
       localStorage.removeItem(DRAFT_STORAGE_KEY)
-      this.currentStyleInputs = null
       return {
         success: true,
         data: undefined,
