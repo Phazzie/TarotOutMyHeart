@@ -27,13 +27,13 @@ import type {
   PromptId,
   ApiUsage,
   PromptValidationError,
-  PromptGenerationErrorCode,
 } from '$contracts/PromptGeneration'
 
 import {
   MAJOR_ARCANA_NAMES,
   MAJOR_ARCANA_MEANINGS,
   GROK_MODELS,
+  PromptGenerationErrorCode,
 } from '$contracts/PromptGeneration'
 
 import type { ServiceResponse } from '$contracts/types/common'
@@ -66,19 +66,19 @@ export class PromptGenerationMockService implements IPromptGenerationService {
 
     // Simulate progress callbacks
     if (onProgress) {
-      onProgress({ progress: 0, total: 22, status: 'Analyzing reference images...' })
+      onProgress({ progress: 0, status: 'Analyzing reference images...', currentStep: 'analyzing' })
       await this.delay(800)
 
-      onProgress({ progress: 25, total: 22, status: 'Generating prompts for Fool through Lovers...' })
+      onProgress({ progress: 25, status: 'Generating prompts for Fool through Lovers...', currentStep: 'generating' })
       await this.delay(1000)
 
-      onProgress({ progress: 50, total: 22, status: 'Generating prompts for Chariot through Hanged Man...' })
+      onProgress({ progress: 50, status: 'Generating prompts for Chariot through Hanged Man...', currentStep: 'generating' })
       await this.delay(1000)
 
-      onProgress({ progress: 75, total: 22, status: 'Generating prompts for Death through World...' })
+      onProgress({ progress: 75, status: 'Generating prompts for Death through World...', currentStep: 'generating' })
       await this.delay(1000)
 
-      onProgress({ progress: 100, total: 22, status: 'Finalizing prompts...' })
+      onProgress({ progress: 100, status: 'Finalizing prompts...', currentStep: 'complete' })
       await this.delay(500)
     } else {
       // No progress callback, just simulate total generation time
@@ -105,7 +105,6 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       completionTokens: 2200, // ~100 tokens per card * 22
       totalTokens: 2650,
       estimatedCost: 0.0265, // Mock cost: $0.01 per 1K tokens
-      currency: 'USD',
     }
 
     return {
@@ -155,7 +154,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       cardNumbers.add(prompt.cardNumber)
 
       // Check prompt length
-      if (prompt.prompt.length < 50) {
+      if (prompt.generatedPrompt.length < 50) {
         errors.push({
           code: PromptGenerationErrorCode.PROMPT_TOO_SHORT,
           message: `Prompt for ${prompt.cardName} is too short`,
@@ -163,7 +162,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
           promptId: prompt.id,
         })
         invalidPrompts.push(prompt)
-      } else if (prompt.prompt.length > 2000) {
+      } else if (prompt.generatedPrompt.length > 2000) {
         errors.push({
           code: PromptGenerationErrorCode.PROMPT_TOO_LONG,
           message: `Prompt for ${prompt.cardName} is too long`,
@@ -220,7 +219,6 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       completionTokens: 100,
       totalTokens: 550,
       estimatedCost: 0.0055,
-      currency: 'USD',
     }
 
     return {
@@ -247,10 +245,10 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       id: promptId,
       cardNumber: 0 as CardNumber, // Would retrieve from storage
       cardName: 'The Fool', // Would retrieve from storage
-      cardMeaning: MAJOR_ARCANA_MEANINGS[0], // Would retrieve from storage
-      prompt: editedPrompt,
+      traditionalMeaning: MAJOR_ARCANA_MEANINGS[0], // Would retrieve from storage
+      generatedPrompt: editedPrompt,
+      confidence: 0.95, // Mock confidence
       generatedAt: new Date(),
-      edited: true,
     }
 
     return {
@@ -259,6 +257,31 @@ export class PromptGenerationMockService implements IPromptGenerationService {
         cardPrompt,
         edited: true,
       },
+    }
+  }
+
+  /**
+   * Estimate cost for generating prompts
+   */
+  async estimateCost(
+    input: Omit<GeneratePromptsInput, 'onProgress'>
+  ): Promise<ServiceResponse<ApiUsage>> {
+    await this.delay(100)
+
+    const { model } = input
+
+    // Mock cost estimation
+    const usage: ApiUsage = {
+      model: model || GROK_MODELS.vision,
+      promptTokens: 450, // Estimated based on reference images + style
+      completionTokens: 2200, // ~100 tokens per card * 22
+      totalTokens: 2650,
+      estimatedCost: 0.0265, // Mock cost: $0.01 per 1K tokens
+    }
+
+    return {
+      success: true,
+      data: usage,
     }
   }
 
@@ -276,27 +299,28 @@ export class PromptGenerationMockService implements IPromptGenerationService {
     description: string
   ): CardPrompt {
     const cardName = MAJOR_ARCANA_NAMES[cardNumber]
-    const cardMeaning = MAJOR_ARCANA_MEANINGS[cardNumber]
+    const traditionalMeaning = MAJOR_ARCANA_MEANINGS[cardNumber]
 
     // Create a prompt that incorporates the style inputs and card meaning
-    const prompt = `Create a ${theme.toLowerCase()} style tarot card for "${cardName}" (Card ${cardNumber}) with a ${tone.toLowerCase()} tone. ${description} This card represents ${cardMeaning.toLowerCase()}. The composition should feature symbolic elements that capture the essence of ${cardMeaning}. Incorporate ${theme.toLowerCase()} artistic elements and maintain a ${tone.toLowerCase()} atmosphere throughout. Include traditional tarot symbolism while staying true to the ${theme} aesthetic. The card should evoke feelings of ${this.getEmotionalKeywords(cardMeaning)} and convey the concept of ${cardMeaning}. Focus on visual storytelling that immediately communicates the card's meaning through ${theme.toLowerCase()} imagery and ${tone.toLowerCase()} color palette.`
+    const generatedPrompt = `Create a ${theme.toLowerCase()} style tarot card for "${cardName}" (Card ${cardNumber}) with a ${tone.toLowerCase()} tone. ${description} This card represents ${traditionalMeaning.toLowerCase()}. The composition should feature symbolic elements that capture the essence of ${traditionalMeaning}. Incorporate ${theme.toLowerCase()} artistic elements and maintain a ${tone.toLowerCase()} atmosphere throughout. Include traditional tarot symbolism while staying true to the ${theme} aesthetic. The card should evoke feelings of ${this.getEmotionalKeywords(traditionalMeaning)} and convey the concept of ${traditionalMeaning}. Focus on visual storytelling that immediately communicates the card's meaning through ${theme.toLowerCase()} imagery and ${tone.toLowerCase()} color palette.`
 
     return {
       id: crypto.randomUUID() as PromptId,
       cardNumber,
       cardName,
-      cardMeaning,
-      prompt,
+      traditionalMeaning,
+      generatedPrompt,
+      confidence: 0.95, // Mock confidence score
       generatedAt: new Date(),
-      edited: false,
     }
   }
 
   /**
    * Extract emotional keywords from card meaning
    */
-  private getEmotionalKeywords(meaning: string): string {
+  private getEmotionalKeywords(_meaning: string): string {
     // Simple keyword extraction for more varied prompts
+    // In a real implementation, this could analyze the meaning string
     const keywords = [
       'wonder and curiosity',
       'mystery and wisdom',
@@ -309,7 +333,8 @@ export class PromptGenerationMockService implements IPromptGenerationService {
     ]
 
     // Return a random keyword set
-    return keywords[Math.floor(Math.random() * keywords.length)]
+    const randomIndex = Math.floor(Math.random() * keywords.length)
+    return keywords[randomIndex] || 'mystery and wisdom'
   }
 
   /**
