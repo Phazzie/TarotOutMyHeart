@@ -46,6 +46,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "notion-mcp-server": "^1.0.1"
+    "notion-mcp-server": "^1.0.1",
+    "openai": "^6.9.1"
   }
 }

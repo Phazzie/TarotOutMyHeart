@@ -8,7 +8,7 @@
  */
 
 import { createServices } from '../services/factory'
-import type { AgentCapability } from '@contracts'
+import { logger } from './observability/logger'
 
 // Simulated delays for demo effect
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
@@ -44,9 +44,9 @@ function log(agent: 'system' | 'claude' | 'copilot' | 'user', message: string) {
  * Claude leads, delegates to Copilot
  */
 async function demoOrchestratorWorker() {
-  console.log('\n' + '═'.repeat(60))
-  console.log(colors.bright + 'DEMO: Orchestrator-Worker Pattern' + colors.reset)
-  console.log('═'.repeat(60) + '\n')
+  logger.info('═'.repeat(60))
+  logger.info('DEMO: Orchestrator-Worker Pattern')
+  logger.info('═'.repeat(60))
 
   const services = await createServices({ useMocks: true })
 
@@ -217,7 +217,12 @@ async function demoOrchestratorWorker() {
 
   if (status.success && status.data) {
     const progress = status.data.progress
-    console.log()
+    logger.info('Collaboration status', {
+      percentComplete: progress.percentComplete,
+      tasksCompleted: progress.tasksCompleted,
+      tasksTotal: progress.tasksTotal,
+      activeLocks: status.data.currentLocks.length
+    })
     log('system', `Progress: ${progress.percentComplete}% complete`)
     log('system', `Tasks: ${progress.tasksCompleted}/${progress.tasksTotal} completed`)
     log('system', `Active locks: ${status.data.currentLocks.length}`)
@@ -229,9 +234,9 @@ async function demoOrchestratorWorker() {
  * Both AIs work simultaneously
  */
 async function demoParallelWork() {
-  console.log('\n' + '═'.repeat(60))
-  console.log(colors.bright + 'DEMO: Parallel Collaboration' + colors.reset)
-  console.log('═'.repeat(60) + '\n')
+  logger.info('═'.repeat(60))
+  logger.info('DEMO: Parallel Collaboration')
+  logger.info('═'.repeat(60))
 
   const services = await createServices({ useMocks: true })
 
@@ -375,7 +380,12 @@ async function demoParallelWork() {
 
   if (status.success && status.data) {
     const progress = status.data.progress
-    console.log()
+    logger.info('Parallel work completed', {
+      percentComplete: progress.percentComplete,
+      tasksCompleted: progress.tasksCompleted,
+      tasksTotal: progress.tasksTotal,
+      conflictsDetected: false
+    })
     log('system', `Both AIs completed their tasks!`)
     log('system', `Progress: ${progress.percentComplete}% complete`)
     log('system', `No conflicts detected - successful parallel work!`)
@@ -386,14 +396,12 @@ async function demoParallelWork() {
  * Main demo runner
  */
 async function runDemo() {
-  console.log('\n' + '='.repeat(60))
-  console.log(colors.bright + '    AI COORDINATION SERVER - DEMO' + colors.reset)
-  console.log('='.repeat(60))
-  console.log()
-  console.log('This demo shows how Claude Code and GitHub Copilot')
-  console.log('collaborate on development tasks through the')
-  console.log('coordination server.')
-  console.log()
+  logger.info('='.repeat(60))
+  logger.info('AI COORDINATION SERVER - DEMO')
+  logger.info('='.repeat(60))
+  logger.info('This demo shows how Claude Code and GitHub Copilot collaborate on development tasks through the coordination server.', {
+    demo: 'started'
+  })
 
   // Run orchestrator-worker demo
   await demoOrchestratorWorker()
@@ -402,23 +410,24 @@ async function runDemo() {
   // Run parallel work demo
   await demoParallelWork()
 
-  console.log('\n' + '='.repeat(60))
-  console.log(colors.bright + 'DEMO COMPLETE!' + colors.reset)
-  console.log('='.repeat(60))
-  console.log()
-  console.log('The coordination server enables:')
-  console.log('  ✅ Task distribution between AIs')
-  console.log('  ✅ File access coordination')
-  console.log('  ✅ Progress tracking')
-  console.log('  ✅ Conflict prevention')
-  console.log('  ✅ Multiple collaboration patterns')
-  console.log()
+  logger.info('='.repeat(60))
+  logger.info('DEMO COMPLETE!')
+  logger.info('='.repeat(60))
+  logger.info('The coordination server enables:', {
+    features: [
+      'Task distribution between AIs',
+      'File access coordination',
+      'Progress tracking',
+      'Conflict prevention',
+      'Multiple collaboration patterns'
+    ]
+  })
 }
 
 // Run demo if executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   runDemo().catch(error => {
-    console.error('Demo error:', error)
+    logger.error('Demo error', error, { component: 'Demo' })
     process.exit(1)
   })
 }

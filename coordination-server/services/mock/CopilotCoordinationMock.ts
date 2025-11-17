@@ -21,11 +21,8 @@ import type {
   LockToken,
   CollaborationStatus,
   CollaborationSession,
-  FileLock,
-  FileConflict,
   SessionId,
-  ServiceResponse,
-  ServiceError
+  ServiceResponse
 } from '@contracts'
 
 /**
@@ -457,7 +454,7 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
    * Releases all Copilot's locks (for emergency cleanup)
    */
   async releaseAllCopilotLocks(): Promise<void> {
-    for (const [path, token] of this.copilotLocks.entries()) {
+    for (const [_path, token] of this.copilotLocks.entries()) {
       await this.stateStore.releaseLock(token)
     }
     this.copilotLocks.clear()

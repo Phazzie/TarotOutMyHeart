@@ -18,14 +18,15 @@ import {
 } from '@modelcontextprotocol/sdk/types.js'
 import type { CoordinationServices } from '../services/factory'
 import { generateMCPToolDefinitions } from '@contracts'
+import { logInfo, logError, logWarn } from './observability/logger'
 
 /**
  * MCP Server for GitHub Copilot coordination
  * Exposes coordination capabilities as MCP tools
  */
 export class MCPCoordinationServer {
-  private services: CoordinationServices
-  private server: Server
+  public readonly services: CoordinationServices
+  public readonly server: Server
   private isRunning = false
 
   constructor(services: CoordinationServices) {
@@ -59,7 +60,11 @@ export class MCPCoordinationServer {
         inputSchema: def.inputSchema as any
       }))
 
-      console.log(`[MCPServer] Listing ${tools.length} available tools`)
+      logInfo('Listing available MCP tools', {
+        component: 'MCPServer',
+        toolCount: tools.length,
+        tools: tools.map(t => t.name)
+      })
 
       return { tools }
     })
@@ -68,8 +73,11 @@ export class MCPCoordinationServer {
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params
 
-      console.log(`[MCPServer] Tool invoked: ${name}`)
-      console.log('[MCPServer] Arguments:', JSON.stringify(args, null, 2))
+      logInfo('MCP tool invoked', {
+        component: 'MCPServer',
+        toolName: name,
+        argumentKeys: Object.keys(args || {})
+      })
 
       try {
         let result: any
@@ -115,7 +123,10 @@ export class MCPCoordinationServer {
         }
 
       } catch (error) {
-        console.error(`[MCPServer] Tool error: ${name}`, error)
+        logError('MCP tool execution error', error as Error, {
+          component: 'MCPServer',
+          toolName: name
+        })
 
         const errorContent: TextContent = {
           type: 'text',
@@ -150,7 +161,12 @@ export class MCPCoordinationServer {
     })
 
     if (result.success && result.data) {
-      console.log(`[MCPServer] Found ${result.data.length} tasks for Copilot`)
+      logInfo('Tasks found for Copilot', {
+        component: 'MCPServer',
+        agentId: args.agentId,
+        taskCount: result.data.length,
+        capabilities: args.capabilities
+      })
     }
 
     return result
@@ -169,7 +185,12 @@ export class MCPCoordinationServer {
     })
 
     if (result.success && result.data) {
-      console.log(`[MCPServer] Task claimed: ${result.data.description}`)
+      logInfo('Task claimed via MCP', {
+        component: 'MCPServer',
+        taskId: args.taskId,
+        agentId: args.agentId,
+        description: result.data.description
+      })
     }
 
     return result
@@ -195,7 +216,13 @@ export class MCPCoordinationServer {
       error: args.error
     })
 
-    console.log(`[MCPServer] Task result submitted: ${args.success ? 'SUCCESS' : 'FAILED'}`)
+    logInfo('Task result submitted via MCP', {
+      component: 'MCPServer',
+      taskId: args.taskId,
+      agentId: args.agentId,
+      status: args.success ? 'SUCCESS' : 'FAILED',
+      filesModified: args.filesModified?.length || 0
+    })
 
     return result
   }
@@ -215,7 +242,13 @@ export class MCPCoordinationServer {
     })
 
     if (result.success && result.data) {
-      console.log(`[MCPServer] File access ${result.data.granted ? 'GRANTED' : 'DENIED'}: ${args.path}`)
+      logInfo('File access request via MCP', {
+        component: 'MCPServer',
+        agentId: args.agentId,
+        path: args.path,
+        operation: args.operation,
+        granted: result.data.granted
+      })
     }
 
     return result
@@ -233,7 +266,11 @@ export class MCPCoordinationServer {
       agentId: args.agentId as any
     })
 
-    console.log(`[MCPServer] File lock released: ${args.lockToken}`)
+    logInfo('File lock released via MCP', {
+      component: 'MCPServer',
+      agentId: args.agentId,
+      lockToken: args.lockToken
+    })
 
     return result
   }
@@ -250,7 +287,13 @@ export class MCPCoordinationServer {
 
     if (result.success && result.data) {
       const progress = result.data.progress
-      console.log(`[MCPServer] Collaboration status: ${progress.percentComplete}% complete (${progress.tasksCompleted}/${progress.tasksTotal})`)
+      logInfo('Collaboration status retrieved via MCP', {
+        component: 'MCPServer',
+        sessionId: args.sessionId,
+        percentComplete: progress.percentComplete,
+        tasksCompleted: progress.tasksCompleted,
+        tasksTotal: progress.tasksTotal
+      })
     }
 
     return result
@@ -261,25 +304,29 @@ export class MCPCoordinationServer {
    */
   async startStdio(): Promise<void> {
     if (this.isRunning) {
-      console.warn('[MCPServer] Server already running')
+      logWarn('MCP server already running', {
+        component: 'MCPServer'
+      })
       return
     }
 
-    console.log('[MCPServer] Starting MCP server on stdio...')
+    logInfo('Starting MCP server on stdio', {
+      component: 'MCPServer'
+    })
 
     const transport = new StdioServerTransport()
     await this.server.connect(transport)
 
     this.isRunning = true
 
-    console.log('[MCPServer] MCP server started on stdio')
-    console.log('[MCPServer] Copilot can now connect using MCP protocol')
-    console.log('[MCPServer] Available tools:')
-
     const tools = generateMCPToolDefinitions()
-    for (const tool of tools) {
-      console.log(`  - ${tool.name}: ${tool.description}`)
-    }
+    logInfo('MCP server started successfully', {
+      component: 'MCPServer',
+      transport: 'stdio',
+      toolCount: tools.length,
+      tools: tools.map(t => t.name),
+      status: 'ready for Copilot'
+    })
   }
 
   /**
@@ -290,10 +337,15 @@ export class MCPCoordinationServer {
       return
     }
 
-    console.log('[MCPServer] Stopping MCP server...')
+    logInfo('Stopping MCP server', {
+      component: 'MCPServer'
+    })
     await this.server.close()
     this.isRunning = false
-    console.log('[MCPServer] MCP server stopped')
+    logInfo('MCP server stopped', {
+      component: 'MCPServer',
+      status: 'stopped'
+    })
   }
 
   /**
@@ -305,6 +357,90 @@ export class MCPCoordinationServer {
       tools: generateMCPToolDefinitions().length
     }
   }
+
+  /**
+   * Lists available MCP tools (for testing)
+   */
+  async listTools() {
+    const toolDefinitions = generateMCPToolDefinitions()
+    return toolDefinitions.map(def => ({
+      name: def.name,
+      description: def.description,
+      inputSchema: def.inputSchema
+    }))
+  }
+
+  /**
+   * Invokes an MCP tool (for testing)
+   */
+  async callTool(name: string, args: any) {
+    try {
+      let result: any
+
+      switch (name) {
+        case 'checkForTasks':
+          result = await this.handleCheckForTasks(args)
+          break
+        case 'claimTask':
+          result = await this.handleClaimTask(args)
+          break
+        case 'submitTaskResult':
+          result = await this.handleSubmitTaskResult(args)
+          break
+        case 'requestFileAccess':
+          result = await this.handleRequestFileAccess(args)
+          break
+        case 'releaseFileAccess':
+          result = await this.handleReleaseFileAccess(args)
+          break
+        case 'getCollaborationStatus':
+          result = await this.handleGetCollaborationStatus(args)
+          break
+        default:
+          return {
+            content: [{
+              type: 'text' as const,
+              text: JSON.stringify({
+                success: false,
+                error: {
+                  code: 'UNKNOWN_TOOL',
+                  message: `Unknown tool: ${name}`,
+                  retryable: false
+                }
+              })
+            }],
+            isError: true
+          }
+      }
+
+      const content: TextContent = {
+        type: 'text',
+        text: JSON.stringify(result)
+      }
+
+      return {
+        content: [content],
+        isError: false
+      }
+    } catch (error) {
+      const errorContent: TextContent = {
+        type: 'text',
+        text: JSON.stringify({
+          success: false,
+          error: {
+            code: 'TOOL_EXECUTION_ERROR',
+            message: error instanceof Error ? error.message : 'Unknown error',
+            retryable: false
+          }
+        })
+      }
+
+      return {
+        content: [errorContent],
+        isError: true
+      }
+    }
+  }
 }
 
 /**
@@ -312,7 +448,10 @@ export class MCPCoordinationServer {
  * Used when running as a separate process
  */
 export async function startMCPServerStandalone(): Promise<void> {
-  console.log('[MCPServer] Initializing standalone MCP server...')
+  logInfo('Initializing standalone MCP server', {
+    component: 'MCPServer',
+    mode: 'standalone'
+  })
 
   // Import services
   const { createServices } = await import('../services/factory')
@@ -354,13 +493,19 @@ export async function startMCPServerStandalone(): Promise<void> {
 
   // Handle graceful shutdown
   process.on('SIGINT', async () => {
-    console.log('\n[MCPServer] Received SIGINT, shutting down...')
+    logInfo('Received SIGINT signal, shutting down', {
+      component: 'MCPServer',
+      signal: 'SIGINT'
+    })
     await mcpServer.stop()
     process.exit(0)
   })
 
   process.on('SIGTERM', async () => {
-    console.log('\n[MCPServer] Received SIGTERM, shutting down...')
+    logInfo('Received SIGTERM signal, shutting down', {
+      component: 'MCPServer',
+      signal: 'SIGTERM'
+    })
     await mcpServer.stop()
     process.exit(0)
   })
@@ -369,7 +514,10 @@ export async function startMCPServerStandalone(): Promise<void> {
 // Run standalone if this file is executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   startMCPServerStandalone().catch(error => {
-    console.error('[MCPServer] Fatal error:', error)
+    logError('MCP server fatal error', error, {
+      component: 'MCPServer',
+      level: 'fatal'
+    })
     process.exit(1)
   })
 }

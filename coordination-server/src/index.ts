@@ -15,11 +15,14 @@ import { WebSocketServer } from 'ws'
 import * as dotenv from 'dotenv'
 import { createServices, getServices, seedMockData } from '../services/factory'
 import { MCPCoordinationServer } from './mcp-server'
+import { logInfo, logError, setCorrelationId } from './observability/logger'
+import { metricsMiddleware, getMetrics } from './observability/metrics'
+import { createRateLimiter, RateLimitConfig } from './middleware/rate-limiter'
+import { v4 as uuidv4 } from 'uuid'
 import type {
   TaskId,
   ContextId,
   SessionId,
-  AgentId,
   AgentCapability,
   TaskProgress,
   TaskResult,
@@ -37,7 +40,16 @@ const config = {
   useMocks: process.env.USE_MOCKS !== 'false',
   debug: process.env.DEBUG === 'true',
   enableMCP: process.env.ENABLE_MCP !== 'false',
-  enableWebSocket: process.env.ENABLE_WEBSOCKET !== 'false'
+  enableWebSocket: process.env.ENABLE_WEBSOCKET !== 'false',
+  rateLimit: {
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000'),
+    defaultRequestsPerMinute: parseInt(process.env.RATE_LIMIT_DEFAULT_REQUESTS || '100'),
+    agentLimits: {
+      'claude-code': parseInt(process.env.RATE_LIMIT_CLAUDE_REQUESTS || '100'),
+      'github-copilot': parseInt(process.env.RATE_LIMIT_COPILOT_REQUESTS || '50')
+    },
+    excludePaths: (process.env.RATE_LIMIT_EXCLUDE_PATHS || '/health,/status').split(',').map(p => p.trim())
+  }
 }
 
 /**
@@ -67,7 +79,7 @@ app.use(express.urlencoded({ extended: true }))
 
 // CORS for development
 if (config.debug) {
-  app.use((req, res, next) => {
+  app.use((_req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*')
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
@@ -75,15 +87,41 @@ if (config.debug) {
   })
 }
 
-// Request logging
-app.use((req, res, next) => {
-  console.log(`[API] ${req.method} ${req.path}`)
+// Request logging with correlation ID
+app.use((req, _res, next) => {
+  // Set correlation ID from request header or generate new one
+  const correlationIdHeader = req.get('x-correlation-id')
+  if (correlationIdHeader) {
+    setCorrelationId(correlationIdHeader)
+  } else {
+    setCorrelationId(uuidv4())
+  }
+
+  logInfo('HTTP Request', {
+    method: req.method,
+    path: req.path,
+    ip: req.ip,
+    userAgent: req.get('user-agent')
+  })
   next()
 })
 
+// Metrics middleware (tracks all API requests)
+app.use(metricsMiddleware)
+
+// Rate limiting middleware
+const rateLimitConfig: RateLimitConfig = {
+  defaultRequestsPerMinute: config.rateLimit.defaultRequestsPerMinute,
+  windowMs: config.rateLimit.windowMs,
+  agentLimits: config.rateLimit.agentLimits,
+  excludePaths: config.rateLimit.excludePaths,
+  debug: config.debug
+}
+app.use(createRateLimiter(rateLimitConfig))
+
 // ========== Health & Status Endpoints ==========
 
-app.get('/health', (req: Request, res: Response) => {
+app.get('/health', (_req: Request, res: Response) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -95,7 +133,18 @@ app.get('/health', (req: Request, res: Response) => {
   })
 })
 
-app.get('/status', async (req: Request, res: Response) => {
+app.get('/metrics', async (_req: Request, res: Response) => {
+  try {
+    res.set('Content-Type', 'text/plain; version=0.0.4')
+    const metrics = await getMetrics()
+    res.send(metrics)
+  } catch (error) {
+    logError('Failed to collect metrics', error as Error, { component: 'Metrics' })
+    res.status(500).send('Error collecting metrics')
+  }
+})
+
+app.get('/status', async (_req: Request, res: Response) => {
   try {
     const services = getServices()
 
@@ -461,19 +510,27 @@ app.post('/api/user/conflict/:conflictId/resolve', async (req: Request, res: Res
 
 function setupWebSocketServer(): void {
   if (!config.enableWebSocket) {
-    console.log('[WebSocket] WebSocket server disabled')
+    logInfo('WebSocket server disabled', { reason: 'ENABLE_WEBSOCKET=false' })
     return
   }
 
   wsServer = new WebSocketServer({ server: httpServer })
 
   wsServer.on('connection', (ws, req) => {
-    console.log(`[WebSocket] New connection from ${req.socket.remoteAddress}`)
+    logInfo('WebSocket connection established', {
+      component: 'WebSocket',
+      remoteAddress: req.socket.remoteAddress,
+      connectedClients: wsServer?.clients.size
+    })
 
     ws.on('message', async (data) => {
       try {
         const message = JSON.parse(data.toString())
-        console.log('[WebSocket] Received message:', message)
+        logInfo('WebSocket message received', {
+          component: 'WebSocket',
+          messageType: message.type,
+          hasSessionId: !!message.sessionId
+        })
 
         // Handle subscription requests
         if (message.type === 'subscribe' && message.sessionId) {
@@ -490,7 +547,9 @@ function setupWebSocketServer(): void {
           }
         }
       } catch (error) {
-        console.error('[WebSocket] Error handling message:', error)
+        logError('WebSocket message handling error', error as Error, {
+          component: 'WebSocket'
+        })
         ws.send(JSON.stringify({
           type: 'error',
           error: error instanceof Error ? error.message : 'Unknown error'
@@ -499,11 +558,16 @@ function setupWebSocketServer(): void {
     })
 
     ws.on('close', () => {
-      console.log('[WebSocket] Connection closed')
+      logInfo('WebSocket connection closed', {
+        component: 'WebSocket',
+        remainingClients: wsServer?.clients.size
+      })
     })
 
     ws.on('error', (error) => {
-      console.error('[WebSocket] Connection error:', error)
+      logError('WebSocket connection error', error, {
+        component: 'WebSocket'
+      })
     })
 
     // Send welcome message
@@ -513,30 +577,36 @@ function setupWebSocketServer(): void {
     }))
   })
 
-  console.log('[WebSocket] WebSocket server initialized')
+  logInfo('WebSocket server initialized', {
+    component: 'WebSocket',
+    port: config.port
+  })
 }
 
 // ========== Server Initialization ==========
 
 async function initializeServer(): Promise<void> {
-  console.log('╔════════════════════════════════════════════════╗')
-  console.log('║        AI Coordination Server v0.1.0           ║')
-  console.log('╚════════════════════════════════════════════════╝')
-  console.log()
+  logInfo('╔════════════════════════════════════════════════╗')
+  logInfo('║        AI Coordination Server v0.1.0           ║')
+  logInfo('╚════════════════════════════════════════════════╝')
 
-  console.log('[Init] Starting server initialization...')
+  logInfo('Starting server initialization', { component: 'Init' })
 
   try {
     // Create services
-    console.log(`[Init] Creating services (USE_MOCKS=${config.useMocks})...`)
-    const services = await createServices({
+    logInfo('Creating services', {
+      component: 'Init',
+      useMocks: config.useMocks,
+      debug: config.debug
+    })
+    await createServices({
       useMocks: config.useMocks,
       debug: config.debug
     })
 
     // Seed test data if using mocks
     if (config.useMocks && config.debug) {
-      console.log('[Init] Seeding mock data for testing...')
+      logInfo('Seeding mock data for testing', { component: 'Init' })
       await seedMockData({
         tasks: [
           {
@@ -563,32 +633,38 @@ async function initializeServer(): Promise<void> {
 
     // Start HTTP server
     httpServer.listen(config.port, () => {
-      console.log()
-      console.log('╔════════════════════════════════════════════════╗')
-      console.log('║          Server Started Successfully           ║')
-      console.log('╚════════════════════════════════════════════════╝')
-      console.log()
-      console.log(`📡 HTTP API:    http://localhost:${config.port}`)
-      console.log(`📊 Health:      http://localhost:${config.port}/health`)
-      console.log(`📈 Status:      http://localhost:${config.port}/status`)
+      logInfo('╔════════════════════════════════════════════════╗')
+      logInfo('║          Server Started Successfully           ║')
+      logInfo('╚════════════════════════════════════════════════╝')
+      logInfo('HTTP API server started', {
+        component: 'Init',
+        port: config.port,
+        endpoints: {
+          api: `http://localhost:${config.port}`,
+          health: `http://localhost:${config.port}/health`,
+          status: `http://localhost:${config.port}/status`,
+          websocket: config.enableWebSocket ? `ws://localhost:${config.port}` : 'disabled',
+          mcp: config.enableMCP ? 'Run "npm run mcp"' : 'disabled'
+        }
+      })
 
       if (config.enableWebSocket) {
-        console.log(`🔌 WebSocket:   ws://localhost:${config.port}`)
+        logInfo('WebSocket enabled', { component: 'Init', url: `ws://localhost:${config.port}` })
       }
 
-      console.log()
-      console.log('API Endpoints:')
-      console.log('  Claude Code:  /api/claude/*')
-      console.log('  User Control: /api/user/*')
-      console.log()
+      logInfo('API endpoints registered', {
+        component: 'Init',
+        endpoints: ['claude', 'user', 'health', 'status']
+      })
 
       if (config.enableMCP) {
-        console.log('⚠️  To start MCP server for Copilot:')
-        console.log('    npm run mcp')
-        console.log()
+        logInfo('MCP server available', {
+          component: 'Init',
+          instruction: 'Run "npm run mcp" to start'
+        })
       }
 
-      console.log('Ready for AI collaboration! 🤖🤝🤖')
+      logInfo('Server ready for AI collaboration', { component: 'Init', status: 'ready' })
     })
 
     // Handle graceful shutdown
@@ -596,37 +672,47 @@ async function initializeServer(): Promise<void> {
     process.on('SIGTERM', gracefulShutdown)
 
   } catch (error) {
-    console.error('[Init] Failed to initialize server:', error)
+    logError('Failed to initialize server', error as Error, { component: 'Init' })
     process.exit(1)
   }
 }
 
 async function gracefulShutdown(signal: string): Promise<void> {
-  console.log(`\n[Shutdown] Received ${signal}, starting graceful shutdown...`)
+  logInfo('Graceful shutdown initiated', {
+    component: 'Shutdown',
+    signal,
+    time: new Date().toISOString()
+  })
 
   // Close WebSocket server
   if (wsServer) {
-    console.log('[Shutdown] Closing WebSocket connections...')
+    logInfo('Closing WebSocket connections', {
+      component: 'Shutdown',
+      clientCount: wsServer.clients.size
+    })
     wsServer.clients.forEach(ws => ws.close())
     wsServer.close()
   }
 
   // Close HTTP server
-  console.log('[Shutdown] Closing HTTP server...')
+  logInfo('Closing HTTP server', { component: 'Shutdown' })
   httpServer.close()
 
   // Close MCP server if running
   if (mcpServer) {
-    console.log('[Shutdown] Closing MCP server...')
+    logInfo('Closing MCP server', { component: 'Shutdown' })
     await mcpServer.stop()
   }
 
-  console.log('[Shutdown] Server stopped successfully')
+  logInfo('Server shutdown complete', {
+    component: 'Shutdown',
+    status: 'stopped'
+  })
   process.exit(0)
 }
 
 // Start the server
 initializeServer().catch(error => {
-  console.error('[Fatal] Server initialization failed:', error)
+  logError('Server initialization failed', error, { component: 'Fatal' })
   process.exit(1)
 })

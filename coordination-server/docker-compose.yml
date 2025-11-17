@@ -1,0 +1,214 @@
+# Docker Compose Configuration for AI Coordination Server
+# Provides production-ready multi-service setup
+# Usage: docker-compose up -d
+
+version: '3.9'
+
+services:
+  # ============================================
+  # Main Application Service
+  # ============================================
+  coordination-server:
+    # Build from local Dockerfile
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+
+    # Container name for easy reference
+    container_name: tarot-coordination-server
+
+    # Port mappings
+    ports:
+      # HTTP API
+      - "3456:3456"
+
+    # Environment variables for production
+    environment:
+      # Node.js
+      NODE_ENV: production
+
+      # Server Configuration
+      PORT: 3456
+      USE_MOCKS: "false"          # Use real services in production
+      DEBUG: "false"              # Disable debug logging
+      ENABLE_MCP: "false"         # MCP server disabled by default (enable for Copilot support)
+      ENABLE_WEBSOCKET: "true"    # WebSocket enabled for real-time updates
+
+      # Database Configuration
+      DB_TYPE: postgres           # Use PostgreSQL in production
+      DATABASE_URL: postgresql://coordination_user:coordination_password@postgres:5432/coordination_db
+      POSTGRES_URL: postgresql://coordination_user:coordination_password@postgres:5432/coordination_db
+
+      # Logging Configuration
+      LOG_LEVEL: info
+      LOG_DIR: /app/logs
+      LOG_MAX_FILES: "14"
+      LOG_MAX_SIZE: "10m"
+
+      # Rate Limiting (moderate for production)
+      RATE_LIMIT_WINDOW_MS: "60000"
+      RATE_LIMIT_DEFAULT_REQUESTS: "100"
+      RATE_LIMIT_CLAUDE_REQUESTS: "100"
+      RATE_LIMIT_COPILOT_REQUESTS: "50"
+
+    # Volume mounts
+    volumes:
+      # Logs volume for persistence and analysis
+      - coordination-logs:/app/logs
+      # Data volume for SQLite or other data files
+      - coordination-data:/app/data
+
+    # Service dependencies
+    depends_on:
+      postgres:
+        condition: service_healthy
+      # Uncomment if using Redis
+      # redis:
+      #   condition: service_healthy
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3456/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    # Network configuration
+    networks:
+      - coordination-network
+
+    # Resource limits (optional - uncomment to enable)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: 512M
+    #     reservations:
+    #       cpus: '0.5'
+    #       memory: 256M
+
+  # ============================================
+  # PostgreSQL Database Service
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: tarot-coordination-postgres
+
+    # Environment variables
+    environment:
+      POSTGRES_USER: coordination_user
+      POSTGRES_PASSWORD: coordination_password
+      POSTGRES_DB: coordination_db
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+
+    # Port mapping (expose only internally unless needed)
+    ports:
+      - "5432:5432"
+
+    # Volume for data persistence
+    volumes:
+      # Database data persistence
+      - postgres-data:/var/lib/postgresql/data
+      # Optional: initialization scripts
+      # - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coordination_user -d coordination_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    # Network configuration
+    networks:
+      - coordination-network
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Resource limits (optional)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: 512M
+
+  # ============================================
+  # Redis Cache Service (Optional)
+  # Uncomment to enable for distributed caching
+  # ============================================
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: tarot-coordination-redis
+  #
+  #   # Port mapping
+  #   ports:
+  #     - "6379:6379"
+  #
+  #   # Volume for data persistence
+  #   volumes:
+  #     - redis-data:/data
+  #
+  #   # Command with persistence settings
+  #   command: redis-server --appendonly yes --requirepass coordination_redis_pass
+  #
+  #   # Health check
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
+  #
+  #   # Network configuration
+  #   networks:
+  #     - coordination-network
+  #
+  #   # Restart policy
+  #   restart: unless-stopped
+
+# ============================================
+# Named Volumes
+# ============================================
+volumes:
+  postgres-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/postgres
+  coordination-logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./logs
+  coordination-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data
+  # Uncomment if using Redis
+  # redis-data:
+  #   driver: local
+  #   driver_opts:
+  #     type: none
+  #     o: bind
+  #     device: ./data/redis
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  coordination-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br_coordination
