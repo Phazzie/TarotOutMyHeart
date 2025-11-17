@@ -24,8 +24,7 @@ import type {
   ContextId,
   Message,
   SessionId,
-  ServiceResponse,
-  ServiceError
+  ServiceResponse
 } from '@contracts'
 
 /**

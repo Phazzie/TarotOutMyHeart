@@ -36,7 +36,9 @@ export class StateStoreSQLite implements StateStoreContract {
   private db: sqlite3.Database | null = null
   private readonly dbPath: string
   private readonly LOCK_EXPIRY_MS = 5 * 60 * 1000 // 5 minutes
+  private readonly CLEANUP_INTERVAL_MS = 60 * 1000 // 60 seconds
   private initialized = false
+  private cleanupTimer?: NodeJS.Timeout
 
   constructor(dbPath: string = './coordination.db') {
     this.dbPath = dbPath
@@ -61,6 +63,8 @@ export class StateStoreSQLite implements StateStoreContract {
           .then(() => {
             this.initialized = true
             console.log(`[StateStoreSQLite] Initialized with database: ${this.dbPath}`)
+            // Start background cleanup job
+            this.startCleanupJob()
             resolve()
           })
           .catch(reject)
@@ -69,13 +73,22 @@ export class StateStoreSQLite implements StateStoreContract {
   }
 
   /**
-   * Create database schema
+   * Create database schema with optimizations
    */
   private async createTables(): Promise<void> {
     if (!this.db) throw new Error('Database not initialized')
 
     return new Promise((resolve, reject) => {
       this.db!.serialize(() => {
+        // Enable WAL mode for better concurrency
+        this.db!.run(`PRAGMA journal_mode=WAL;`, (err) => {
+          if (err) {
+            console.warn('[StateStoreSQLite] Failed to enable WAL mode:', err.message)
+          } else {
+            console.log('[StateStoreSQLite] WAL mode enabled')
+          }
+        })
+
         // Tasks table
         this.db!.run(
           `CREATE TABLE IF NOT EXISTS tasks (
@@ -98,6 +111,35 @@ export class StateStoreSQLite implements StateStoreContract {
           }
         )
 
+        // Create indexes on tasks table for frequently queried fields
+        this.db!.run(
+          `CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)`,
+          (err) => {
+            if (err) console.warn('[StateStoreSQLite] Failed to create index on tasks.status:', err.message)
+          }
+        )
+
+        this.db!.run(
+          `CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority)`,
+          (err) => {
+            if (err) console.warn('[StateStoreSQLite] Failed to create index on tasks.priority:', err.message)
+          }
+        )
+
+        this.db!.run(
+          `CREATE INDEX IF NOT EXISTS idx_tasks_type ON tasks(type)`,
+          (err) => {
+            if (err) console.warn('[StateStoreSQLite] Failed to create index on tasks.type:', err.message)
+          }
+        )
+
+        this.db!.run(
+          `CREATE INDEX IF NOT EXISTS idx_tasks_session_id ON tasks(session_id)`,
+          (err) => {
+            if (err) console.warn('[StateStoreSQLite] Failed to create index on tasks.session_id:', err.message)
+          }
+        )
+
         // File locks table
         this.db!.run(
           `CREATE TABLE IF NOT EXISTS file_locks (
@@ -116,6 +158,21 @@ export class StateStoreSQLite implements StateStoreContract {
           }
         )
 
+        // Create indexes on file_locks table
+        this.db!.run(
+          `CREATE INDEX IF NOT EXISTS idx_file_locks_owner ON file_locks(owner)`,
+          (err) => {
+            if (err) console.warn('[StateStoreSQLite] Failed to create index on file_locks.owner:', err.message)
+          }
+        )
+
+        this.db!.run(
+          `CREATE INDEX IF NOT EXISTS idx_file_locks_expires_at ON file_locks(expires_at)`,
+          (err) => {
+            if (err) console.warn('[StateStoreSQLite] Failed to create index on file_locks.expires_at:', err.message)
+          }
+        )
+
         // Contexts table
         this.db!.run(
           `CREATE TABLE IF NOT EXISTS contexts (
@@ -127,9 +184,19 @@ export class StateStoreSQLite implements StateStoreContract {
           (err) => {
             if (err) {
               reject(new Error(`Failed to create contexts table: ${err.message}`))
-            } else {
-              resolve()
+              return
             }
+          }
+        )
+
+        // Create index on contexts table
+        this.db!.run(
+          `CREATE INDEX IF NOT EXISTS idx_contexts_last_updated ON contexts(last_updated)`,
+          (err) => {
+            if (err) {
+              console.warn('[StateStoreSQLite] Failed to create index on contexts.last_updated:', err.message)
+            }
+            resolve()
           }
         )
       })
@@ -678,10 +745,109 @@ export class StateStoreSQLite implements StateStoreContract {
     }
   }
 
+  // ========== Cleanup Operations ==========
+
+  /**
+   * Start background cleanup job
+   * Runs every 60 seconds to clean up expired locks and abandoned tasks
+   */
+  private startCleanupJob(): void {
+    if (this.cleanupTimer) {
+      console.warn('[StateStoreSQLite] Cleanup job already running')
+      return
+    }
+
+    console.log('[StateStoreSQLite] Starting cleanup job (runs every 60s)')
+
+    this.cleanupTimer = setInterval(() => {
+      this.performCleanup().catch(error => {
+        console.error('[StateStoreSQLite] Cleanup job failed:', error)
+      })
+    }, this.CLEANUP_INTERVAL_MS)
+
+    // Perform immediate cleanup
+    this.performCleanup().catch(error => {
+      console.error('[StateStoreSQLite] Initial cleanup failed:', error)
+    })
+  }
+
+  /**
+   * Stop background cleanup job
+   */
+  private stopCleanupJob(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer)
+      this.cleanupTimer = undefined
+      console.log('[StateStoreSQLite] Stopped cleanup job')
+    }
+  }
+
+  /**
+   * Perform cleanup operations
+   * - Remove expired file locks (older than 5 minutes)
+   * - Move abandoned tasks back to queue (stuck in 'in-progress' or 'claimed' for too long)
+   */
+  private async performCleanup(): Promise<void> {
+    if (!this.db) return
+
+    const now = Date.now()
+    const lockExpiryThreshold = now
+
+    try {
+      // Clean up expired locks
+      const lockResult = await new Promise<number>((resolve, reject) => {
+        this.db!.run(
+          `DELETE FROM file_locks WHERE expires_at < ?`,
+          [lockExpiryThreshold],
+          function(err) {
+            if (err) reject(err)
+            else resolve(this.changes)
+          }
+        )
+      })
+
+      if (lockResult > 0) {
+        console.log(`[StateStoreSQLite] Cleanup: Removed ${lockResult} expired locks`)
+      }
+
+      // Find tasks stuck in 'in-progress' or 'claimed' for more than 5 minutes
+      const taskExpiryThreshold = now - this.LOCK_EXPIRY_MS
+      const abandonedTasks = await this.all<{ id: string; status: string; updated_at: number }>(
+        `SELECT id, status, updated_at FROM tasks
+         WHERE (status = 'in-progress' OR status = 'claimed')
+         AND updated_at < ?`,
+        [taskExpiryThreshold]
+      )
+
+      if (abandonedTasks.length > 0) {
+        console.log(
+          `[StateStoreSQLite] Cleanup: Found ${abandonedTasks.length} abandoned tasks, moving back to queue`
+        )
+
+        // Move abandoned tasks back to 'queued' status
+        for (const task of abandonedTasks) {
+          await this.run(
+            `UPDATE tasks SET status = 'queued', updated_at = ? WHERE id = ?`,
+            [now, task.id]
+          )
+        }
+
+        console.log(
+          `[StateStoreSQLite] Cleanup: Requeued ${abandonedTasks.length} abandoned tasks`
+        )
+      }
+    } catch (error) {
+      console.error('[StateStoreSQLite] Cleanup error:', error)
+    }
+  }
+
   /**
    * Close database connection
    */
   async close(): Promise<void> {
+    // Stop cleanup job first
+    this.stopCleanupJob()
+
     if (!this.db) return
 
     return new Promise((resolve, reject) => {

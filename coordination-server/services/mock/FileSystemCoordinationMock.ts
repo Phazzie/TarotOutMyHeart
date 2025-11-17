@@ -17,8 +17,7 @@ import type {
   FileConflict,
   AgentId,
   LockToken,
-  ServiceResponse,
-  ServiceError
+  ServiceResponse
 } from '@contracts'
 
 /**
@@ -76,7 +75,7 @@ export class FileSystemCoordinationMock implements FileSystemCoordinationContrac
   private hasConflict(
     path: string,
     operation: 'read' | 'write' | 'delete',
-    agentId: AgentId
+    _agentId: AgentId
   ): { hasConflict: boolean; reason?: string; conflictingAgent?: AgentId } {
     const currentAccess = this.activeAccess.get(path) || []
 

@@ -25,6 +25,7 @@ import { FileSystemCoordinationMock } from './mock/FileSystemCoordinationMock'
 
 // Real implementations
 import { StateStoreSQLite } from './real/StateStoreSQLite'
+import { StateStorePostgres } from './real/StateStorePostgres'
 import { ClaudeCoordinationService } from './real/ClaudeCoordinationService'
 import { CopilotCoordinationService } from './real/CopilotCoordinationService'
 import { UserCoordinationService } from './real/UserCoordinationService'
@@ -37,10 +38,16 @@ export interface ServiceConfig {
   /** Use mock implementations (default: true for development) */
   useMocks?: boolean
 
-  /** SQLite database path (for real implementation) */
+  /** Database type: 'sqlite' or 'postgres' (default: 'sqlite') */
+  dbType?: 'sqlite' | 'postgres'
+
+  /** SQLite database path (for SQLite implementation) */
   databasePath?: string
 
-  /** Redis connection URL (for distributed state store) */
+  /** PostgreSQL connection string (for PostgreSQL implementation) */
+  postgresUrl?: string
+
+  /** Redis connection URL (for distributed state store - future) */
   redisUrl?: string
 
   /** Enable debug logging */
@@ -87,6 +94,7 @@ let servicesInstance: CoordinationServices | null = null
 export async function createServices(config: ServiceConfig = {}): Promise<CoordinationServices> {
   // Use environment variable if not specified
   const useMocks = config.useMocks ?? process.env.USE_MOCKS !== 'false'
+  const dbType = config.dbType ?? (process.env.DB_TYPE as 'sqlite' | 'postgres') ?? 'sqlite'
 
   // Create singleton if not exists
   if (!servicesInstance) {
@@ -98,7 +106,18 @@ export async function createServices(config: ServiceConfig = {}): Promise<Coordi
     if (useMocks) {
       stateStore = new StateStoreMock()
       console.log('[ServiceFactory] Using in-memory StateStoreMock')
+    } else if (dbType === 'postgres') {
+      // PostgreSQL implementation
+      const postgresUrl = config.postgresUrl || process.env.DATABASE_URL || process.env.POSTGRES_URL
+      if (!postgresUrl) {
+        throw new Error('PostgreSQL URL not provided. Set DATABASE_URL or POSTGRES_URL environment variable, or pass postgresUrl in config.')
+      }
+      const postgresStore = new StateStorePostgres(postgresUrl)
+      await postgresStore.initialize()
+      stateStore = postgresStore
+      console.log('[ServiceFactory] Using PostgreSQL StateStore')
     } else {
+      // SQLite implementation (default)
       const sqliteStore = new StateStoreSQLite(config.databasePath || './coordination.db')
       await sqliteStore.initialize()
       stateStore = sqliteStore

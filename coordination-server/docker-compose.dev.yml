@@ -1,0 +1,194 @@
+# Docker Compose Override for Development
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Or set: COMPOSE_FILE=docker-compose.yml:docker-compose.dev.yml
+
+version: '3.9'
+
+services:
+  # ============================================
+  # Development Overrides for Main Application
+  # ============================================
+  coordination-server:
+    # Build context for development
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=development
+
+    # Override environment variables for development
+    environment:
+      # Node.js
+      NODE_ENV: development
+
+      # Server Configuration
+      PORT: 3456
+      USE_MOCKS: "true"           # Use mock services for testing
+      DEBUG: "true"               # Enable debug logging
+      ENABLE_MCP: "true"          # Enable MCP for Copilot testing
+      ENABLE_WEBSOCKET: "true"    # WebSocket enabled
+
+      # Database Configuration - Use SQLite for simplicity
+      DB_TYPE: sqlite
+      DATABASE_PATH: /app/data/coordination-dev.db
+
+      # Logging Configuration - More verbose
+      LOG_LEVEL: debug
+      LOG_DIR: /app/logs
+      LOG_MAX_FILES: "7"
+      LOG_MAX_SIZE: "5m"
+
+      # Rate Limiting - Relaxed for development
+      RATE_LIMIT_WINDOW_MS: "60000"
+      RATE_LIMIT_DEFAULT_REQUESTS: "1000"
+      RATE_LIMIT_CLAUDE_REQUESTS: "1000"
+      RATE_LIMIT_COPILOT_REQUESTS: "1000"
+
+    # Volume mounts for hot reload and debugging
+    volumes:
+      # Mount entire src directory for hot reload (requires nodemon/tsx watch)
+      - ./src:/app/src:cached
+      - ./services:/app/services:cached
+      - ./tsconfig.json:/app/tsconfig.json:cached
+
+      # Keep node_modules from container (avoid conflicts)
+      - /app/node_modules
+
+      # Logs and data volumes
+      - ./logs:/app/logs
+      - ./data:/app/data
+
+    # Additional ports for debugging
+    ports:
+      # HTTP API
+      - "3456:3456"
+      # Node.js debugger (if using --inspect)
+      # Uncomment to enable remote debugging
+      # - "9229:9229"
+
+    # Override command to use development server with watch mode
+    # Option 1: Use tsx watch (recommended for hot reload)
+    command: sh -c "npm install && npm run dev"
+
+    # Option 2: Use node with ts-node (if you have ts-node installed)
+    # command: npx ts-node --transpile-only src/index.ts
+
+    # Option 3: Use tsx watch with MCP server
+    # command: npm run dev & npm run mcp
+
+    # Never stop in development (manual control)
+    restart: no
+
+    # Resource limits - Higher for development/testing
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2'
+    #       memory: 1G
+    #     reservations:
+    #       cpus: '1'
+    #       memory: 512M
+
+    # Additional environment for development tools
+    stdin_open: true
+    tty: true
+
+  # ============================================
+  # Development Overrides for PostgreSQL
+  # ============================================
+  postgres:
+    # Use same image
+    image: postgres:16-alpine
+
+    # Override port to expose locally for tools like pgAdmin
+    ports:
+      - "5432:5432"
+
+    # Additional environment for development
+    environment:
+      # Keep original credentials
+      POSTGRES_USER: coordination_user
+      POSTGRES_PASSWORD: coordination_password
+      POSTGRES_DB: coordination_db
+
+      # Optional: Log all queries (performance impact, useful for debugging)
+      # POSTGRES_INITDB_ARGS: "-c log_statement=all"
+
+    # Volume mounts
+    volumes:
+      # Database data
+      - postgres-data-dev:/var/lib/postgresql/data
+      # Optional: Init script for dev data
+      # - ./scripts/init-dev.sql:/docker-entrypoint-initdb.d/01-init.sql
+
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coordination_user"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    # Never stop in development
+    restart: no
+
+  # ============================================
+  # PgAdmin Service (Optional Database GUI)
+  # Uncomment to enable web-based PostgreSQL admin
+  # ============================================
+  # pgadmin:
+  #   image: dpage/pgadmin4:latest
+  #   container_name: tarot-coordination-pgadmin
+  #
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@example.com
+  #     PGADMIN_DEFAULT_PASSWORD: admin_password
+  #     PGADMIN_CONFIG_SERVER_MODE: 'False'
+  #
+  #   ports:
+  #     - "5050:80"
+  #
+  #   volumes:
+  #     - pgadmin-data:/var/lib/pgadmin
+  #
+  #   networks:
+  #     - coordination-network
+  #
+  #   restart: no
+  #
+  #   depends_on:
+  #     - postgres
+
+  # ============================================
+  # Redis Service (Optional Cache)
+  # Uncomment to enable Redis caching
+  # ============================================
+  # redis:
+  #   image: redis:7-alpine
+  #
+  #   # Expose port for local tools
+  #   ports:
+  #     - "6379:6379"
+  #
+  #   # Command without authentication for development
+  #   command: redis-server --appendonly yes
+  #
+  #   volumes:
+  #     - redis-data-dev:/data
+  #
+  #   restart: no
+
+# ============================================
+# Development-Specific Volumes
+# ============================================
+volumes:
+  postgres-data-dev:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/postgres-dev
+  # pgadmin-data:
+  #   driver: local
+  # redis-data-dev:
+  #   driver: local

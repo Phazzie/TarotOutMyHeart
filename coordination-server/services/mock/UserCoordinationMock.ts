@@ -20,15 +20,12 @@ import type {
   ConflictResolution,
   ConversationContext,
   Task,
-  TaskType,
-  FileLock,
   FileConflict,
   AgentId,
   SessionId,
   ContextId,
   ConflictId,
-  ServiceResponse,
-  ServiceError
+  ServiceResponse
 } from '@contracts'
 
 /**
@@ -107,11 +104,6 @@ export class UserCoordinationMock implements UserCoordinationContract {
     mode: CollaborationMode
   ): Promise<Task[]> {
     const tasks: Task[] = []
-
-    // Parse task description to determine what needs to be done
-    const isComplexTask = taskDescription.length > 50 ||
-      taskDescription.toLowerCase().includes('and') ||
-      taskDescription.toLowerCase().includes('with')
 
     if (mode === 'orchestrator-worker') {
       // Create orchestration task for Claude

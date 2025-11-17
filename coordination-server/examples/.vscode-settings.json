@@ -1,0 +1,70 @@
+{
+  "// INSTRUCTIONS": "Copy this file to .vscode/settings.json in your project root to enable MCP coordination server for GitHub Copilot",
+  "// NOTE": "Ensure coordination server is running: npm run dev (HTTP) and npm run mcp (MCP) in separate terminals",
+  "// PORT": "Coordination Server HTTP: 3456 | MCP Server: stdio",
+
+  "mcp.servers": {
+    "coordination": {
+      "// PURPOSE": "Enable GitHub Copilot to participate in coordinated multi-AI development",
+      "// STARTUP": "MCP server uses stdio transport - connects automatically when defined here",
+
+      "command": "npm",
+      "args": ["run", "mcp"],
+      "cwd": "${workspaceFolder}/coordination-server",
+
+      "env": {
+        "// COORDINATION_SERVER_URL": "Where MCP server communicates with HTTP API",
+        "COORDINATION_SERVER_URL": "http://localhost:3456",
+
+        "// USE_MOCKS": "true for development/testing, false for production with real services",
+        "USE_MOCKS": "true",
+
+        "// DEBUG_MCP": "Enable debug logging from MCP server",
+        "DEBUG_MCP": "false",
+
+        "// LOG_LEVEL": "error, warn, info, debug - controls verbosity",
+        "LOG_LEVEL": "info",
+
+        "// MCP_TIMEOUT_MS": "How long to wait for tool responses (ms). Increase if network is slow",
+        "MCP_TIMEOUT_MS": "30000",
+
+        "// MCP_MAX_RETRIES": "How many times to retry tool invocations on failure",
+        "MCP_MAX_RETRIES": "3"
+      },
+
+      "// alwaysAllow": "Tools that don't require user confirmation before execution",
+      "alwaysAllow": [
+        "checkForTasks",
+        "getCollaborationStatus"
+      ],
+
+      "// disabled": "Set to true to disable this server without removing configuration",
+      "disabled": false,
+
+      "// timeout": "VS Code timeout for tool invocations (ms)",
+      "timeout": 45000
+    }
+  },
+
+  "// COPILOT CHAT SETTINGS": "Configure Copilot Chat behavior for coordination",
+  "github.copilot.chat.slashCommands.enabled": true,
+  "github.copilot.chat.localization": "en",
+
+  "// EDITOR SETTINGS": "Recommended settings for working with coordination",
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+
+  "// TERMINAL SETTINGS": "Recommended for running servers",
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+
+  "// DEBUG SETTINGS": "Enable for troubleshooting coordination issues",
+  "// debugSettings": {
+  "//   'debug.console.fontSize': 13",
+  "//   'debug.console.wordWrap': true"
+  "// }": ""
+}

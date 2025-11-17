@@ -10,6 +10,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid'
+import { logInfo, logError } from '../../src/observability/logger'
 import type {
   ClaudeCoordinationContract,
   StateStoreContract,
@@ -22,10 +23,8 @@ import type {
   ConversationContext,
   ContextId,
   ServiceResponse,
-  ServiceError,
   RegistrationToken,
-  HandoffId,
-  SessionId
+  HandoffId
 } from '@contracts'
 
 /**
@@ -140,7 +139,12 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
     this.registrations.set(params.agentId, registration)
     this.tokenToAgent.set(token, params.agentId)
 
-    console.log(`[ClaudeCoordination] Agent registered: ${params.agentId} with capabilities:`, params.capabilities)
+    logInfo('Agent registered', {
+      service: 'ClaudeCoordinationMock',
+      agentId: params.agentId,
+      capabilities: params.capabilities,
+      version: params.version
+    })
 
     return {
       success: true,
@@ -222,7 +226,13 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
 
     this.claimedTasks.set(taskId, 'claude-code')
 
-    console.log(`[ClaudeCoordination] Task claimed: ${taskId} - ${task.description}`)
+    logInfo('Task claimed', {
+      service: 'ClaudeCoordinationMock',
+      taskId,
+      description: task.description,
+      type: task.type,
+      priority: task.priority
+    })
 
     return {
       success: true,
@@ -264,7 +274,13 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
     }
 
     // In a real implementation, we'd store progress details
-    console.log(`[ClaudeCoordination] Progress update for ${taskId}: ${progress.percentComplete}% - ${progress.currentStep}`)
+    logInfo('Task progress reported', {
+      service: 'ClaudeCoordinationMock',
+      taskId,
+      percentComplete: progress.percentComplete,
+      currentStep: progress.currentStep,
+      filesModified: progress.filesModified?.length || 0
+    })
 
     return { success: true }
   }
@@ -303,9 +319,19 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
     // Clean up claimed task
     this.claimedTasks.delete(taskId)
 
-    console.log(`[ClaudeCoordination] Task completed: ${taskId} - Success: ${result.success}`)
-    if (!result.success && result.error) {
-      console.error(`[ClaudeCoordination] Task failed with error:`, result.error)
+    if (result.success) {
+      logInfo('Task completed successfully', {
+        service: 'ClaudeCoordinationMock',
+        taskId,
+        output: result.output?.substring(0, 100), // Truncate for logging
+        filesModified: result.filesModified?.length || 0
+      })
+    } else {
+      logError('Task completed with failure', result.error?.message, {
+        service: 'ClaudeCoordinationMock',
+        taskId,
+        errorCode: result.error?.code
+      })
     }
 
     return { success: true }
@@ -326,7 +352,11 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
       }
     }
 
-    console.log(`[ClaudeCoordination] Retrieved context ${contextId} with ${result.data.messages.length} messages`)
+    logInfo('Context retrieved', {
+      service: 'ClaudeCoordinationMock',
+      contextId,
+      messageCount: result.data.messages.length
+    })
 
     return {
       success: true,
@@ -342,7 +372,11 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
       return result
     }
 
-    console.log(`[ClaudeCoordination] Saved context ${contextId} with ${context.messages.length} messages`)
+    logInfo('Context saved', {
+      service: 'ClaudeCoordinationMock',
+      contextId,
+      messageCount: context.messages.length
+    })
 
     return { success: true }
   }
@@ -400,9 +434,14 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
     // Update task status
     await this.stateStore.updateTaskStatus(params.taskId, 'handed-off')
 
-    console.log(`[ClaudeCoordination] Handoff requested: ${handoffId}`)
-    console.log(`  From: claude-code → To: ${params.toAgent}`)
-    console.log(`  Reason: ${params.reason}`)
+    logInfo('Handoff requested', {
+      service: 'ClaudeCoordinationMock',
+      handoffId,
+      taskId: params.taskId,
+      fromAgent: 'claude-code',
+      toAgent: params.toAgent,
+      reason: params.reason
+    })
 
     return {
       success: true,
@@ -474,7 +513,12 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
 
     this.claimedTasks.set(handoff.taskId, byAgent)
 
-    console.log(`[ClaudeCoordination] Handoff accepted by ${byAgent}`)
+    logInfo('Handoff accepted', {
+      service: 'ClaudeCoordinationMock',
+      handoffId,
+      taskId: handoff.taskId,
+      acceptedBy: byAgent
+    })
 
     return {
       success: true,

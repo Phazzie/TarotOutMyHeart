@@ -24,11 +24,22 @@ import type { IDownloadService } from '$contracts/Download'
 // Import mock services
 import { ImageUploadMock } from './mock/ImageUploadMock'
 import { StyleInputMock } from './mock/StyleInputMock'
-import { PromptGenerationMock } from './mock/PromptGenerationMock'
+import { PromptGenerationMockService } from './mock/PromptGenerationMock'
 import { ImageGenerationMock } from './mock/ImageGenerationMock'
 import { DeckDisplayMock } from './mock/DeckDisplayMock'
 import { CostCalculationMock } from './mock/CostCalculation'
 import { DownloadMock } from './mock/Download'
+
+// Import real services
+import { ImageGenerationService } from './real/ImageGenerationService'
+import { PromptGenerationService } from './real/PromptGenerationService'
+
+// TODO: Import other real services when implemented
+// import { ImageUploadService } from './real/ImageUploadService'
+// import { StyleInputService } from './real/StyleInputService'
+// import { DeckDisplayService } from './real/DeckDisplayService'
+// import { CostCalculationService } from './real/CostCalculationService'
+// import { DownloadService } from './real/DownloadService'
 
 // ============================================================================
 // SINGLETON INSTANCES
@@ -60,20 +71,11 @@ import { DownloadMock } from './mock/Download'
  */
 const imageUploadMockService = new ImageUploadMock()
 const styleInputMockService = new StyleInputMock()
-const promptGenerationMockService = new PromptGenerationMock()
+const promptGenerationMockService = new PromptGenerationMockService()
 const imageGenerationMockService = new ImageGenerationMock()
 const deckDisplayMockService = new DeckDisplayMock()
 const costCalculationMockService = new CostCalculationMock()
 const downloadMockService = new DownloadMock()
-
-// TODO: Import real services when implemented
-// import { ImageUploadService } from './real/ImageUploadService'
-// import { StyleInputService } from './real/StyleInputService'
-// import { PromptGenerationService } from './real/PromptGenerationService'
-// import { ImageGenerationService } from './real/ImageGenerationService'
-// import { DeckDisplayService } from './real/DeckDisplayService'
-// import { CostCalculationService } from './real/CostCalculationService'
-// import { DownloadService } from './real/DownloadService'
 
 // ============================================================================
 // CONFIGURATION
@@ -126,27 +128,25 @@ export const styleInputService: IStyleInputService = USE_MOCKS
 
 /**
  * Prompt Generation Service
- * 
+ *
  * Generates 22 card prompts using Grok vision API.
  * Mock: Simulated AI generation with realistic delays
  * Real: Actual Grok vision API calls
  */
 export const promptGenerationService: IPromptGenerationService = USE_MOCKS
   ? promptGenerationMockService
-  : promptGenerationMockService // TODO: Replace with real service
-  // : new PromptGenerationService(process.env.XAI_API_KEY!)
+  : new PromptGenerationService()
 
 /**
  * Image Generation Service
- * 
+ *
  * Generates 22 card images using Grok image API.
  * Mock: Simulated image generation with placeholder images
  * Real: Actual Grok image API calls
  */
 export const imageGenerationService: IImageGenerationService = USE_MOCKS
   ? imageGenerationMockService
-  : imageGenerationMockService // TODO: Replace with real service
-  // : new ImageGenerationService(process.env.XAI_API_KEY!)
+  : new ImageGenerationService(process.env['XAI_API_KEY'])
 
 /**
  * Deck Display Service
