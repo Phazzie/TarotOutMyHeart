@@ -17,6 +17,7 @@ A **data boundary** is any point where data crosses from one system/component/la
 ### Flow Step 1: User Uploads Reference Images
 
 **Boundary 1: Browser → Application**
+
 - **From**: User's file system (via browser file input)
 - **To**: Application's image upload handler
 - **Data crossing**: File objects (1-5 images)
@@ -25,6 +26,7 @@ A **data boundary** is any point where data crosses from one system/component/la
 - **State change**: No images → Images uploaded
 
 **Questions to answer**:
+
 - What file formats are accepted? (JPG, PNG per PRD)
 - What's the max size per file? (10MB per PRD)
 - What happens if user tries to upload 6 images? (Block/Error)
@@ -36,9 +38,10 @@ A **data boundary** is any point where data crosses from one system/component/la
 ### Flow Step 2: User Defines Style Parameters
 
 **Boundary 2: Form Input → Application State**
+
 - **From**: HTML form fields
 - **To**: Application's style validation/storage
-- **Data crossing**: 
+- **Data crossing**:
   - Theme (string)
   - Tone (string)
   - Description (string, max 500 chars)
@@ -49,6 +52,7 @@ A **data boundary** is any point where data crosses from one system/component/la
 - **State change**: Empty form → Validated style inputs
 
 **Questions to answer**:
+
 - Are theme/tone free text or dropdown selections?
 - Is description required or optional?
 - What happens if description exceeds 500 characters?
@@ -60,6 +64,7 @@ A **data boundary** is any point where data crosses from one system/component/la
 ### Flow Step 3: Generate Card Prompts (AI Processing)
 
 **Boundary 3: Application → Grok Text API**
+
 - **From**: Application (with uploaded images + style inputs)
 - **To**: Grok text API (grok-4-fast-reasoning)
 - **Data crossing outbound**:
@@ -76,6 +81,7 @@ A **data boundary** is any point where data crosses from one system/component/la
 - **State change**: Inputs ready → Prompts generated
 
 **Questions to answer**:
+
 - How are reference images sent to Grok? (URLs vs base64?)
 - What format does Grok expect for the request?
 - What format does Grok return for prompts?
@@ -89,6 +95,7 @@ A **data boundary** is any point where data crosses from one system/component/la
 ### Flow Step 4: User Reviews/Edits Prompts
 
 **Boundary 4: Prompt Display → User Editing**
+
 - **From**: Generated prompts (from Grok)
 - **To**: Editable prompt preview component
 - **Data crossing**: 22 CardPrompt objects
@@ -97,6 +104,7 @@ A **data boundary** is any point where data crosses from one system/component/la
 - **State change**: Generated prompts → User-reviewed/edited prompts
 
 **Questions to answer**:
+
 - Can user edit all fields or just the prompt text?
 - Are edits saved immediately or on "confirm"?
 - Can user reset to original AI-generated prompt?
@@ -107,6 +115,7 @@ A **data boundary** is any point where data crosses from one system/component/la
 ### Flow Step 5: Generate Card Images (AI Processing)
 
 **Boundary 5: Application → Grok Image API**
+
 - **From**: Application (with finalized prompts)
 - **To**: Grok image API (grok-image-generator)
 - **Data crossing outbound**:
@@ -123,6 +132,7 @@ A **data boundary** is any point where data crosses from one system/component/la
 - **State change**: Prompts ready → Images generated
 
 **Questions to answer**:
+
 - Are all 22 images generated at once or sequentially?
 - How long does each image take? (Need progress: X/22 complete)
 - What if some images fail but others succeed?
@@ -136,6 +146,7 @@ A **data boundary** is any point where data crosses from one system/component/la
 ### Flow Step 6: Display Card Gallery
 
 **Boundary 6: Generated Images → UI Display**
+
 - **From**: Generated card data (images + metadata)
 - **To**: Gallery component for display
 - **Data crossing**: GeneratedCard[] (22 cards)
@@ -144,6 +155,7 @@ A **data boundary** is any point where data crosses from one system/component/la
 - **State change**: Images available → Gallery displayed
 
 **Questions to answer**:
+
 - What metadata is displayed per card? (Name, meaning, prompt used?)
 - Is gallery sortable/filterable?
 - Are images lazy-loaded?
@@ -155,9 +167,10 @@ A **data boundary** is any point where data crosses from one system/component/la
 ### Flow Step 7: Calculate and Display Costs
 
 **Boundary 7: Token Usage → Cost Display**
+
 - **From**: API responses (token counts from Grok)
 - **To**: Cost calculator → UI display
-- **Data crossing**: 
+- **Data crossing**:
   - Input tokens used (prompt generation + image generation)
   - Output tokens used (responses)
   - Cost per token (pricing from PRD)
@@ -166,6 +179,7 @@ A **data boundary** is any point where data crosses from one system/component/la
 - **State change**: API calls made → Cost calculated and displayed
 
 **Questions to answer**:
+
 - Is cost shown before generation (estimate) or after (actual)?
 - Is cost per API call or total for entire deck?
 - Is there a cost warning/confirmation before expensive operations?
@@ -176,6 +190,7 @@ A **data boundary** is any point where data crosses from one system/component/la
 ### Flow Step 8: Download Cards
 
 **Boundary 8: Generated Cards → User's File System**
+
 - **From**: Application (GeneratedCard data)
 - **To**: User's downloads folder (via browser download)
 - **Data crossing outbound**:
@@ -186,6 +201,7 @@ A **data boundary** is any point where data crosses from one system/component/la
 - **State change**: Cards in app → Cards downloaded
 
 **Questions to answer**:
+
 - What's the filename format? (e.g., "the-fool.png", "card-00-the-fool.png")
 - Does ZIP include metadata file? (Prompts, style inputs, generation details?)
 - What image quality/resolution? (Default or user-configurable?)
@@ -200,7 +216,8 @@ A **data boundary** is any point where data crosses from one system/component/la
 
 **From**: Various components  
 **To**: Application state store (Svelte stores? Context?)  
-**Data**: 
+**Data**:
+
 - Uploaded images
 - Style inputs
 - Generated prompts
@@ -210,6 +227,7 @@ A **data boundary** is any point where data crosses from one system/component/la
 - Error states
 
 **Questions**:
+
 - Do we use Svelte stores for global state?
 - Is state persisted in localStorage?
 - How do we handle state across page refreshes?
@@ -221,12 +239,14 @@ A **data boundary** is any point where data crosses from one system/component/la
 **From**: Any service (upload, API calls, download)  
 **To**: Error display component  
 **Data**: Error objects with:
+
 - Error code (for programmatic handling)
 - User-friendly message
 - Retryable flag
 - Technical details (for debugging)
 
 **Questions**:
+
 - Where are errors displayed? (Toast? Modal? Inline?)
 - Are errors logged/tracked?
 - Can user report errors?
@@ -290,10 +310,10 @@ export enum [Feature]ErrorCode {
 export interface I[Feature]Service {
   /**
    * [Description of what this method does]
-   * 
+   *
    * @param input - [Description of input parameter]
    * @returns Promise<ServiceResponse<Output>> - Success or error
-   * 
+   *
    * @throws Never throws - always returns ServiceResponse
    */
   [methodName](input: [Feature]Input): Promise<ServiceResponse<[Feature]Output>>
@@ -305,18 +325,21 @@ export interface I[Feature]Service {
 ## Open Questions to Resolve Before Contracts
 
 ### Image Upload:
+
 - [ ] Client-side storage or immediate upload to server/CDN?
 - [ ] Generate preview URLs immediately or after validation?
 - [ ] Max file size per image? (PRD says 10MB)
 - [ ] Image preprocessing needed? (Resize, compress, convert format?)
 
 ### Style Input:
+
 - [ ] Theme/tone: Free text or predefined options?
 - [ ] Are there default values?
 - [ ] Validation: Required vs optional fields?
 - [ ] Save draft inputs to localStorage?
 
 ### Prompt Generation:
+
 - [ ] Send reference images as URLs or base64 to Grok?
 - [ ] Grok request format (need API docs)?
 - [ ] Grok response format (need API docs)?
@@ -324,6 +347,7 @@ export interface I[Feature]Service {
 - [ ] Retry strategy (how many retries, backoff timing)?
 
 ### Image Generation:
+
 - [ ] Batch generation (all 22 at once) or sequential?
 - [ ] Progress tracking strategy?
 - [ ] Cancellation support needed?
@@ -331,16 +355,19 @@ export interface I[Feature]Service {
 - [ ] Regenerate individual cards: New seam or part of this one?
 
 ### Gallery Display:
+
 - [ ] Lazy loading images?
 - [ ] Virtual scrolling for performance?
 - [ ] Image optimization (thumbnails vs full size)?
 
 ### Cost Calculation:
+
 - [ ] Show estimate BEFORE generation or actual AFTER?
 - [ ] Warn user if cost exceeds threshold?
 - [ ] Cost breakdown (prompt gen vs image gen)?
 
 ### Download:
+
 - [ ] Client-side ZIP creation library?
 - [ ] Include metadata file in ZIP?
 - [ ] Filename conventions?
@@ -366,4 +393,3 @@ export interface I[Feature]Service {
 - Contracts must be IMMUTABLE once development starts
 - If questions arise during implementation, create contract v2 instead of modifying v1
 - Use `ServiceResponse<T>` wrapper for all async operations (defined in contracts/types/common.ts)
-

@@ -26,16 +26,6 @@
       "@utils/*": ["./src/utils/*"]
     }
   },
-  "include": [
-    "src/**/*",
-    "../contracts/**/*",
-    "services/**/*",
-    "tests/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.test.ts",
-    "**/*.spec.ts"
-  ]
+  "include": ["src/**/*", "../contracts/**/*", "services/**/*", "tests/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }

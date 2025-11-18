@@ -9,11 +9,13 @@
 ## 🚨 **CRITICAL REMINDER** 🚨
 
 **BEFORE ENDING ANY SESSION:**
+
 1. ✅ **UPDATE `lessonslearned.md`** - Add new lessons from this session
 2. ✅ **UPDATE `CHANGELOG.md`** - Document all changes made
 3. ✅ **COMMIT AND PUSH** - Never leave uncommitted work
 
 **AFTER COMPLETING ANY MAJOR TASK:**
+
 - Document patterns that worked well
 - Document mistakes to avoid
 - Update both files IMMEDIATELY, not at end of session
@@ -23,6 +25,7 @@
 ## 🎯 Claude-Specific Strengths for This Project
 
 Claude excels at:
+
 - ✅ **Long-form context understanding** - Can read entire PRD and all documentation
 - ✅ **Structured thinking** - Perfect for Seam-Driven Development methodology
 - ✅ **TypeScript strict mode** - Excellent at type inference and validation
@@ -35,6 +38,7 @@ Claude excels at:
 ## 📚 Required Reading (Read in This Order)
 
 **Root Documentation** (Original scaffolding):
+
 1. **THIS FILE** (CLAUDE.md) - Claude-specific guidance
 2. **AGENTS.md** - Universal AI agent instructions (full methodology)
 3. **seam-driven-development.md** - Complete SDD guide
@@ -43,21 +47,21 @@ Claude excels at:
 6. **prd.MD** - Product requirements and sprint checklists
 7. **lessonslearned.md** - Project-specific patterns
 
-**Development Documents** (Planning folder):
-8. **docs/planning/DATA-BOUNDARIES.md** - Data boundary analysis (IDENTIFY phase)
-9. **docs/planning/RECOMMENDATIONS.md** - Technical decisions
+**Development Documents** (Planning folder): 8. **docs/planning/DATA-BOUNDARIES.md** - Data boundary analysis (IDENTIFY phase) 9. **docs/planning/RECOMMENDATIONS.md** - Technical decisions
 
 **Don't skip this!** These files contain critical context for working correctly.
 
 ## 📂 Documentation Structure
 
 **Root** = Original scaffolding (read-only structure)
+
 - Methodology: `seam-driven-development.md`
 - Instructions: `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`
 - Product: `prd.MD`, `SEAMSLIST.md`
 - History: `CHANGELOG.md`, `lessonslearned.md`
 
 **`/docs/planning/`** = Development workspace (create new docs here)
+
 - Data analysis: `DATA-BOUNDARIES.md`
 - Decisions: `RECOMMENDATIONS.md`
 - Future: Contract drafts, diagrams, retrospectives
@@ -83,6 +87,7 @@ Claude excels at:
 ```
 
 **Required for ALL files**:
+
 - ✅ Contract files (`/contracts/*.ts`)
 - ✅ Service implementations (`/services/mock/*.ts`, `/services/real/*.ts`)
 - ✅ Svelte components (`/src/lib/components/*.svelte`)
@@ -90,17 +95,20 @@ Claude excels at:
 - ✅ Test files (`/tests/**/*.test.ts`)
 
 **Use blueprints as starting points**:
+
 - Contracts: `cp docs/blueprints/CONTRACT-BLUEPRINT.md contracts/YourFeature.ts`
 - Services: `cp docs/blueprints/STUB-BLUEPRINT.md services/mock/YourMock.ts`
 - Components: Reference `docs/blueprints/COMPONENT-BLUEPRINT.md`
 
 **Why this matters**:
+
 - You and other AIs can understand context without reading entire files
 - Humans can quickly grasp purpose and usage
 - Documentation enforces clear thinking about responsibilities
 - Reduces integration errors by making boundaries explicit
 
 **CRITICAL**: Update `/CHANGELOG.md` frequently throughout your work:
+
 - After defining each contract
 - After implementing each service
 - After completing each feature
@@ -145,10 +153,10 @@ When defining contracts, use Claude's analytical abilities:
  * @requirement PRD Sprint 1 - Seam 3: Prompt Generation
  * @boundary User inputs + reference images → 22 unique card prompts
  * @updated 2025-11-07
- * 
+ *
  * This seam bridges user creativity (style inputs + reference images)
  * with AI generation (Grok prompt creation). Critical for deck cohesion.
- * 
+ *
  * Edge cases handled:
  * - Missing reference images (use style description only)
  * - Invalid style inputs (validation fails before API call)
@@ -158,21 +166,20 @@ When defining contracts, use Claude's analytical abilities:
 export interface IPromptGenerationService {
   /**
    * Generate prompts for all 22 Major Arcana cards
-   * 
+   *
    * @param input - User's style preferences and reference images
    * @returns Promise resolving to 22 card prompts or error
-   * 
+   *
    * @throws {ValidationError} If input validation fails
    * @throws {APIError} If Grok API fails after retries
    * @throws {RateLimitError} If rate limit exceeded
    */
-  generatePrompts(
-    input: PromptGenerationInput
-  ): Promise<ServiceResponse<CardPrompt[]>>
+  generatePrompts(input: PromptGenerationInput): Promise<ServiceResponse<CardPrompt[]>>
 }
 ```
 
 **Why this works for Claude**:
+
 - Detailed comments help Claude understand context
 - Comprehensive error cases prevent future issues
 - Traceability to requirements aids in validation
@@ -199,9 +206,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
     // ... Claude can generate all 22 with accurate meanings
   ]
 
-  async generatePrompts(
-    input: PromptGenerationInput
-  ): Promise<ServiceResponse<CardPrompt[]>> {
+  async generatePrompts(input: PromptGenerationInput): Promise<ServiceResponse<CardPrompt[]>> {
     // Claude: Simulate realistic API timing
     await this.simulateDelay(1500, 2500)
 
@@ -214,8 +219,8 @@ export class PromptGenerationMockService implements IPromptGenerationService {
           code: 'VALIDATION_FAILED',
           message: validation.errors.join(', '),
           retryable: false,
-          details: { fields: validation.errorFields }
-        }
+          details: { fields: validation.errorFields },
+        },
       }
     }
 
@@ -225,34 +230,33 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       cardName: card.name,
       traditionalMeaning: card.meaning,
       generatedPrompt: this.craftPrompt(card, input),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     }))
 
     return { success: true, data: prompts }
   }
 
-  private craftPrompt(
-    card: MajorArcanaCard,
-    input: PromptGenerationInput
-  ): string {
+  private craftPrompt(card: MajorArcanaCard, input: PromptGenerationInput): string {
     // Claude: Create prompts that realistically combine:
     // - Card symbolism
     // - User's theme and tone
     // - Reference image style
     // - Traditional meanings
     const { theme, tone, description } = input.styleInputs
-    
-    return `A tarot card illustration for ${card.name}, ` +
+
+    return (
+      `A tarot card illustration for ${card.name}, ` +
       `embodying ${card.meaning}. ` +
       `Style: ${theme} with ${tone} tone. ` +
       `${description}. ` +
       `Incorporate symbolic elements: ${this.getSymbols(card)}.`
+    )
   }
 
   // Claude: Add helper methods that show domain knowledge
   private getSymbols(card: MajorArcanaCard): string {
     const symbols = {
-      0: 'cliff edge, white dog, beggar\'s bundle, white rose',
+      0: "cliff edge, white dog, beggar's bundle, white rose",
       1: 'infinity symbol, wand raised, altar with tools',
       // ... etc
     }
@@ -262,6 +266,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
 ```
 
 **Why this works for Claude**:
+
 - Shows deep understanding of domain (tarot)
 - Realistic data helps UI developers
 - Comprehensive error handling teaches patterns
@@ -296,12 +301,12 @@ When integration fails, use Claude's systematic approach:
 
 // Claude's proposed fix:
 interface GrokAPIResponse {
-  card_name: string  // What API actually returns
+  card_name: string // What API actually returns
 }
 
 function adaptGrokResponse(raw: GrokAPIResponse): CardPrompt {
   return {
-    cardName: raw.card_name,  // Transform to match contract
+    cardName: raw.card_name, // Transform to match contract
     // ... other fields
   }
 }
@@ -312,31 +317,37 @@ function adaptGrokResponse(raw: GrokAPIResponse): CardPrompt {
 ## 🎓 Claude Best Practices for This Project
 
 ### 1. **Read Documentation First**
+
 - **Do**: Spend time reading all docs before first code change
 - **Why**: Claude's large context window makes this efficient
 - **Result**: Better decisions, fewer mistakes
 
 ### 2. **Plan Multi-Step Tasks**
+
 - **Do**: Break large tasks into 5-10 substeps before starting
 - **Why**: Claude excels at structured planning
 - **Result**: Systematic progress, nothing forgotten
 
 ### 3. **Explain Your Reasoning**
+
 - **Do**: Include comments explaining "why" not just "what"
 - **Why**: Helps future Claude sessions and human developers
 - **Result**: Maintainable, understandable code
 
 ### 4. **Validate Constantly**
+
 - **Do**: Run `npm run check` after every contract change
 - **Why**: Catch type errors immediately
 - **Result**: Integration success rate near 100%
 
 ### 5. **Ask Clarifying Questions**
+
 - **Do**: If requirements are unclear, ask user before coding
 - **Why**: Claude can identify ambiguity humans might miss
 - **Result**: Correct implementation first time
 
 ### 6. **Use Type Guards Extensively**
+
 - **Do**: Write type guards for all unknown data
 - **Why**: TypeScript strict mode requires it, Claude is excellent at this
 - **Result**: Type-safe code throughout
@@ -345,9 +356,9 @@ function adaptGrokResponse(raw: GrokAPIResponse): CardPrompt {
 // Claude pattern for type guards
 function isValidCardPrompt(value: unknown): value is CardPrompt {
   if (typeof value !== 'object' || value === null) return false
-  
+
   const obj = value as Record<string, unknown>
-  
+
   return (
     typeof obj.cardNumber === 'number' &&
     typeof obj.cardName === 'string' &&
@@ -362,6 +373,7 @@ function isValidCardPrompt(value: unknown): value is CardPrompt {
 ```
 
 ### 7. **Test Edge Cases**
+
 - **Do**: Consider and test edge cases in every function
 - **Why**: Claude's analytical nature catches these
 - **Result**: Robust, production-ready code
@@ -371,9 +383,11 @@ function isValidCardPrompt(value: unknown): value is CardPrompt {
 ## 🚫 Common Claude Pitfalls (Avoid These!)
 
 ### Pitfall 1: Over-Engineering Contracts
+
 **Problem**: Claude's thoroughness can lead to overly complex contracts upfront
 
 **Example of over-engineering**:
+
 ```typescript
 // ❌ Too complex for MVP
 interface PromptGenerationInput {
@@ -388,6 +402,7 @@ interface PromptGenerationInput {
 ```
 
 **Better approach**:
+
 ```typescript
 // ✅ Start simple, add complexity later
 interface PromptGenerationInput {
@@ -402,14 +417,17 @@ interface PromptGenerationInput {
 ---
 
 ### Pitfall 2: Analysis Paralysis
+
 **Problem**: Claude can spend too much time analyzing instead of implementing
 
 **Watch for**:
+
 - Spending >5 minutes planning a simple component
 - Listing 10+ alternative approaches
 - Overthinking mock data
 
-**Solution**: 
+**Solution**:
+
 - Use AI-CHECKLIST.md workflows (they're pre-planned)
 - If task is in PRD Sprint checklist, follow it directly
 - Trust the SDD process
@@ -417,9 +435,11 @@ interface PromptGenerationInput {
 ---
 
 ### Pitfall 3: Verbose Comments
+
 **Problem**: Claude can write comments longer than the code
 
 **Example of too much**:
+
 ```typescript
 /**
  * This function validates the style inputs provided by the user.
@@ -428,11 +448,12 @@ interface PromptGenerationInput {
  * [20 more lines of obvious description]
  */
 function validateStyleInputs(inputs: StyleInputs): ValidationResult {
-  return { isValid: true }  // 1 line of actual code!
+  return { isValid: true } // 1 line of actual code!
 }
 ```
 
 **Better approach**:
+
 ```typescript
 /**
  * Validates style inputs per contract requirements
@@ -448,14 +469,17 @@ function validateStyleInputs(inputs: StyleInputs): ValidationResult {
 ---
 
 ### Pitfall 4: Modifying Contracts "Just a Little"
+
 **Problem**: Claude might suggest "harmless" contract modifications
 
 **Example**:
+
 > "I noticed the contract doesn't include a timestamp field. I'll add it since it's useful for debugging."
 
 **Why it's bad**: Contract modifications break SDD, even if well-intentioned
 
-**Solution**: 
+**Solution**:
+
 - If contract needs change, flag it to user
 - User decides: optional field or v2 contract
 - Never modify contracts during implementation
@@ -477,9 +501,9 @@ describe('PromptGenerationService', () => {
         theme: 'cyberpunk',
         tone: 'dark',
         description: 'Neon-lit dystopian future',
-        concept: 'Technology vs humanity'
+        concept: 'Technology vs humanity',
       },
-      referenceImages: [mockImage1, mockImage2]
+      referenceImages: [mockImage1, mockImage2],
     }
 
     const result = await service.generatePrompts(mockInput)
@@ -492,8 +516,10 @@ describe('PromptGenerationService', () => {
 
   it('handles missing reference images gracefully', async () => {
     const mockInput: PromptGenerationInput = {
-      styleInputs: { /* valid inputs */ },
-      referenceImages: []  // Empty array
+      styleInputs: {
+        /* valid inputs */
+      },
+      referenceImages: [], // Empty array
     }
 
     const result = await service.generatePrompts(mockInput)
@@ -504,8 +530,8 @@ describe('PromptGenerationService', () => {
 
   it('fails validation for empty theme', async () => {
     const mockInput: PromptGenerationInput = {
-      styleInputs: { theme: '', /* other fields */ },
-      referenceImages: []
+      styleInputs: { theme: '' /* other fields */ },
+      referenceImages: [],
     }
 
     const result = await service.generatePrompts(mockInput)
@@ -612,19 +638,23 @@ describe('PromptGenerationService', () => {
 ### Sprint 1: Contracts & Mocks (Claude's Planning Sprint)
 
 **Day 1**: Define all 7 seam contracts
+
 - Use Claude's analytical abilities to identify all boundaries
 - Spend time getting contracts right (they're immutable after this!)
 - Ask user for clarification on any ambiguity
 
 **Day 2-3**: Implement all mock services
+
 - Use Claude's creativity for realistic mock data
 - Make mocks educational (other developers learn from them)
 
 **Day 4**: Write all tests
+
 - Use Claude's thoroughness for comprehensive test coverage
 - Test contracts, mocks, and mock behavior
 
 **Day 5**: Validation and documentation
+
 - Run full test suite
 - Update SEAMSLIST.md
 - Demo to user
@@ -636,6 +666,7 @@ describe('PromptGenerationService', () => {
 **Approach**: One component at a time, fully complete before moving to next
 
 **For each component**:
+
 1. Plan component structure (props, state, events)
 2. Implement with TypeScript types
 3. Test manually with mock service
@@ -651,13 +682,15 @@ describe('PromptGenerationService', () => {
 
 **Critical**: This is where SDD proves itself
 
-**Approach**: 
+**Approach**:
+
 1. Implement real service matching contract exactly
 2. Test against contract (should pass immediately if contract correct)
 3. Switch from mock to real
 4. Integration should work first try
 
-**If integration fails**: 
+**If integration fails**:
+
 - Don't panic
 - Run Emergency Protocols
 - Claude will systematically identify the issue
@@ -697,7 +730,7 @@ console.log(JSON.stringify(response, null, 2))
 // 4. Check contract:
 interface ServiceResponse<T> {
   success: boolean
-  data?: T  // Optional - can be undefined!
+  data?: T // Optional - can be undefined!
   error?: ServiceError
 }
 
@@ -792,6 +825,7 @@ You're doing SDD correctly if:
 Claude is now equipped to build TarotOutMyHeart using Seam-Driven Development!
 
 **Remember**:
+
 1. **Read first, code second** (use your large context window)
 2. **Plan systematically** (your strength)
 3. **Follow SDD strictly** (integration will work!)
@@ -802,4 +836,4 @@ Claude is now equipped to build TarotOutMyHeart using Seam-Driven Development!
 
 ---
 
-*This file is specific to Claude AI. For universal instructions, see AGENTS.md. For Gemini-specific instructions, see GEMINI.md.*
+_This file is specific to Claude AI. For universal instructions, see AGENTS.md. For Gemini-specific instructions, see GEMINI.md._

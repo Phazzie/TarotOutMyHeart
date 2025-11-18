@@ -49,11 +49,11 @@ describe('Real Services Integration', () => {
         context: {
           files: [],
           conversationHistory: [],
-          requirements: 'Test requirements'
+          requirements: 'Test requirements',
         },
         sessionId: 'test-session' as any,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       }
 
       // Enqueue task
@@ -64,7 +64,9 @@ describe('Real Services Integration', () => {
       const taskId = enqueueResult.data!
 
       // Dequeue task
-      const dequeueResult = await stateStore.dequeueTask(['typescript-development'] as AgentCapability[])
+      const dequeueResult = await stateStore.dequeueTask([
+        'typescript-development',
+      ] as AgentCapability[])
       expect(dequeueResult.success).toBe(true)
       expect(dequeueResult.data).toBeDefined()
       expect(dequeueResult.data!.id).toBe(taskId)
@@ -104,11 +106,11 @@ describe('Real Services Integration', () => {
           {
             role: 'user' as const,
             content: 'Test message',
-            timestamp: new Date()
-          }
+            timestamp: new Date(),
+          },
         ],
         sharedState: { testKey: 'testValue' },
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       }
 
       // Save context
@@ -129,7 +131,7 @@ describe('Real Services Integration', () => {
       const result = await claudeService.registerAgent({
         agentId: 'claude-code',
         capabilities: ['typescript-development', 'testing'],
-        version: '1.0.0'
+        version: '1.0.0',
       })
 
       expect(result.success).toBe(true)
@@ -141,7 +143,7 @@ describe('Real Services Integration', () => {
       await claudeService.registerAgent({
         agentId: 'claude-code',
         capabilities: ['typescript-development'],
-        version: '1.0.0'
+        version: '1.0.0',
       })
 
       // Enqueue a task
@@ -153,11 +155,11 @@ describe('Real Services Integration', () => {
         context: {
           files: [],
           conversationHistory: [],
-          requirements: 'Feature requirements'
+          requirements: 'Feature requirements',
         },
         sessionId: 'test-session' as any,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       }
 
       const enqueueResult = await stateStore.enqueueTask(taskInput)
@@ -177,7 +179,7 @@ describe('Real Services Integration', () => {
       const progressResult = await claudeService.reportProgress(taskId, {
         percentComplete: 50,
         currentStep: 'Implementing',
-        filesModified: ['src/feature.ts']
+        filesModified: ['src/feature.ts'],
       })
       expect(progressResult.success).toBe(true)
 
@@ -185,7 +187,7 @@ describe('Real Services Integration', () => {
       const completeResult = await claudeService.completeTask(taskId, {
         success: true,
         output: 'Feature implemented',
-        filesModified: ['src/feature.ts']
+        filesModified: ['src/feature.ts'],
       })
       expect(completeResult.success).toBe(true)
 
@@ -200,7 +202,7 @@ describe('Real Services Integration', () => {
       const result = await fileSystemService.requestFileAccess({
         path: '/src/App.tsx',
         operation: 'write',
-        agentId: 'claude-code'
+        agentId: 'claude-code',
       })
 
       expect(result.success).toBe(true)
@@ -215,7 +217,7 @@ describe('Real Services Integration', () => {
       const grant1 = await fileSystemService.requestFileAccess({
         path,
         operation: 'write',
-        agentId: 'claude-code'
+        agentId: 'claude-code',
       })
       expect(grant1.data!.granted).toBe(true)
 
@@ -223,7 +225,7 @@ describe('Real Services Integration', () => {
       const grant2 = await fileSystemService.requestFileAccess({
         path,
         operation: 'write',
-        agentId: 'github-copilot'
+        agentId: 'github-copilot',
       })
       expect(grant2.data!.granted).toBe(false)
       expect(grant2.data!.reason).toContain('locked')
@@ -241,7 +243,7 @@ describe('Real Services Integration', () => {
       const regResult = await claudeService.registerAgent({
         agentId: 'claude-code',
         capabilities: ['typescript-development'],
-        version: '1.0.0'
+        version: '1.0.0',
       })
       expect(regResult.success).toBe(true)
 
@@ -254,11 +256,11 @@ describe('Real Services Integration', () => {
         context: {
           files: [],
           conversationHistory: [],
-          requirements: 'OAuth2 authentication'
+          requirements: 'OAuth2 authentication',
         },
         sessionId: 'collab-session' as any,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       const taskId = taskResult.data!
 
@@ -270,7 +272,7 @@ describe('Real Services Integration', () => {
       const fileAccess = await fileSystemService.requestFileAccess({
         path: '/src/auth/Login.ts',
         operation: 'write',
-        agentId: 'claude-code'
+        agentId: 'claude-code',
       })
       expect(fileAccess.data!.granted).toBe(true)
 
@@ -278,14 +280,14 @@ describe('Real Services Integration', () => {
       await claudeService.reportProgress(taskId, {
         percentComplete: 75,
         currentStep: 'Writing tests',
-        filesModified: ['/src/auth/Login.ts', '/src/auth/Login.test.ts']
+        filesModified: ['/src/auth/Login.ts', '/src/auth/Login.test.ts'],
       })
 
       // 6. Complete task
       const completeResult = await claudeService.completeTask(taskId, {
         success: true,
         output: 'Authentication implemented with OAuth2',
-        filesModified: ['/src/auth/Login.ts', '/src/auth/Login.test.ts']
+        filesModified: ['/src/auth/Login.ts', '/src/auth/Login.test.ts'],
       })
       expect(completeResult.success).toBe(true)
 

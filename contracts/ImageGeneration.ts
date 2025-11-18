@@ -5,14 +5,14 @@
  * @boundary Seam #4: ImageGenerationSeam - Generate 22 tarot card images from prompts
  * @requirement PRD Section: "User Flow Step 5 - Generate Card Images"
  * @updated 2025-11-07
- * 
+ *
  * @example
  * ```typescript
  * const result = await imageService.generateImages({
  *   prompts: cardPrompts, // 22 prompts
  *   onProgress: (progress) => console.log(`${progress.completed}/22`)
  * });
- * 
+ *
  * if (result.success) {
  *   const images = result.data.generatedCards;
  *   const cost = result.data.totalUsage.estimatedCost;
@@ -36,12 +36,12 @@ export const GROK_IMAGE_MODEL = 'grok-2-image-alpha' as const
  * Image generation settings
  */
 export const IMAGE_GENERATION_CONFIG = {
-  imageSize: '1024x1024',         // Fixed size for Grok
-  format: 'png',                   // PNG format
-  responseFormat: 'b64_json',      // Base64 response
-  delayBetweenRequests: 2000,      // 2 seconds to avoid rate limits
-  timeout: 30000,                  // 30 seconds per image
-  maxRetries: 3,                   // Retry failed generations
+  imageSize: '1024x1024', // Fixed size for Grok
+  format: 'png', // PNG format
+  responseFormat: 'b64_json', // Base64 response
+  delayBetweenRequests: 2000, // 2 seconds to avoid rate limits
+  timeout: 30000, // 30 seconds per image
+  maxRetries: 3, // Retry failed generations
 } as const
 
 // ============================================================================
@@ -56,12 +56,12 @@ export type GeneratedCardId = string & { readonly __brand: 'GeneratedCardId' }
 /**
  * Generation status for a single card
  */
-export type GenerationStatus = 
-  | 'queued'        // Waiting to generate
-  | 'generating'    // Currently generating
-  | 'completed'     // Successfully generated
-  | 'failed'        // Generation failed
-  | 'retrying'      // Retrying after failure
+export type GenerationStatus =
+  | 'queued' // Waiting to generate
+  | 'generating' // Currently generating
+  | 'completed' // Successfully generated
+  | 'failed' // Generation failed
+  | 'retrying' // Retrying after failure
 
 // ============================================================================
 // CORE DATA STRUCTURES
@@ -69,7 +69,7 @@ export type GenerationStatus =
 
 /**
  * A single generated tarot card image
- * 
+ *
  * @property id - Unique identifier
  * @property cardNumber - Card number (0-21)
  * @property cardName - Traditional card name
@@ -96,7 +96,7 @@ export interface GeneratedCard {
 
 /**
  * Progress tracking during image generation
- * 
+ *
  * @property total - Total cards to generate
  * @property completed - Cards successfully generated
  * @property failed - Cards that failed
@@ -143,7 +143,7 @@ export interface TotalImageGenerationUsage {
 
 /**
  * Input for generating all 22 card images
- * 
+ *
  * @property prompts - 22 card prompts to generate images from
  * @property model - Grok model to use (defaults to grok-2-image-alpha)
  * @property saveToStorage - Whether to upload to permanent storage (Vercel Blob)
@@ -160,7 +160,7 @@ export interface GenerateImagesInput {
 
 /**
  * Input for regenerating a single failed image
- * 
+ *
  * @property cardNumber - Card to regenerate
  * @property prompt - Prompt to use
  * @property previousAttempts - Number of previous attempts
@@ -173,7 +173,7 @@ export interface RegenerateImageInput {
 
 /**
  * Input for canceling ongoing generation
- * 
+ *
  * @property sessionId - Generation session to cancel
  */
 export interface CancelGenerationInput {
@@ -182,7 +182,7 @@ export interface CancelGenerationInput {
 
 /**
  * Input for getting generation status
- * 
+ *
  * @property sessionId - Generation session ID
  */
 export interface GetGenerationStatusInput {
@@ -195,7 +195,7 @@ export interface GetGenerationStatusInput {
 
 /**
  * Result of generating all images
- * 
+ *
  * @property generatedCards - All 22 cards (successful and failed)
  * @property totalUsage - API usage and cost information
  * @property sessionId - Session ID for this generation
@@ -214,7 +214,7 @@ export interface GenerateImagesOutput {
 
 /**
  * Result of regenerating a single image
- * 
+ *
  * @property generatedCard - The regenerated card
  * @property usage - API usage for this regeneration
  */
@@ -225,7 +225,7 @@ export interface RegenerateImageOutput {
 
 /**
  * Result of canceling generation
- * 
+ *
  * @property canceled - Whether cancellation was successful
  * @property completedBeforeCancel - Cards completed before cancellation
  * @property sessionId - The canceled session
@@ -238,7 +238,7 @@ export interface CancelGenerationOutput {
 
 /**
  * Current status of generation session
- * 
+ *
  * @property sessionId - Session ID
  * @property progress - Current progress
  * @property isComplete - Whether generation is complete
@@ -253,7 +253,7 @@ export interface GetGenerationStatusOutput {
 
 /**
  * Cost estimate for generating all images
- * 
+ *
  * @property totalImages - Number of images to generate
  * @property costPerImage - Estimated cost per image
  * @property totalEstimatedCost - Total estimated cost
@@ -280,32 +280,32 @@ export enum ImageGenerationErrorCode {
   API_TIMEOUT = 'API_TIMEOUT',
   API_RATE_LIMIT = 'API_RATE_LIMIT',
   API_ERROR = 'API_ERROR',
-  
+
   // Input validation
   INVALID_PROMPTS = 'INVALID_PROMPTS',
   WRONG_PROMPT_COUNT = 'WRONG_PROMPT_COUNT',
   PROMPT_TOO_LONG = 'PROMPT_TOO_LONG',
   INVALID_MODEL = 'INVALID_MODEL',
-  
+
   // Generation errors
   GENERATION_FAILED = 'GENERATION_FAILED',
   INVALID_IMAGE_DATA = 'INVALID_IMAGE_DATA',
   IMAGE_UPLOAD_FAILED = 'IMAGE_UPLOAD_FAILED',
   PARTIAL_GENERATION_FAILURE = 'PARTIAL_GENERATION_FAILURE',
   ALL_GENERATIONS_FAILED = 'ALL_GENERATIONS_FAILED',
-  
+
   // Session errors
   SESSION_NOT_FOUND = 'SESSION_NOT_FOUND',
   SESSION_ALREADY_COMPLETE = 'SESSION_ALREADY_COMPLETE',
   SESSION_CANCELED = 'SESSION_CANCELED',
-  
+
   // Storage errors
   STORAGE_UNAVAILABLE = 'STORAGE_UNAVAILABLE',
   STORAGE_QUOTA_EXCEEDED = 'STORAGE_QUOTA_EXCEEDED',
-  
+
   // Network errors
   NETWORK_ERROR = 'NETWORK_ERROR',
-  
+
   // Cost/quota errors
   INSUFFICIENT_CREDITS = 'INSUFFICIENT_CREDITS',
   QUOTA_EXCEEDED = 'QUOTA_EXCEEDED',
@@ -327,7 +327,7 @@ export interface CardGenerationError {
 
 /**
  * Image Generation Service Contract
- * 
+ *
  * Defines all operations for generating tarot card images using Grok image API.
  * Implementation handles:
  * - Sequential generation of 22 images with progress tracking
@@ -336,13 +336,13 @@ export interface CardGenerationError {
  * - Upload to permanent storage (Vercel Blob)
  * - Error handling and partial success
  * - Generation cancellation
- * 
+ *
  * @interface IImageGenerationService
  */
 export interface IImageGenerationService {
   /**
    * Generate all 22 tarot card images
-   * 
+   *
    * Workflow:
    * 1. Validate prompts (count, format)
    * 2. Generate images sequentially (to avoid rate limits)
@@ -351,12 +351,12 @@ export interface IImageGenerationService {
    * 5. Track progress and call onProgress callback
    * 6. Handle failures (retry or mark as failed)
    * 7. Return all cards (successful and failed)
-   * 
+   *
    * @param input - Prompts and generation options
    * @returns Promise<ServiceResponse<GenerateImagesOutput>> - All generated images
-   * 
+   *
    * @throws Never throws - all errors returned in ServiceResponse
-   * 
+   *
    * @example
    * ```typescript
    * const result = await service.generateImages({
@@ -368,35 +368,33 @@ export interface IImageGenerationService {
    *     console.log(`~${progress.estimatedTimeRemaining}s remaining`);
    *   }
    * });
-   * 
+   *
    * if (result.success) {
    *   const { generatedCards, totalUsage, fullySuccessful } = result.data;
-   *   
+   *
    *   if (fullySuccessful) {
    *     console.log('All 22 cards generated!');
    *   } else {
    *     const failed = generatedCards.filter(c => c.generationStatus === 'failed');
    *     console.log(`${failed.length} cards failed - retry?`);
    *   }
-   *   
+   *
    *   console.log(`Total cost: $${totalUsage.estimatedCost}`);
    * }
    * ```
    */
-  generateImages(
-    input: GenerateImagesInput
-  ): Promise<ServiceResponse<GenerateImagesOutput>>
+  generateImages(input: GenerateImagesInput): Promise<ServiceResponse<GenerateImagesOutput>>
 
   /**
    * Regenerate a single failed image
-   * 
+   *
    * Useful for retrying specific cards that failed during batch generation.
-   * 
+   *
    * @param input - Card to regenerate
    * @returns Promise<ServiceResponse<RegenerateImageOutput>> - Regenerated card
-   * 
+   *
    * @throws Never throws - all errors returned in ServiceResponse
-   * 
+   *
    * @example
    * ```typescript
    * // Retry failed card
@@ -404,27 +402,25 @@ export interface IImageGenerationService {
    *   cardNumber: 13, // Death card failed
    *   prompt: cardPrompts[13].generatedPrompt
    * });
-   * 
+   *
    * if (result.success) {
    *   replaceCard(13, result.data.generatedCard);
    * }
    * ```
    */
-  regenerateImage(
-    input: RegenerateImageInput
-  ): Promise<ServiceResponse<RegenerateImageOutput>>
+  regenerateImage(input: RegenerateImageInput): Promise<ServiceResponse<RegenerateImageOutput>>
 
   /**
    * Cancel ongoing image generation
-   * 
+   *
    * Stops generation after current card completes.
    * Returns cards generated before cancellation.
-   * 
+   *
    * @param input - Session to cancel
    * @returns Promise<ServiceResponse<CancelGenerationOutput>> - Cancellation result
-   * 
+   *
    * @throws Never throws - all errors returned in ServiceResponse
-   * 
+   *
    * @example
    * ```typescript
    * const result = await service.cancelGeneration({ sessionId });
@@ -433,20 +429,18 @@ export interface IImageGenerationService {
    * }
    * ```
    */
-  cancelGeneration(
-    input: CancelGenerationInput
-  ): Promise<ServiceResponse<CancelGenerationOutput>>
+  cancelGeneration(input: CancelGenerationInput): Promise<ServiceResponse<CancelGenerationOutput>>
 
   /**
    * Get status of ongoing generation
-   * 
+   *
    * Check progress without blocking.
-   * 
+   *
    * @param input - Session ID
    * @returns Promise<ServiceResponse<GetGenerationStatusOutput>> - Current status
-   * 
+   *
    * @throws Never throws - all errors returned in ServiceResponse
-   * 
+   *
    * @example
    * ```typescript
    * const result = await service.getGenerationStatus({ sessionId });
@@ -464,15 +458,15 @@ export interface IImageGenerationService {
 
   /**
    * Estimate cost and time for generating images
-   * 
+   *
    * Calculates estimated cost based on number of images.
    * Use before generation to show user expected cost.
-   * 
+   *
    * @param input - Number of images to generate
    * @returns Promise<ServiceResponse<EstimateImageCostOutput>> - Cost estimate
-   * 
+   *
    * @throws Never throws - all errors returned in ServiceResponse
-   * 
+   *
    * @example
    * ```typescript
    * const result = await service.estimateCost({ imageCount: 22 });
@@ -484,9 +478,7 @@ export interface IImageGenerationService {
    * }
    * ```
    */
-  estimateCost(
-    input: { imageCount: number }
-  ): Promise<ServiceResponse<EstimateImageCostOutput>>
+  estimateCost(input: { imageCount: number }): Promise<ServiceResponse<EstimateImageCostOutput>>
 }
 
 // ============================================================================
@@ -497,56 +489,37 @@ export interface IImageGenerationService {
  * Maps error codes to user-friendly messages
  */
 export const IMAGE_GENERATION_ERROR_MESSAGES: Record<ImageGenerationErrorCode, string> = {
-  [ImageGenerationErrorCode.API_KEY_MISSING]: 
+  [ImageGenerationErrorCode.API_KEY_MISSING]:
     'Grok API key is not configured - please contact support',
-  [ImageGenerationErrorCode.API_KEY_INVALID]: 
-    'Grok API key is invalid - please contact support',
-  [ImageGenerationErrorCode.API_TIMEOUT]: 
-    'Image generation timed out - please try again',
-  [ImageGenerationErrorCode.API_RATE_LIMIT]: 
-    'Rate limit reached - please wait a moment',
-  [ImageGenerationErrorCode.API_ERROR]: 
-    'Grok API error - please try again',
-  
-  [ImageGenerationErrorCode.INVALID_PROMPTS]: 
-    'Invalid prompts provided',
-  [ImageGenerationErrorCode.WRONG_PROMPT_COUNT]: 
-    'Must provide exactly 22 prompts',
-  [ImageGenerationErrorCode.PROMPT_TOO_LONG]: 
-    'Prompt exceeds maximum length',
-  [ImageGenerationErrorCode.INVALID_MODEL]: 
-    'Invalid Grok model specified',
-  
-  [ImageGenerationErrorCode.GENERATION_FAILED]: 
-    'Image generation failed - please try again',
-  [ImageGenerationErrorCode.INVALID_IMAGE_DATA]: 
-    'Received invalid image data from API',
-  [ImageGenerationErrorCode.IMAGE_UPLOAD_FAILED]: 
-    'Failed to upload image to storage',
-  [ImageGenerationErrorCode.PARTIAL_GENERATION_FAILURE]: 
+  [ImageGenerationErrorCode.API_KEY_INVALID]: 'Grok API key is invalid - please contact support',
+  [ImageGenerationErrorCode.API_TIMEOUT]: 'Image generation timed out - please try again',
+  [ImageGenerationErrorCode.API_RATE_LIMIT]: 'Rate limit reached - please wait a moment',
+  [ImageGenerationErrorCode.API_ERROR]: 'Grok API error - please try again',
+
+  [ImageGenerationErrorCode.INVALID_PROMPTS]: 'Invalid prompts provided',
+  [ImageGenerationErrorCode.WRONG_PROMPT_COUNT]: 'Must provide exactly 22 prompts',
+  [ImageGenerationErrorCode.PROMPT_TOO_LONG]: 'Prompt exceeds maximum length',
+  [ImageGenerationErrorCode.INVALID_MODEL]: 'Invalid Grok model specified',
+
+  [ImageGenerationErrorCode.GENERATION_FAILED]: 'Image generation failed - please try again',
+  [ImageGenerationErrorCode.INVALID_IMAGE_DATA]: 'Received invalid image data from API',
+  [ImageGenerationErrorCode.IMAGE_UPLOAD_FAILED]: 'Failed to upload image to storage',
+  [ImageGenerationErrorCode.PARTIAL_GENERATION_FAILURE]:
     'Some images failed to generate - you can retry failed cards',
-  [ImageGenerationErrorCode.ALL_GENERATIONS_FAILED]: 
+  [ImageGenerationErrorCode.ALL_GENERATIONS_FAILED]:
     'All image generations failed - please try again',
-  
-  [ImageGenerationErrorCode.SESSION_NOT_FOUND]: 
-    'Generation session not found',
-  [ImageGenerationErrorCode.SESSION_ALREADY_COMPLETE]: 
-    'Generation session is already complete',
-  [ImageGenerationErrorCode.SESSION_CANCELED]: 
-    'Generation was canceled',
-  
-  [ImageGenerationErrorCode.STORAGE_UNAVAILABLE]: 
-    'Image storage is unavailable',
-  [ImageGenerationErrorCode.STORAGE_QUOTA_EXCEEDED]: 
-    'Storage quota exceeded',
-  
-  [ImageGenerationErrorCode.NETWORK_ERROR]: 
-    'Network error - please check your connection',
-  
-  [ImageGenerationErrorCode.INSUFFICIENT_CREDITS]: 
-    'Insufficient API credits',
-  [ImageGenerationErrorCode.QUOTA_EXCEEDED]: 
-    'API quota exceeded - please try again later',
+
+  [ImageGenerationErrorCode.SESSION_NOT_FOUND]: 'Generation session not found',
+  [ImageGenerationErrorCode.SESSION_ALREADY_COMPLETE]: 'Generation session is already complete',
+  [ImageGenerationErrorCode.SESSION_CANCELED]: 'Generation was canceled',
+
+  [ImageGenerationErrorCode.STORAGE_UNAVAILABLE]: 'Image storage is unavailable',
+  [ImageGenerationErrorCode.STORAGE_QUOTA_EXCEEDED]: 'Storage quota exceeded',
+
+  [ImageGenerationErrorCode.NETWORK_ERROR]: 'Network error - please check your connection',
+
+  [ImageGenerationErrorCode.INSUFFICIENT_CREDITS]: 'Insufficient API credits',
+  [ImageGenerationErrorCode.QUOTA_EXCEEDED]: 'API quota exceeded - please try again later',
 }
 
 // ============================================================================

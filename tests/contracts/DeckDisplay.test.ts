@@ -14,18 +14,34 @@ import {
   type GeneratedCard,
   type CardNumber,
   type GeneratedCardId,
-  type DisplayCard
+  type DisplayCard,
 } from '../../contracts'
 
 // Helper to create mock cards
 const createMockCards = (count: number = 22): GeneratedCard[] => {
   const MAJOR_ARCANA_NAMES = [
-    'The Fool', 'The Magician', 'The High Priestess', 'The Empress',
-    'The Emperor', 'The Hierophant', 'The Lovers', 'The Chariot',
-    'Strength', 'The Hermit', 'Wheel of Fortune', 'Justice',
-    'The Hanged Man', 'Death', 'Temperance', 'The Devil',
-    'The Tower', 'The Star', 'The Moon', 'The Sun',
-    'Judgement', 'The World'
+    'The Fool',
+    'The Magician',
+    'The High Priestess',
+    'The Empress',
+    'The Emperor',
+    'The Hierophant',
+    'The Lovers',
+    'The Chariot',
+    'Strength',
+    'The Hermit',
+    'Wheel of Fortune',
+    'Justice',
+    'The Hanged Man',
+    'Death',
+    'Temperance',
+    'The Devil',
+    'The Tower',
+    'The Star',
+    'The Moon',
+    'The Sun',
+    'Judgement',
+    'The World',
   ]
 
   return Array.from({ length: count }, (_, i) => ({
@@ -36,7 +52,7 @@ const createMockCards = (count: number = 22): GeneratedCard[] => {
     imageUrl: `https://example.com/cards/card-${String(i).padStart(2, '0')}.png`,
     generationStatus: 'completed' as const,
     generatedAt: new Date(Date.now() - (21 - i) * 1000), // Staggered times
-    retryCount: 0
+    retryCount: 0,
   }))
 }
 
@@ -52,7 +68,7 @@ describe('DeckDisplay Contract', () => {
   describe('initializeDisplay()', () => {
     it('should initialize display with 22 cards and default settings', async () => {
       const response = await service.initializeDisplay({
-        generatedCards: mockCards
+        generatedCards: mockCards,
       })
 
       expect(response.success).toBe(true)
@@ -70,7 +86,7 @@ describe('DeckDisplay Contract', () => {
     it('should initialize with custom layout', async () => {
       const response = await service.initializeDisplay({
         generatedCards: mockCards,
-        initialLayout: 'list'
+        initialLayout: 'list',
       })
 
       expect(response.success).toBe(true)
@@ -80,7 +96,7 @@ describe('DeckDisplay Contract', () => {
     it('should initialize with custom size', async () => {
       const response = await service.initializeDisplay({
         generatedCards: mockCards,
-        initialSize: 'large'
+        initialSize: 'large',
       })
 
       expect(response.success).toBe(true)
@@ -89,7 +105,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should create DisplayCard objects with correct properties', async () => {
       const response = await service.initializeDisplay({
-        generatedCards: mockCards
+        generatedCards: mockCards,
       })
 
       expect(response.success).toBe(true)
@@ -104,7 +120,7 @@ describe('DeckDisplay Contract', () => {
     it('should auto-open first card when autoOpenFirst is true', async () => {
       const response = await service.initializeDisplay({
         generatedCards: mockCards,
-        autoOpenFirst: true
+        autoOpenFirst: true,
       })
 
       expect(response.success).toBe(true)
@@ -114,7 +130,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should fail with NO_CARDS_PROVIDED when no cards provided', async () => {
       const response = await service.initializeDisplay({
-        generatedCards: []
+        generatedCards: [],
       })
 
       expect(response.success).toBe(false)
@@ -126,7 +142,7 @@ describe('DeckDisplay Contract', () => {
     it('should fail with INVALID_LAYOUT for invalid initial layout', async () => {
       const response = await service.initializeDisplay({
         generatedCards: mockCards,
-        initialLayout: 'invalid' as any
+        initialLayout: 'invalid' as any,
       })
 
       expect(response.success).toBe(false)
@@ -136,7 +152,7 @@ describe('DeckDisplay Contract', () => {
     it('should fail with INVALID_SIZE for invalid initial size', async () => {
       const response = await service.initializeDisplay({
         generatedCards: mockCards,
-        initialSize: 'extra-large' as any
+        initialSize: 'extra-large' as any,
       })
 
       expect(response.success).toBe(false)
@@ -151,7 +167,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should change layout from grid to list', async () => {
       const response = await service.changeLayout({
-        layout: 'list'
+        layout: 'list',
       })
 
       expect(response.success).toBe(true)
@@ -163,7 +179,7 @@ describe('DeckDisplay Contract', () => {
       await service.changeLayout({ layout: 'list' })
 
       const response = await service.changeLayout({
-        layout: 'carousel'
+        layout: 'carousel',
       })
 
       expect(response.success).toBe(true)
@@ -174,7 +190,7 @@ describe('DeckDisplay Contract', () => {
       await service.changeLayout({ layout: 'carousel' })
 
       const response = await service.changeLayout({
-        layout: 'grid'
+        layout: 'grid',
       })
 
       expect(response.success).toBe(true)
@@ -191,7 +207,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should fail with INVALID_LAYOUT for invalid layout', async () => {
       const response = await service.changeLayout({
-        layout: 'masonry' as any
+        layout: 'masonry' as any,
       })
 
       expect(response.success).toBe(false)
@@ -206,7 +222,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should change size from medium to small', async () => {
       const response = await service.changeCardSize({
-        size: 'small'
+        size: 'small',
       })
 
       expect(response.success).toBe(true)
@@ -216,7 +232,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should change size to large', async () => {
       const response = await service.changeCardSize({
-        size: 'large'
+        size: 'large',
       })
 
       expect(response.success).toBe(true)
@@ -227,7 +243,7 @@ describe('DeckDisplay Contract', () => {
       await service.changeCardSize({ size: 'large' })
 
       const response = await service.changeCardSize({
-        size: 'medium'
+        size: 'medium',
       })
 
       expect(response.success).toBe(true)
@@ -244,7 +260,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should fail with INVALID_SIZE for invalid size', async () => {
       const response = await service.changeCardSize({
-        size: 'tiny' as any
+        size: 'tiny' as any,
       })
 
       expect(response.success).toBe(false)
@@ -260,7 +276,7 @@ describe('DeckDisplay Contract', () => {
     it('should sort cards by number ascending', async () => {
       const response = await service.sortCards({
         sortBy: 'number',
-        ascending: true
+        ascending: true,
       })
 
       expect(response.success).toBe(true)
@@ -276,7 +292,7 @@ describe('DeckDisplay Contract', () => {
     it('should sort cards by number descending', async () => {
       const response = await service.sortCards({
         sortBy: 'number',
-        ascending: false
+        ascending: false,
       })
 
       expect(response.success).toBe(true)
@@ -288,7 +304,7 @@ describe('DeckDisplay Contract', () => {
     it('should sort cards by name ascending', async () => {
       const response = await service.sortCards({
         sortBy: 'name',
-        ascending: true
+        ascending: true,
       })
 
       expect(response.success).toBe(true)
@@ -297,14 +313,16 @@ describe('DeckDisplay Contract', () => {
       // Verify alphabetical order
       const cards = response.data!.displayCards
       for (let i = 1; i < cards.length; i++) {
-        expect(cards[i]!.card.cardName.localeCompare(cards[i - 1]!.card.cardName)).toBeGreaterThanOrEqual(0)
+        expect(
+          cards[i]!.card.cardName.localeCompare(cards[i - 1]!.card.cardName)
+        ).toBeGreaterThanOrEqual(0)
       }
     })
 
     it('should sort cards by generated date ascending', async () => {
       const response = await service.sortCards({
         sortBy: 'generated-date',
-        ascending: true
+        ascending: true,
       })
 
       expect(response.success).toBe(true)
@@ -321,7 +339,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should default to ascending when not specified', async () => {
       const response = await service.sortCards({
-        sortBy: 'number'
+        sortBy: 'number',
       })
 
       expect(response.success).toBe(true)
@@ -339,7 +357,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should fail with INVALID_SORT_OPTION for invalid sort option', async () => {
       const response = await service.sortCards({
-        sortBy: 'color' as any
+        sortBy: 'color' as any,
       })
 
       expect(response.success).toBe(false)
@@ -354,7 +372,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should filter cards by name', async () => {
       const response = await service.filterCards({
-        filter: 'Fool'
+        filter: 'Fool',
       })
 
       expect(response.success).toBe(true)
@@ -368,7 +386,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should filter cards by number', async () => {
       const response = await service.filterCards({
-        filter: '0'
+        filter: '0',
       })
 
       expect(response.success).toBe(true)
@@ -381,7 +399,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should filter cards by prompt text', async () => {
       const response = await service.filterCards({
-        filter: 'cyberpunk'
+        filter: 'cyberpunk',
       })
 
       expect(response.success).toBe(true)
@@ -404,7 +422,7 @@ describe('DeckDisplay Contract', () => {
 
       // Then clear filter
       const response = await service.filterCards({
-        filter: ''
+        filter: '',
       })
 
       expect(response.success).toBe(true)
@@ -413,7 +431,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should return zero visible count for non-matching filter', async () => {
       const response = await service.filterCards({
-        filter: 'nonexistent-card-xyz'
+        filter: 'nonexistent-card-xyz',
       })
 
       expect(response.success).toBe(true)
@@ -422,7 +440,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should mark matching cards as visible and non-matching as not visible', async () => {
       const response = await service.filterCards({
-        filter: 'Fool'
+        filter: 'Fool',
       })
 
       expect(response.success).toBe(true)
@@ -444,7 +462,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should select card 0', async () => {
       const response = await service.selectCard({
-        cardNumber: 0
+        cardNumber: 0,
       })
 
       expect(response.success).toBe(true)
@@ -455,7 +473,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should select card 13', async () => {
       const response = await service.selectCard({
-        cardNumber: 13
+        cardNumber: 13,
       })
 
       expect(response.success).toBe(true)
@@ -465,7 +483,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should select card 21', async () => {
       const response = await service.selectCard({
-        cardNumber: 21
+        cardNumber: 21,
       })
 
       expect(response.success).toBe(true)
@@ -476,7 +494,7 @@ describe('DeckDisplay Contract', () => {
     it('should select card without opening lightbox', async () => {
       const response = await service.selectCard({
         cardNumber: 5,
-        openLightbox: false
+        openLightbox: false,
       })
 
       expect(response.success).toBe(true)
@@ -488,7 +506,7 @@ describe('DeckDisplay Contract', () => {
     it('should select card and open lightbox', async () => {
       const response = await service.selectCard({
         cardNumber: 7,
-        openLightbox: true
+        openLightbox: true,
       })
 
       expect(response.success).toBe(true)
@@ -500,7 +518,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should fail with INVALID_CARD_NUMBER for card -1', async () => {
       const response = await service.selectCard({
-        cardNumber: -1
+        cardNumber: -1,
       })
 
       expect(response.success).toBe(false)
@@ -509,7 +527,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should fail with INVALID_CARD_NUMBER for card 22', async () => {
       const response = await service.selectCard({
-        cardNumber: 22
+        cardNumber: 22,
       })
 
       expect(response.success).toBe(false)
@@ -518,7 +536,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should fail with INVALID_CARD_NUMBER for card 100', async () => {
       const response = await service.selectCard({
-        cardNumber: 100
+        cardNumber: 100,
       })
 
       expect(response.success).toBe(false)
@@ -533,7 +551,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should open lightbox for card 0', async () => {
       const response = await service.openLightbox({
-        cardNumber: 0
+        cardNumber: 0,
       })
 
       expect(response.success).toBe(true)
@@ -545,7 +563,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should open lightbox for card 13 (middle card)', async () => {
       const response = await service.openLightbox({
-        cardNumber: 13
+        cardNumber: 13,
       })
 
       expect(response.success).toBe(true)
@@ -556,7 +574,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should open lightbox for card 21 (last card)', async () => {
       const response = await service.openLightbox({
-        cardNumber: 21
+        cardNumber: 21,
       })
 
       expect(response.success).toBe(true)
@@ -567,7 +585,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should set canNavigateLeft to false for first card', async () => {
       const response = await service.openLightbox({
-        cardNumber: 0
+        cardNumber: 0,
       })
 
       expect(response.success).toBe(true)
@@ -577,7 +595,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should set canNavigateRight to false for last card', async () => {
       const response = await service.openLightbox({
-        cardNumber: 21
+        cardNumber: 21,
       })
 
       expect(response.success).toBe(true)
@@ -588,7 +606,7 @@ describe('DeckDisplay Contract', () => {
     it('should open with showPrompt option', async () => {
       const response = await service.openLightbox({
         cardNumber: 5,
-        showPrompt: true
+        showPrompt: true,
       })
 
       expect(response.success).toBe(true)
@@ -598,7 +616,7 @@ describe('DeckDisplay Contract', () => {
     it('should open with showMetadata option', async () => {
       const response = await service.openLightbox({
         cardNumber: 5,
-        showMetadata: true
+        showMetadata: true,
       })
 
       expect(response.success).toBe(true)
@@ -609,7 +627,7 @@ describe('DeckDisplay Contract', () => {
       const response = await service.openLightbox({
         cardNumber: 5,
         showPrompt: true,
-        showMetadata: true
+        showMetadata: true,
       })
 
       expect(response.success).toBe(true)
@@ -619,7 +637,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should default showPrompt and showMetadata to false', async () => {
       const response = await service.openLightbox({
-        cardNumber: 5
+        cardNumber: 5,
       })
 
       expect(response.success).toBe(true)
@@ -629,7 +647,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should fail with INVALID_CARD_NUMBER for invalid card', async () => {
       const response = await service.openLightbox({
-        cardNumber: 25
+        cardNumber: 25,
       })
 
       expect(response.success).toBe(false)
@@ -680,7 +698,7 @@ describe('DeckDisplay Contract', () => {
       await service.openLightbox({ cardNumber: 0 })
 
       const response = await service.navigateLightbox({
-        direction: 'next'
+        direction: 'next',
       })
 
       expect(response.success).toBe(true)
@@ -692,7 +710,7 @@ describe('DeckDisplay Contract', () => {
       await service.openLightbox({ cardNumber: 5 })
 
       const response = await service.navigateLightbox({
-        direction: 'previous'
+        direction: 'previous',
       })
 
       expect(response.success).toBe(true)
@@ -737,7 +755,7 @@ describe('DeckDisplay Contract', () => {
       await service.openLightbox({ cardNumber: 0 })
 
       const response = await service.navigateLightbox({
-        direction: 'previous'
+        direction: 'previous',
       })
 
       expect(response.success).toBe(false)
@@ -748,7 +766,7 @@ describe('DeckDisplay Contract', () => {
       await service.openLightbox({ cardNumber: 21 })
 
       const response = await service.navigateLightbox({
-        direction: 'next'
+        direction: 'next',
       })
 
       expect(response.success).toBe(false)
@@ -757,7 +775,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should fail with LIGHTBOX_NOT_OPEN when lightbox is closed', async () => {
       const response = await service.navigateLightbox({
-        direction: 'next'
+        direction: 'next',
       })
 
       expect(response.success).toBe(false)
@@ -863,7 +881,7 @@ describe('DeckDisplay Contract', () => {
   describe('Error Code Coverage', () => {
     it('should test NO_CARDS_PROVIDED error', async () => {
       const response = await service.initializeDisplay({
-        generatedCards: []
+        generatedCards: [],
       })
 
       expect(response.error?.code).toBe(DeckDisplayErrorCode.NO_CARDS_PROVIDED)
@@ -880,7 +898,7 @@ describe('DeckDisplay Contract', () => {
     it('should test INVALID_LAYOUT error', async () => {
       const response = await service.initializeDisplay({
         generatedCards: mockCards,
-        initialLayout: 'invalid-layout' as any
+        initialLayout: 'invalid-layout' as any,
       })
 
       expect(response.error?.code).toBe(DeckDisplayErrorCode.INVALID_LAYOUT)
@@ -889,7 +907,7 @@ describe('DeckDisplay Contract', () => {
     it('should test INVALID_SIZE error', async () => {
       const response = await service.initializeDisplay({
         generatedCards: mockCards,
-        initialSize: 'gigantic' as any
+        initialSize: 'gigantic' as any,
       })
 
       expect(response.error?.code).toBe(DeckDisplayErrorCode.INVALID_SIZE)
@@ -899,7 +917,7 @@ describe('DeckDisplay Contract', () => {
       await service.initializeDisplay({ generatedCards: mockCards })
 
       const response = await service.sortCards({
-        sortBy: 'popularity' as any
+        sortBy: 'popularity' as any,
       })
 
       expect(response.error?.code).toBe(DeckDisplayErrorCode.INVALID_SORT_OPTION)
@@ -943,7 +961,7 @@ describe('DeckDisplay Contract', () => {
 
     it('should return properly typed InitializeDisplayOutput', async () => {
       const response = await service.initializeDisplay({
-        generatedCards: mockCards
+        generatedCards: mockCards,
       })
 
       expect(response.success).toBe(true)

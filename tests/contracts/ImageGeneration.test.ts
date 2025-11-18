@@ -13,18 +13,34 @@ import type {
   RegenerateImageInput,
   CancelGenerationInput,
   GetGenerationStatusInput,
-  ImageGenerationErrorCode
+  ImageGenerationErrorCode,
 } from '../../contracts/ImageGeneration'
 import type { CardPrompt, CardNumber, PromptId } from '../../contracts/PromptGeneration'
 
 // Helper to create mock CardPrompt array
 const MAJOR_ARCANA_NAMES = [
-  'The Fool', 'The Magician', 'The High Priestess', 'The Empress',
-  'The Emperor', 'The Hierophant', 'The Lovers', 'The Chariot',
-  'Strength', 'The Hermit', 'Wheel of Fortune', 'Justice',
-  'The Hanged Man', 'Death', 'Temperance', 'The Devil',
-  'The Tower', 'The Star', 'The Moon', 'The Sun',
-  'Judgement', 'The World'
+  'The Fool',
+  'The Magician',
+  'The High Priestess',
+  'The Empress',
+  'The Emperor',
+  'The Hierophant',
+  'The Lovers',
+  'The Chariot',
+  'Strength',
+  'The Hermit',
+  'Wheel of Fortune',
+  'Justice',
+  'The Hanged Man',
+  'Death',
+  'Temperance',
+  'The Devil',
+  'The Tower',
+  'The Star',
+  'The Moon',
+  'The Sun',
+  'Judgement',
+  'The World',
 ]
 
 function createMockPrompts(count: number = 22): CardPrompt[] {
@@ -35,7 +51,7 @@ function createMockPrompts(count: number = 22): CardPrompt[] {
     traditionalMeaning: `Traditional meaning for card ${i}`,
     generatedPrompt: `A detailed tarot card illustration for ${MAJOR_ARCANA_NAMES[i]}, embodying mystical symbolism with rich colors and intricate details. The card shows traditional imagery with a modern artistic interpretation.`,
     confidence: 0.85 + Math.random() * 0.15,
-    generatedAt: new Date()
+    generatedAt: new Date(),
   }))
 }
 
@@ -51,7 +67,7 @@ describe('ImageGeneration Contract', () => {
       it('should generate all 22 card images from valid prompts', async () => {
         const mockPrompts = createMockPrompts(22)
         const input: GenerateImagesInput = {
-          prompts: mockPrompts
+          prompts: mockPrompts,
         }
 
         const response = await service.generateImages(input)
@@ -70,7 +86,11 @@ describe('ImageGeneration Contract', () => {
 
         expect(response.success).toBe(true)
         const cardNumbers = response.data!.generatedCards.map(c => c.cardNumber)
-        expect(cardNumbers).toEqual(expect.arrayContaining([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]))
+        expect(cardNumbers).toEqual(
+          expect.arrayContaining([
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+          ])
+        )
       })
 
       it('should generate images with correct card names', async () => {
@@ -103,11 +123,13 @@ describe('ImageGeneration Contract', () => {
         const mockPrompts = createMockPrompts(22)
         const response = await service.generateImages({
           prompts: mockPrompts,
-          saveToStorage: true
+          saveToStorage: true,
         })
 
         expect(response.success).toBe(true)
-        const successfulCards = response.data!.generatedCards.filter(c => c.generationStatus === 'completed')
+        const successfulCards = response.data!.generatedCards.filter(
+          c => c.generationStatus === 'completed'
+        )
 
         if (successfulCards.length > 0) {
           expect(successfulCards[0]?.imageUrl).toBeDefined()
@@ -118,11 +140,13 @@ describe('ImageGeneration Contract', () => {
         const mockPrompts = createMockPrompts(22)
         const response = await service.generateImages({
           prompts: mockPrompts,
-          saveToStorage: false
+          saveToStorage: false,
         })
 
         expect(response.success).toBe(true)
-        const successfulCards = response.data!.generatedCards.filter(c => c.generationStatus === 'completed')
+        const successfulCards = response.data!.generatedCards.filter(
+          c => c.generationStatus === 'completed'
+        )
 
         if (successfulCards.length > 0) {
           expect(successfulCards[0]?.imageDataUrl).toBeDefined()
@@ -150,9 +174,9 @@ describe('ImageGeneration Contract', () => {
 
         const response = await service.generateImages({
           prompts: mockPrompts,
-          onProgress: (progress) => {
+          onProgress: progress => {
             progressUpdates.push(progress)
-          }
+          },
         })
 
         expect(response.success).toBe(true)
@@ -165,9 +189,9 @@ describe('ImageGeneration Contract', () => {
 
         await service.generateImages({
           prompts: mockPrompts,
-          onProgress: (progress) => {
+          onProgress: progress => {
             progressUpdates.push(progress)
-          }
+          },
         })
 
         if (progressUpdates.length > 0) {
@@ -186,7 +210,7 @@ describe('ImageGeneration Contract', () => {
         const mockPrompts = createMockPrompts(22)
         const response = await service.generateImages({
           prompts: mockPrompts,
-          model: 'grok-2-image-alpha'
+          model: 'grok-2-image-alpha',
         })
 
         expect(response.success).toBe(true)
@@ -196,7 +220,7 @@ describe('ImageGeneration Contract', () => {
         const mockPrompts = createMockPrompts(22)
         const response = await service.generateImages({
           prompts: mockPrompts,
-          allowPartialSuccess: true
+          allowPartialSuccess: true,
         })
 
         expect(response.success).toBe(true)
@@ -253,7 +277,7 @@ describe('ImageGeneration Contract', () => {
         const mockPrompts = createMockPrompts(22)
         const response = await service.generateImages({
           prompts: mockPrompts,
-          model: 'invalid-model-name'
+          model: 'invalid-model-name',
         })
 
         // May succeed or fail depending on mock implementation
@@ -291,7 +315,9 @@ describe('ImageGeneration Contract', () => {
         expect(response.success).toBe(true)
         const card = response.data!.generatedCards[0]!
 
-        expect(['queued', 'generating', 'completed', 'failed', 'retrying']).toContain(card.generationStatus)
+        expect(['queued', 'generating', 'completed', 'failed', 'retrying']).toContain(
+          card.generationStatus
+        )
         expect(card.retryCount).toBeGreaterThanOrEqual(0)
       })
 
@@ -309,7 +335,9 @@ describe('ImageGeneration Contract', () => {
         const response = await service.generateImages({ prompts: mockPrompts })
 
         expect(response.success).toBe(true)
-        expect(response.data!.startedAt.getTime()).toBeLessThanOrEqual(response.data!.completedAt.getTime())
+        expect(response.data!.startedAt.getTime()).toBeLessThanOrEqual(
+          response.data!.completedAt.getTime()
+        )
       })
 
       it('should have fullySuccessful as boolean', async () => {
@@ -327,7 +355,7 @@ describe('ImageGeneration Contract', () => {
       it('should regenerate a single card image', async () => {
         const input: RegenerateImageInput = {
           cardNumber: 13 as CardNumber,
-          prompt: 'A detailed tarot card illustration for Death'
+          prompt: 'A detailed tarot card illustration for Death',
         }
 
         const response = await service.regenerateImage(input)
@@ -340,7 +368,7 @@ describe('ImageGeneration Contract', () => {
       it('should return GeneratedCard with correct card number', async () => {
         const input: RegenerateImageInput = {
           cardNumber: 5 as CardNumber,
-          prompt: 'Tarot card for The Hierophant'
+          prompt: 'Tarot card for The Hierophant',
         }
 
         const response = await service.regenerateImage(input)
@@ -352,7 +380,7 @@ describe('ImageGeneration Contract', () => {
       it('should include usage information', async () => {
         const input: RegenerateImageInput = {
           cardNumber: 0 as CardNumber,
-          prompt: 'The Fool tarot card'
+          prompt: 'The Fool tarot card',
         }
 
         const response = await service.regenerateImage(input)
@@ -369,7 +397,7 @@ describe('ImageGeneration Contract', () => {
         const input: RegenerateImageInput = {
           cardNumber: 13 as CardNumber,
           prompt: 'Death card',
-          previousAttempts: 2
+          previousAttempts: 2,
         }
 
         const response = await service.regenerateImage(input)
@@ -381,7 +409,7 @@ describe('ImageGeneration Contract', () => {
       it('should generate different images on regeneration', async () => {
         const input: RegenerateImageInput = {
           cardNumber: 10 as CardNumber,
-          prompt: 'Wheel of Fortune'
+          prompt: 'Wheel of Fortune',
         }
 
         const response1 = await service.regenerateImage(input)
@@ -397,7 +425,7 @@ describe('ImageGeneration Contract', () => {
       it('should fail with INVALID_PROMPTS when card number < 0', async () => {
         const input: RegenerateImageInput = {
           cardNumber: -1 as CardNumber,
-          prompt: 'Invalid card'
+          prompt: 'Invalid card',
         }
 
         const response = await service.regenerateImage(input)
@@ -409,7 +437,7 @@ describe('ImageGeneration Contract', () => {
       it('should fail with INVALID_PROMPTS when card number > 21', async () => {
         const input: RegenerateImageInput = {
           cardNumber: 22 as CardNumber,
-          prompt: 'Invalid card'
+          prompt: 'Invalid card',
         }
 
         const response = await service.regenerateImage(input)
@@ -421,7 +449,7 @@ describe('ImageGeneration Contract', () => {
       it('should fail with PROMPT_TOO_LONG for excessively long prompts', async () => {
         const input: RegenerateImageInput = {
           cardNumber: 0 as CardNumber,
-          prompt: 'a'.repeat(10000)
+          prompt: 'a'.repeat(10000),
         }
 
         const response = await service.regenerateImage(input)
@@ -456,7 +484,7 @@ describe('ImageGeneration Contract', () => {
 
       it('should return number of cards completed before cancel', async () => {
         const input: CancelGenerationInput = {
-          sessionId: 'test-session-id'
+          sessionId: 'test-session-id',
         }
 
         const response = await service.cancelGeneration(input)
@@ -472,7 +500,7 @@ describe('ImageGeneration Contract', () => {
     describe('Error Cases', () => {
       it('should fail with SESSION_NOT_FOUND for non-existent session', async () => {
         const response = await service.cancelGeneration({
-          sessionId: 'non-existent-session-id'
+          sessionId: 'non-existent-session-id',
         })
 
         expect(response.success).toBe(false)
@@ -485,7 +513,7 @@ describe('ImageGeneration Contract', () => {
 
         if (genResponse.success) {
           const cancelResponse = await service.cancelGeneration({
-            sessionId: genResponse.data!.sessionId
+            sessionId: genResponse.data!.sessionId,
           })
 
           if (!cancelResponse.success) {
@@ -515,7 +543,7 @@ describe('ImageGeneration Contract', () => {
     describe('Success Cases', () => {
       it('should get status of a generation session', async () => {
         const input: GetGenerationStatusInput = {
-          sessionId: 'test-status-session'
+          sessionId: 'test-status-session',
         }
 
         const response = await service.getGenerationStatus(input)
@@ -535,7 +563,7 @@ describe('ImageGeneration Contract', () => {
 
         if (genResponse.success) {
           const statusResponse = await service.getGenerationStatus({
-            sessionId: genResponse.data!.sessionId
+            sessionId: genResponse.data!.sessionId,
           })
 
           if (statusResponse.success) {
@@ -557,7 +585,7 @@ describe('ImageGeneration Contract', () => {
 
         if (genResponse.success) {
           const statusResponse = await service.getGenerationStatus({
-            sessionId: genResponse.data!.sessionId
+            sessionId: genResponse.data!.sessionId,
           })
 
           if (statusResponse.success) {
@@ -568,7 +596,7 @@ describe('ImageGeneration Contract', () => {
 
       it('should have percentComplete between 0-100', async () => {
         const input: GetGenerationStatusInput = {
-          sessionId: 'test-session'
+          sessionId: 'test-session',
         }
 
         const response = await service.getGenerationStatus(input)
@@ -583,7 +611,7 @@ describe('ImageGeneration Contract', () => {
     describe('Error Cases', () => {
       it('should fail with SESSION_NOT_FOUND for non-existent session', async () => {
         const response = await service.getGenerationStatus({
-          sessionId: 'definitely-does-not-exist'
+          sessionId: 'definitely-does-not-exist',
         })
 
         expect(response.success).toBe(false)
@@ -633,7 +661,9 @@ describe('ImageGeneration Contract', () => {
         const response22 = await service.estimateCost({ imageCount: 22 })
 
         if (response10.success && response22.success) {
-          expect(response22.data!.totalEstimatedCost).toBeGreaterThan(response10.data!.totalEstimatedCost)
+          expect(response22.data!.totalEstimatedCost).toBeGreaterThan(
+            response10.data!.totalEstimatedCost
+          )
         }
       })
     })
@@ -693,13 +723,15 @@ describe('ImageGeneration Contract', () => {
       const genResponse = await service.generateImages({ prompts: mockPrompts })
 
       if (genResponse.success) {
-        const failedCards = genResponse.data!.generatedCards.filter(c => c.generationStatus === 'failed')
+        const failedCards = genResponse.data!.generatedCards.filter(
+          c => c.generationStatus === 'failed'
+        )
 
         if (failedCards.length > 0) {
           const failedCard = failedCards[0]!
           const regenResponse = await service.regenerateImage({
             cardNumber: failedCard.cardNumber,
-            prompt: failedCard.prompt
+            prompt: failedCard.prompt,
           })
 
           expect(regenResponse.success).toBe(true)
@@ -714,9 +746,9 @@ describe('ImageGeneration Contract', () => {
 
       await service.generateImages({
         prompts: mockPrompts,
-        onProgress: (progress) => {
+        onProgress: progress => {
           progressUpdates.push(progress.percentComplete)
-        }
+        },
       })
 
       // Progress should increase over time
@@ -734,12 +766,12 @@ describe('ImageGeneration Contract', () => {
 
       const withStorage = await service.generateImages({
         prompts: mockPrompts,
-        saveToStorage: true
+        saveToStorage: true,
       })
 
       const withoutStorage = await service.generateImages({
         prompts: mockPrompts,
-        saveToStorage: false
+        saveToStorage: false,
       })
 
       expect(withStorage.success).toBe(true)
@@ -790,12 +822,14 @@ describe('ImageGeneration Contract', () => {
     })
 
     it('should define PARTIAL_GENERATION_FAILURE error', async () => {
-      const errorCode: ImageGenerationErrorCode = 'PARTIAL_GENERATION_FAILURE' as ImageGenerationErrorCode
+      const errorCode: ImageGenerationErrorCode =
+        'PARTIAL_GENERATION_FAILURE' as ImageGenerationErrorCode
       expect(errorCode).toBe('PARTIAL_GENERATION_FAILURE')
     })
 
     it('should define ALL_GENERATIONS_FAILED error', async () => {
-      const errorCode: ImageGenerationErrorCode = 'ALL_GENERATIONS_FAILED' as ImageGenerationErrorCode
+      const errorCode: ImageGenerationErrorCode =
+        'ALL_GENERATIONS_FAILED' as ImageGenerationErrorCode
       expect(errorCode).toBe('ALL_GENERATIONS_FAILED')
     })
 
@@ -805,7 +839,8 @@ describe('ImageGeneration Contract', () => {
     })
 
     it('should define STORAGE_QUOTA_EXCEEDED error', async () => {
-      const errorCode: ImageGenerationErrorCode = 'STORAGE_QUOTA_EXCEEDED' as ImageGenerationErrorCode
+      const errorCode: ImageGenerationErrorCode =
+        'STORAGE_QUOTA_EXCEEDED' as ImageGenerationErrorCode
       expect(errorCode).toBe('STORAGE_QUOTA_EXCEEDED')
     })
 

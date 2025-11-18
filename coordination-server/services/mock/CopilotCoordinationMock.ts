@@ -25,7 +25,7 @@ import type {
   FileConflict,
   SessionId,
   ServiceResponse,
-  ServiceError
+  ServiceError,
 } from '@contracts'
 
 /**
@@ -76,8 +76,8 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
         error: {
           code: 'INVALID_AGENT',
           message: 'This service is only for GitHub Copilot',
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -96,11 +96,14 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
       }
     }
 
-    console.log(`[CopilotCoordination] Found ${availableTasks.length} available tasks for capabilities:`, params.capabilities)
+    console.log(
+      `[CopilotCoordination] Found ${availableTasks.length} available tasks for capabilities:`,
+      params.capabilities
+    )
 
     return {
       success: true,
-      data: availableTasks
+      data: availableTasks,
     }
   }
 
@@ -121,8 +124,8 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
         error: {
           code: 'INVALID_AGENT',
           message: 'This service is only for GitHub Copilot',
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -134,8 +137,8 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
         error: {
           code: 'TASK_NOT_FOUND',
           message: `Task ${params.taskId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -151,9 +154,9 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
           retryable: false,
           details: {
             currentStatus: task.status,
-            assignedTo: task.assignedTo
-          }
-        }
+            assignedTo: task.assignedTo,
+          },
+        },
       }
     }
 
@@ -165,11 +168,13 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
     // Track in Copilot's tasks
     this.copilotTasks.set(params.taskId, task)
 
-    console.log(`[CopilotCoordination] Task claimed by Copilot: ${params.taskId} - ${task.description}`)
+    console.log(
+      `[CopilotCoordination] Task claimed by Copilot: ${params.taskId} - ${task.description}`
+    )
 
     return {
       success: true,
-      data: task
+      data: task,
     }
   }
 
@@ -194,8 +199,8 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
         error: {
           code: 'INVALID_AGENT',
           message: 'This service is only for GitHub Copilot',
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -207,8 +212,8 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
         error: {
           code: 'TASK_NOT_FOUND',
           message: `Task ${params.taskId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -219,8 +224,8 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
         error: {
           code: 'TASK_NOT_ASSIGNED',
           message: `Task ${params.taskId} is not assigned to GitHub Copilot`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -229,12 +234,14 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
       success: params.success,
       output: params.output,
       filesModified: params.filesModified || [],
-      error: params.error ? {
-        code: 'COPILOT_EXECUTION_ERROR',
-        message: params.error,
-        stack: undefined,
-        retryable: false
-      } : undefined
+      error: params.error
+        ? {
+            code: 'COPILOT_EXECUTION_ERROR',
+            message: params.error,
+            stack: undefined,
+            retryable: false,
+          }
+        : undefined,
     }
 
     // Update task with result
@@ -243,7 +250,9 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
     // Clean up Copilot's task tracking
     this.copilotTasks.delete(params.taskId)
 
-    console.log(`[CopilotCoordination] Task ${params.success ? 'completed' : 'failed'}: ${params.taskId}`)
+    console.log(
+      `[CopilotCoordination] Task ${params.success ? 'completed' : 'failed'}: ${params.taskId}`
+    )
     if (params.filesModified && params.filesModified.length > 0) {
       console.log(`[CopilotCoordination] Files modified:`, params.filesModified)
     }
@@ -269,21 +278,23 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
         error: {
           code: 'INVALID_AGENT',
           message: 'This service is only for GitHub Copilot',
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
     // If no file coordination service, always grant access
     if (!this.fileCoordination) {
-      console.log(`[CopilotCoordination] File access granted (no coordination): ${params.path} for ${params.operation}`)
+      console.log(
+        `[CopilotCoordination] File access granted (no coordination): ${params.path} for ${params.operation}`
+      )
       return {
         success: true,
         data: {
           path: params.path,
           operation: params.operation,
-          granted: true
-        }
+          granted: true,
+        },
       }
     }
 
@@ -294,7 +305,9 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
       this.copilotLocks.set(params.path, result.data.lockToken)
     }
 
-    console.log(`[CopilotCoordination] File access ${result.success ? 'granted' : 'denied'}: ${params.path} for ${params.operation}`)
+    console.log(
+      `[CopilotCoordination] File access ${result.success ? 'granted' : 'denied'}: ${params.path} for ${params.operation}`
+    )
 
     return result
   }
@@ -316,8 +329,8 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
         error: {
           code: 'INVALID_AGENT',
           message: 'This service is only for GitHub Copilot',
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -368,8 +381,8 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
         error: {
           code: 'NO_ACTIVE_SESSION',
           message: 'No active collaboration session',
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -380,14 +393,14 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
         error: {
           code: 'SESSION_NOT_FOUND',
           message: `Session ${sessionId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
     // Get all tasks for session
     const tasksResult = await this.stateStore.getSessionTasks(sessionId)
-    const allTasks = tasksResult.success ? (tasksResult.data || []) : []
+    const allTasks = tasksResult.success ? tasksResult.data || [] : []
 
     // Categorize tasks
     const activeTasks = allTasks.filter(t =>
@@ -397,14 +410,12 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
 
     // Get current locks
     const locksResult = await this.stateStore.getAllLocks()
-    const currentLocks = locksResult.success ? (locksResult.data || []) : []
+    const currentLocks = locksResult.success ? locksResult.data || [] : []
 
     // Calculate progress
     const tasksTotal = allTasks.length
     const tasksCompleted = completedTasks.length
-    const percentComplete = tasksTotal > 0
-      ? Math.round((tasksCompleted / tasksTotal) * 100)
-      : 0
+    const percentComplete = tasksTotal > 0 ? Math.round((tasksCompleted / tasksTotal) * 100) : 0
 
     const status: CollaborationStatus = {
       session,
@@ -415,15 +426,17 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
       progress: {
         tasksTotal,
         tasksCompleted,
-        percentComplete
-      }
+        percentComplete,
+      },
     }
 
-    console.log(`[CopilotCoordination] Status for session ${sessionId}: ${percentComplete}% complete (${tasksCompleted}/${tasksTotal})`)
+    console.log(
+      `[CopilotCoordination] Status for session ${sessionId}: ${percentComplete}% complete (${tasksCompleted}/${tasksTotal})`
+    )
 
     return {
       success: true,
-      data: status
+      data: status,
     }
   }
 
@@ -446,10 +459,10 @@ export class CopilotCoordinationMock implements CopilotCoordinationContract {
   /**
    * Gets Copilot's current file locks (for testing)
    */
-  getCopilotLocks(): Array<{ path: string, token: LockToken }> {
+  getCopilotLocks(): Array<{ path: string; token: LockToken }> {
     return Array.from(this.copilotLocks.entries()).map(([path, token]) => ({
       path,
-      token
+      token,
     }))
   }
 

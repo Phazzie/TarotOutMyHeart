@@ -5,6 +5,7 @@ A coordination server that enables Claude Code and GitHub Copilot to collaborate
 ## Overview
 
 The AI Coordination Server acts as an orchestration layer between multiple AI agents, allowing them to:
+
 - 🎯 Claim and execute tasks from a shared queue
 - 📝 Share conversation context and progress
 - 🔒 Coordinate file access to prevent conflicts
@@ -34,27 +35,32 @@ The AI Coordination Server acts as an orchestration layer between multiple AI ag
 ## Features
 
 ### 🎭 Dual AI Support
+
 - **Claude Code**: Connects via HTTP REST API for orchestration and complex tasks
 - **GitHub Copilot**: Connects via MCP (Model Context Protocol) for autonomous task execution
 
 ### 📋 Task Management
+
 - Priority-based task queue
 - Task lifecycle tracking (queued → claimed → in-progress → completed)
 - Capability-based task routing
 - Progress reporting and monitoring
 
 ### 🔐 File Coordination
+
 - Advisory file locking to prevent conflicts
 - Support for multiple readers, exclusive writers
 - Conflict detection and resolution
 - Lock expiration to prevent deadlocks
 
 ### 💬 Context Sharing
+
 - Shared conversation history between AIs
 - State persistence across sessions
 - Context handoff for task transfers
 
 ### 🎛️ Collaboration Modes
+
 - **Orchestrator-Worker**: One AI leads, delegates to the other
 - **Peer-to-Peer**: Equal partners with task handoffs
 - **Parallel**: Both AIs work simultaneously on different aspects
@@ -123,6 +129,7 @@ Claude Code connects automatically when running in the same project. The server 
 ### Claude Code Endpoints
 
 #### Register Agent
+
 ```http
 POST /api/claude/register
 Content-Type: application/json
@@ -135,16 +142,19 @@ Content-Type: application/json
 ```
 
 #### Get Available Tasks
+
 ```http
 GET /api/claude/tasks?capabilities=typescript-development,testing
 ```
 
 #### Claim Task
+
 ```http
 POST /api/claude/tasks/{taskId}/claim
 ```
 
 #### Report Progress
+
 ```http
 POST /api/claude/tasks/{taskId}/progress
 Content-Type: application/json
@@ -157,6 +167,7 @@ Content-Type: application/json
 ```
 
 #### Complete Task
+
 ```http
 POST /api/claude/tasks/{taskId}/complete
 Content-Type: application/json
@@ -171,6 +182,7 @@ Content-Type: application/json
 ### User Control Endpoints
 
 #### Start Collaboration
+
 ```http
 POST /api/user/collaboration/start
 Content-Type: application/json
@@ -183,11 +195,13 @@ Content-Type: application/json
 ```
 
 #### Get Status
+
 ```http
 GET /api/user/collaboration/{sessionId}/status
 ```
 
 #### Pause/Resume/Cancel
+
 ```http
 POST /api/user/collaboration/{sessionId}/pause
 POST /api/user/collaboration/{sessionId}/resume
@@ -228,10 +242,10 @@ Services can be configured in `services/factory.ts`:
 
 ```typescript
 const services = await createServices({
-  useMocks: true,           // Use mock implementations
+  useMocks: true, // Use mock implementations
   databasePath: './db.sqlite', // SQLite database location
-  debug: true,               // Enable debug logging
-  logger: customLogger       // Custom logger instance
+  debug: true, // Enable debug logging
+  logger: customLogger, // Custom logger instance
 })
 ```
 
@@ -280,11 +294,13 @@ npm run test:watch
 ## Monitoring
 
 ### Health Check
+
 ```bash
 curl http://localhost:3456/health
 ```
 
 ### Status Dashboard
+
 ```bash
 curl http://localhost:3456/status
 ```
@@ -297,13 +313,15 @@ Connect to WebSocket for live updates:
 const ws = new WebSocket('ws://localhost:3456')
 
 ws.on('open', () => {
-  ws.send(JSON.stringify({
-    type: 'subscribe',
-    sessionId: 'session_123'
-  }))
+  ws.send(
+    JSON.stringify({
+      type: 'subscribe',
+      sessionId: 'session_123',
+    })
+  )
 })
 
-ws.on('message', (data) => {
+ws.on('message', data => {
   const event = JSON.parse(data)
   console.log('Event:', event)
 })
@@ -314,6 +332,7 @@ ws.on('message', (data) => {
 ### Common Issues
 
 #### Port Already in Use
+
 ```bash
 # Find process using port
 lsof -i :3456
@@ -323,11 +342,13 @@ kill -9 <PID>
 ```
 
 #### MCP Connection Failed
+
 - Ensure VS Code has been restarted after configuration
 - Check that coordination server is running
 - Verify MCP client extension is installed
 
 #### File Lock Conflicts
+
 - Locks expire automatically after 5 minutes
 - Force release locks via API if needed
 - Check `/api/status` for active locks

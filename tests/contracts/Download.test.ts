@@ -149,7 +149,7 @@ describe('Download Contract', () => {
         const input: DownloadDeckInput = {
           generatedCards: mockCards,
           styleInputs: mockStyleInputs,
-          onProgress: (progress) => {
+          onProgress: progress => {
             progressUpdates.push(progress)
           },
         }
@@ -166,7 +166,7 @@ describe('Download Contract', () => {
         const input: DownloadDeckInput = {
           generatedCards: mockCards,
           styleInputs: mockStyleInputs,
-          onProgress: (progress) => {
+          onProgress: progress => {
             progressValues.push(progress.progress)
           },
         }
@@ -183,7 +183,7 @@ describe('Download Contract', () => {
         const input: DownloadDeckInput = {
           generatedCards: mockCards,
           styleInputs: mockStyleInputs,
-          onProgress: (progress) => {
+          onProgress: progress => {
             if (!steps.includes(progress.currentStep)) {
               steps.push(progress.currentStep)
             }

@@ -5,7 +5,7 @@
  * @boundary Seam #2: StyleInputSeam - User defines theme, tone, description, concept, characters
  * @requirement PRD Section: "User Flow Step 2 - Define Style Parameters"
  * @updated 2025-11-07
- * 
+ *
  * @example
  * ```typescript
  * const result = await styleInputService.validateStyleInputs({
@@ -78,12 +78,12 @@ export const PREDEFINED_TONES = [
 /**
  * Predefined theme options (derived from constant)
  */
-export type PredefinedTheme = typeof PREDEFINED_THEMES[number]
+export type PredefinedTheme = (typeof PREDEFINED_THEMES)[number]
 
 /**
  * Predefined tone options (derived from constant)
  */
-export type PredefinedTone = typeof PREDEFINED_TONES[number]
+export type PredefinedTone = (typeof PREDEFINED_TONES)[number]
 
 // ============================================================================
 // CORE DATA STRUCTURES
@@ -91,7 +91,7 @@ export type PredefinedTone = typeof PREDEFINED_TONES[number]
 
 /**
  * Complete style inputs for tarot deck generation
- * 
+ *
  * @property theme - Visual style theme (predefined or custom)
  * @property tone - Emotional/atmospheric tone (predefined or custom)
  * @property description - Detailed description of desired aesthetic (required, 10-500 chars)
@@ -143,7 +143,7 @@ export interface StyleInputsDefaults {
 /**
  * Input for validating style inputs
  * Partial allows validating individual fields or complete form
- * 
+ *
  * @property theme - Theme to validate
  * @property tone - Tone to validate
  * @property description - Description to validate
@@ -161,7 +161,7 @@ export interface ValidateStyleInputsInput {
 /**
  * Input for saving style inputs to storage
  * Complete inputs required for save operation
- * 
+ *
  * @property styleInputs - Complete style inputs
  * @property saveAsDraft - Whether to save to localStorage as draft
  */
@@ -172,7 +172,7 @@ export interface SaveStyleInputsInput {
 
 /**
  * Input for loading previously saved style inputs
- * 
+ *
  * @property loadFromDraft - Whether to load from localStorage draft
  */
 export interface LoadStyleInputsInput {
@@ -185,7 +185,7 @@ export interface LoadStyleInputsInput {
 
 /**
  * Result of validating style inputs
- * 
+ *
  * @property validation - Complete validation state
  * @property errors - All validation errors across fields
  * @property warnings - Non-blocking warnings (e.g., description too short but within limits)
@@ -198,7 +198,7 @@ export interface ValidateStyleInputsOutput {
 
 /**
  * Result of saving style inputs
- * 
+ *
  * @property saved - Whether save was successful
  * @property styleInputs - The saved style inputs (validated)
  * @property savedAt - Timestamp of save operation
@@ -213,7 +213,7 @@ export interface SaveStyleInputsOutput {
 
 /**
  * Result of loading style inputs
- * 
+ *
  * @property found - Whether saved inputs were found
  * @property styleInputs - Loaded style inputs (null if not found)
  * @property loadedFrom - Where inputs were loaded from ('draft' | 'default')
@@ -226,7 +226,7 @@ export interface LoadStyleInputsOutput {
 
 /**
  * Get default style input values
- * 
+ *
  * @property defaults - Default values for all fields
  */
 export interface GetDefaultsOutput {
@@ -235,7 +235,7 @@ export interface GetDefaultsOutput {
 
 /**
  * Get predefined options for dropdowns
- * 
+ *
  * @property themes - All predefined theme options
  * @property tones - All predefined tone options
  */
@@ -256,24 +256,24 @@ export enum StyleInputErrorCode {
   THEME_REQUIRED = 'THEME_REQUIRED',
   THEME_TOO_LONG = 'THEME_TOO_LONG',
   THEME_INVALID = 'THEME_INVALID',
-  
+
   // Tone validation
   TONE_REQUIRED = 'TONE_REQUIRED',
   TONE_TOO_LONG = 'TONE_TOO_LONG',
   TONE_INVALID = 'TONE_INVALID',
-  
+
   // Description validation
   DESCRIPTION_REQUIRED = 'DESCRIPTION_REQUIRED',
   DESCRIPTION_TOO_SHORT = 'DESCRIPTION_TOO_SHORT',
   DESCRIPTION_TOO_LONG = 'DESCRIPTION_TOO_LONG',
   DESCRIPTION_INVALID = 'DESCRIPTION_INVALID',
-  
+
   // Concept validation
   CONCEPT_TOO_LONG = 'CONCEPT_TOO_LONG',
-  
+
   // Characters validation
   CHARACTERS_TOO_LONG = 'CHARACTERS_TOO_LONG',
-  
+
   // Save/load errors
   SAVE_FAILED = 'SAVE_FAILED',
   LOAD_FAILED = 'LOAD_FAILED',
@@ -298,42 +298,42 @@ export interface StyleInputValidationError {
 
 /**
  * Style Input Service Contract
- * 
+ *
  * Defines all operations for managing style input parameters.
  * Implementation handles:
  * - Field validation (required, length, format)
  * - Draft persistence (localStorage)
  * - Default values
  * - Predefined options for dropdowns
- * 
+ *
  * @interface IStyleInputService
  */
 export interface IStyleInputService {
   /**
    * Validate style inputs
-   * 
+   *
    * Validates all provided fields against rules.
    * Can validate partial inputs (for real-time validation) or complete form.
-   * 
+   *
    * @param input - Style inputs to validate (partial or complete)
    * @returns Promise<ServiceResponse<ValidateStyleInputsOutput>> - Validation results
-   * 
+   *
    * @throws Never throws - all errors returned in ServiceResponse
-   * 
+   *
    * @example
    * ```typescript
    * // Validate single field (real-time)
-   * const result = await service.validateStyleInputs({ 
-   *   description: userInput 
+   * const result = await service.validateStyleInputs({
+   *   description: userInput
    * });
-   * 
+   *
    * // Validate complete form
    * const result = await service.validateStyleInputs({
    *   theme: 'Cyberpunk',
    *   tone: 'Dark',
    *   description: 'Neon-lit dystopian future...'
    * });
-   * 
+   *
    * if (!result.data.validation.canProceed) {
    *   showErrors(result.data.errors);
    * }
@@ -345,15 +345,15 @@ export interface IStyleInputService {
 
   /**
    * Save style inputs
-   * 
+   *
    * Validates and saves style inputs to application state.
    * Optionally saves to localStorage as draft for session recovery.
-   * 
+   *
    * @param input - Style inputs to save and draft flag
    * @returns Promise<ServiceResponse<SaveStyleInputsOutput>> - Save result
-   * 
+   *
    * @throws Never throws - all errors returned in ServiceResponse
-   * 
+   *
    * @example
    * ```typescript
    * const result = await service.saveStyleInputs({
@@ -364,34 +364,32 @@ export interface IStyleInputService {
    *   },
    *   saveAsDraft: true  // Save to localStorage
    * });
-   * 
+   *
    * if (result.success) {
    *   console.log(`Saved at ${result.data.savedAt}`);
    * }
    * ```
    */
-  saveStyleInputs(
-    input: SaveStyleInputsInput
-  ): Promise<ServiceResponse<SaveStyleInputsOutput>>
+  saveStyleInputs(input: SaveStyleInputsInput): Promise<ServiceResponse<SaveStyleInputsOutput>>
 
   /**
    * Load previously saved style inputs
-   * 
+   *
    * Loads from localStorage draft if available.
    * Returns defaults if no draft found.
-   * 
+   *
    * @param input - Load options
    * @returns Promise<ServiceResponse<LoadStyleInputsOutput>> - Loaded inputs
-   * 
+   *
    * @throws Never throws - all errors returned in ServiceResponse
-   * 
+   *
    * @example
    * ```typescript
    * // On page load, try to restore draft
-   * const result = await service.loadStyleInputs({ 
-   *   loadFromDraft: true 
+   * const result = await service.loadStyleInputs({
+   *   loadFromDraft: true
    * });
-   * 
+   *
    * if (result.success && result.data.found) {
    *   populateForm(result.data.styleInputs);
    * } else {
@@ -399,19 +397,17 @@ export interface IStyleInputService {
    * }
    * ```
    */
-  loadStyleInputs(
-    input: LoadStyleInputsInput
-  ): Promise<ServiceResponse<LoadStyleInputsOutput>>
+  loadStyleInputs(input: LoadStyleInputsInput): Promise<ServiceResponse<LoadStyleInputsOutput>>
 
   /**
    * Get default style input values
-   * 
+   *
    * Returns recommended defaults for form initialization.
-   * 
+   *
    * @returns Promise<ServiceResponse<GetDefaultsOutput>> - Default values
-   * 
+   *
    * @throws Never throws - all errors returned in ServiceResponse
-   * 
+   *
    * @example
    * ```typescript
    * const result = await service.getDefaults();
@@ -425,13 +421,13 @@ export interface IStyleInputService {
 
   /**
    * Get predefined options for dropdowns
-   * 
+   *
    * Returns all predefined themes and tones for UI dropdown menus.
-   * 
+   *
    * @returns Promise<ServiceResponse<GetPredefinedOptionsOutput>> - Predefined options
-   * 
+   *
    * @throws Never throws - all errors returned in ServiceResponse
-   * 
+   *
    * @example
    * ```typescript
    * const result = await service.getPredefinedOptions();
@@ -446,14 +442,14 @@ export interface IStyleInputService {
 
   /**
    * Clear draft from localStorage
-   * 
+   *
    * Removes saved draft to start fresh.
    * Used for "start over" functionality.
-   * 
+   *
    * @returns Promise<ServiceResponse<void>> - Success or error
-   * 
+   *
    * @throws Never throws - all errors returned in ServiceResponse
-   * 
+   *
    * @example
    * ```typescript
    * const result = await service.clearDraft();
@@ -473,43 +469,27 @@ export interface IStyleInputService {
  * Maps error codes to user-friendly messages
  */
 export const STYLE_INPUT_ERROR_MESSAGES: Record<StyleInputErrorCode, string> = {
-  [StyleInputErrorCode.THEME_REQUIRED]: 
-    'Please select or enter a theme',
-  [StyleInputErrorCode.THEME_TOO_LONG]: 
-    `Theme must be ${CHAR_LIMITS.theme} characters or less`,
-  [StyleInputErrorCode.THEME_INVALID]: 
-    'Theme contains invalid characters',
-  
-  [StyleInputErrorCode.TONE_REQUIRED]: 
-    'Please select or enter a tone',
-  [StyleInputErrorCode.TONE_TOO_LONG]: 
-    `Tone must be ${CHAR_LIMITS.tone} characters or less`,
-  [StyleInputErrorCode.TONE_INVALID]: 
-    'Tone contains invalid characters',
-  
-  [StyleInputErrorCode.DESCRIPTION_REQUIRED]: 
-    'Description is required',
-  [StyleInputErrorCode.DESCRIPTION_TOO_SHORT]: 
-    `Description must be at least ${CHAR_LIMITS.description.min} characters`,
-  [StyleInputErrorCode.DESCRIPTION_TOO_LONG]: 
-    `Description must be ${CHAR_LIMITS.description.max} characters or less`,
-  [StyleInputErrorCode.DESCRIPTION_INVALID]: 
-    'Description contains invalid characters',
-  
-  [StyleInputErrorCode.CONCEPT_TOO_LONG]: 
-    `Concept must be ${CHAR_LIMITS.concept} characters or less`,
-  
-  [StyleInputErrorCode.CHARACTERS_TOO_LONG]: 
-    `Characters must be ${CHAR_LIMITS.characters} characters or less`,
-  
-  [StyleInputErrorCode.SAVE_FAILED]: 
-    'Failed to save style inputs - please try again',
-  [StyleInputErrorCode.LOAD_FAILED]: 
-    'Failed to load style inputs',
-  [StyleInputErrorCode.LOCALSTORAGE_NOT_SUPPORTED]: 
-    'Your browser does not support saving drafts',
-  [StyleInputErrorCode.DRAFT_NOT_FOUND]: 
-    'No saved draft found',
+  [StyleInputErrorCode.THEME_REQUIRED]: 'Please select or enter a theme',
+  [StyleInputErrorCode.THEME_TOO_LONG]: `Theme must be ${CHAR_LIMITS.theme} characters or less`,
+  [StyleInputErrorCode.THEME_INVALID]: 'Theme contains invalid characters',
+
+  [StyleInputErrorCode.TONE_REQUIRED]: 'Please select or enter a tone',
+  [StyleInputErrorCode.TONE_TOO_LONG]: `Tone must be ${CHAR_LIMITS.tone} characters or less`,
+  [StyleInputErrorCode.TONE_INVALID]: 'Tone contains invalid characters',
+
+  [StyleInputErrorCode.DESCRIPTION_REQUIRED]: 'Description is required',
+  [StyleInputErrorCode.DESCRIPTION_TOO_SHORT]: `Description must be at least ${CHAR_LIMITS.description.min} characters`,
+  [StyleInputErrorCode.DESCRIPTION_TOO_LONG]: `Description must be ${CHAR_LIMITS.description.max} characters or less`,
+  [StyleInputErrorCode.DESCRIPTION_INVALID]: 'Description contains invalid characters',
+
+  [StyleInputErrorCode.CONCEPT_TOO_LONG]: `Concept must be ${CHAR_LIMITS.concept} characters or less`,
+
+  [StyleInputErrorCode.CHARACTERS_TOO_LONG]: `Characters must be ${CHAR_LIMITS.characters} characters or less`,
+
+  [StyleInputErrorCode.SAVE_FAILED]: 'Failed to save style inputs - please try again',
+  [StyleInputErrorCode.LOAD_FAILED]: 'Failed to load style inputs',
+  [StyleInputErrorCode.LOCALSTORAGE_NOT_SUPPORTED]: 'Your browser does not support saving drafts',
+  [StyleInputErrorCode.DRAFT_NOT_FOUND]: 'No saved draft found',
 }
 
 // ============================================================================
@@ -521,11 +501,11 @@ export const STYLE_INPUT_ERROR_MESSAGES: Record<StyleInputErrorCode, string> = {
  * Used when no draft is available
  */
 export const DEFAULT_STYLE_INPUTS: StyleInputsDefaults = {
-  theme: 'Art Nouveau',  // Tarot-appropriate default
-  tone: 'Mystical',      // Tarot-appropriate default
-  description: '',       // User must provide
-  concept: '',           // Optional
-  characters: '',        // Optional
+  theme: 'Art Nouveau', // Tarot-appropriate default
+  tone: 'Mystical', // Tarot-appropriate default
+  description: '', // User must provide
+  concept: '', // Optional
+  characters: '', // Optional
 } as const
 
 // ============================================================================

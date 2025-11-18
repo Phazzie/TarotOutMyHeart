@@ -13,7 +13,7 @@ import type {
   ClaudeCoordinationContract,
   CopilotCoordinationContract,
   UserCoordinationContract,
-  FileSystemCoordinationContract
+  FileSystemCoordinationContract,
 } from '@contracts'
 
 // Mock implementations
@@ -90,7 +90,9 @@ export async function createServices(config: ServiceConfig = {}): Promise<Coordi
 
   // Create singleton if not exists
   if (!servicesInstance) {
-    console.log(`[ServiceFactory] Creating services with ${useMocks ? 'MOCK' : 'REAL'} implementations`)
+    console.log(
+      `[ServiceFactory] Creating services with ${useMocks ? 'MOCK' : 'REAL'} implementations`
+    )
 
     // Create state store (foundation for all other services)
     let stateStore: StateStoreContract
@@ -102,7 +104,9 @@ export async function createServices(config: ServiceConfig = {}): Promise<Coordi
       const sqliteStore = new StateStoreSQLite(config.databasePath || './coordination.db')
       await sqliteStore.initialize()
       stateStore = sqliteStore
-      console.log(`[ServiceFactory] Using SQLite StateStore at ${config.databasePath || './coordination.db'}`)
+      console.log(
+        `[ServiceFactory] Using SQLite StateStore at ${config.databasePath || './coordination.db'}`
+      )
     }
 
     // Create file system coordination
@@ -157,8 +161,8 @@ export async function createServices(config: ServiceConfig = {}): Promise<Coordi
       fileSystem,
       config: {
         ...config,
-        useMocks
-      }
+        useMocks,
+      },
     }
 
     console.log('[ServiceFactory] All services created successfully')
@@ -244,11 +248,11 @@ export async function seedMockData(data: {
         context: {
           files: [],
           conversationHistory: [],
-          requirements: taskDef.description
+          requirements: taskDef.description,
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-        sessionId: 'seed_session' as any
+        sessionId: 'seed_session' as any,
       }
 
       await services.stateStore.enqueueTask(task)
@@ -263,10 +267,10 @@ export async function seedMockData(data: {
         id: contextDef.id as any,
         messages: contextDef.messages.map(m => ({
           ...m,
-          timestamp: new Date()
+          timestamp: new Date(),
         })),
         sharedState: {},
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       })
     }
     console.log(`[ServiceFactory] Seeded ${data.contexts.length} contexts`)
@@ -280,5 +284,5 @@ export default {
   createServices,
   getServices,
   resetServices,
-  seedMockData
+  seedMockData,
 }

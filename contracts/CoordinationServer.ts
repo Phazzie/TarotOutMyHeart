@@ -52,21 +52,21 @@ export type TaskType =
  * Task lifecycle states
  */
 export type TaskStatus =
-  | 'queued'        // Created but not claimed
-  | 'claimed'       // Agent has claimed but not started
-  | 'in-progress'   // Agent actively working
-  | 'completed'     // Successfully finished
-  | 'failed'        // Failed with error
-  | 'handed-off'    // Transferred to another agent
-  | 'blocked'       // Waiting on dependency
+  | 'queued' // Created but not claimed
+  | 'claimed' // Agent has claimed but not started
+  | 'in-progress' // Agent actively working
+  | 'completed' // Successfully finished
+  | 'failed' // Failed with error
+  | 'handed-off' // Transferred to another agent
+  | 'blocked' // Waiting on dependency
 
 /**
  * Collaboration modes supported by the system
  */
 export type CollaborationMode =
-  | 'orchestrator-worker'  // One lead agent coordinates
-  | 'peer-to-peer'         // Equal partners, handoffs
-  | 'parallel'             // Both work simultaneously
+  | 'orchestrator-worker' // One lead agent coordinates
+  | 'peer-to-peer' // Equal partners, handoffs
+  | 'parallel' // Both work simultaneously
 
 /**
  * Branded type for task identifiers
@@ -137,9 +137,7 @@ export interface ClaudeCoordinationContract {
    * @param capabilities - What this agent can do
    * @returns Array of tasks sorted by priority
    */
-  getAvailableTasks(
-    capabilities: AgentCapability[]
-  ): Promise<ServiceResponse<Task[]>>
+  getAvailableTasks(capabilities: AgentCapability[]): Promise<ServiceResponse<Task[]>>
 
   /**
    * Claim a specific task for execution
@@ -157,10 +155,7 @@ export interface ClaudeCoordinationContract {
    * @param taskId - Task being worked on
    * @param progress - Current state
    */
-  reportProgress(
-    taskId: TaskId,
-    progress: TaskProgress
-  ): Promise<ServiceResponse<void>>
+  reportProgress(taskId: TaskId, progress: TaskProgress): Promise<ServiceResponse<void>>
 
   /**
    * Mark task as completed with results
@@ -168,10 +163,7 @@ export interface ClaudeCoordinationContract {
    * @param taskId - Task that was completed
    * @param result - Outcome and artifacts
    */
-  completeTask(
-    taskId: TaskId,
-    result: TaskResult
-  ): Promise<ServiceResponse<void>>
+  completeTask(taskId: TaskId, result: TaskResult): Promise<ServiceResponse<void>>
 
   /**
    * Retrieve shared conversation context
@@ -179,9 +171,7 @@ export interface ClaudeCoordinationContract {
    * @param contextId - Context to load
    * @returns Full conversation history and state
    */
-  retrieveContext(
-    contextId: ContextId
-  ): Promise<ServiceResponse<ConversationContext>>
+  retrieveContext(contextId: ContextId): Promise<ServiceResponse<ConversationContext>>
 
   /**
    * Save updated conversation context
@@ -189,10 +179,7 @@ export interface ClaudeCoordinationContract {
    * @param contextId - Context to update
    * @param context - New context data
    */
-  saveContext(
-    contextId: ContextId,
-    context: ConversationContext
-  ): Promise<ServiceResponse<void>>
+  saveContext(contextId: ContextId, context: ConversationContext): Promise<ServiceResponse<void>>
 
   /**
    * Request handoff to another agent
@@ -241,10 +228,7 @@ export interface CopilotCoordinationContract {
    *
    * @tool claimTask
    */
-  claimTaskTool(params: {
-    taskId: TaskId
-    agentId: AgentId
-  }): Promise<ServiceResponse<Task>>
+  claimTaskTool(params: { taskId: TaskId; agentId: AgentId }): Promise<ServiceResponse<Task>>
 
   /**
    * MCP Tool: Submit task result
@@ -323,9 +307,7 @@ export interface StateStoreContract {
    * @param capabilities - Required agent capabilities
    * @returns Highest priority available task or null
    */
-  dequeueTask(
-    capabilities: AgentCapability[]
-  ): Promise<ServiceResponse<Task | null>>
+  dequeueTask(capabilities: AgentCapability[]): Promise<ServiceResponse<Task | null>>
 
   /**
    * Get task by ID
@@ -340,10 +322,7 @@ export interface StateStoreContract {
    * @param taskId - Task to update
    * @param status - New status
    */
-  updateTaskStatus(
-    taskId: TaskId,
-    status: TaskStatus
-  ): Promise<ServiceResponse<void>>
+  updateTaskStatus(taskId: TaskId, status: TaskStatus): Promise<ServiceResponse<void>>
 
   /**
    * Update task with result
@@ -351,19 +330,14 @@ export interface StateStoreContract {
    * @param taskId - Task to update
    * @param result - Execution result
    */
-  updateTaskResult(
-    taskId: TaskId,
-    result: TaskResult
-  ): Promise<ServiceResponse<void>>
+  updateTaskResult(taskId: TaskId, result: TaskResult): Promise<ServiceResponse<void>>
 
   /**
    * Get all tasks for a session
    *
    * @param sessionId - Session to query
    */
-  getSessionTasks(
-    sessionId: SessionId
-  ): Promise<ServiceResponse<Task[]>>
+  getSessionTasks(sessionId: SessionId): Promise<ServiceResponse<Task[]>>
 
   // ========== File Lock Operations ==========
 
@@ -376,10 +350,7 @@ export interface StateStoreContract {
    *
    * @throws {LockError} If file already locked
    */
-  acquireLock(
-    path: string,
-    owner: AgentId
-  ): Promise<ServiceResponse<LockToken>>
+  acquireLock(path: string, owner: AgentId): Promise<ServiceResponse<LockToken>>
 
   /**
    * Release lock on file
@@ -409,9 +380,7 @@ export interface StateStoreContract {
    *
    * @param owner - Agent whose locks to release
    */
-  releaseAllLocksForAgent(
-    owner: AgentId
-  ): Promise<ServiceResponse<number>>
+  releaseAllLocksForAgent(owner: AgentId): Promise<ServiceResponse<number>>
 
   // ========== Context Operations ==========
 
@@ -421,19 +390,14 @@ export interface StateStoreContract {
    * @param contextId - Context identifier
    * @param context - Full context data
    */
-  saveContext(
-    contextId: ContextId,
-    context: ConversationContext
-  ): Promise<ServiceResponse<void>>
+  saveContext(contextId: ContextId, context: ConversationContext): Promise<ServiceResponse<void>>
 
   /**
    * Load conversation context
    *
    * @param contextId - Context to load
    */
-  loadContext(
-    contextId: ContextId
-  ): Promise<ServiceResponse<ConversationContext | null>>
+  loadContext(contextId: ContextId): Promise<ServiceResponse<ConversationContext | null>>
 
   /**
    * Append message to context
@@ -442,10 +406,7 @@ export interface StateStoreContract {
    * @param contextId - Context to update
    * @param message - Message to append
    */
-  appendMessage(
-    contextId: ContextId,
-    message: Message
-  ): Promise<ServiceResponse<void>>
+  appendMessage(contextId: ContextId, message: Message): Promise<ServiceResponse<void>>
 }
 
 // ============================================================================
@@ -483,36 +444,28 @@ export interface UserCoordinationContract {
    *
    * @param sessionId - Session to pause
    */
-  pauseCollaboration(
-    sessionId: SessionId
-  ): Promise<ServiceResponse<void>>
+  pauseCollaboration(sessionId: SessionId): Promise<ServiceResponse<void>>
 
   /**
    * Resume paused collaboration
    *
    * @param sessionId - Session to resume
    */
-  resumeCollaboration(
-    sessionId: SessionId
-  ): Promise<ServiceResponse<void>>
+  resumeCollaboration(sessionId: SessionId): Promise<ServiceResponse<void>>
 
   /**
    * Cancel collaboration session
    *
    * @param sessionId - Session to cancel
    */
-  cancelCollaboration(
-    sessionId: SessionId
-  ): Promise<ServiceResponse<void>>
+  cancelCollaboration(sessionId: SessionId): Promise<ServiceResponse<void>>
 
   /**
    * Get current collaboration status
    *
    * @param sessionId - Session to query
    */
-  getCollaborationStatus(
-    sessionId: SessionId
-  ): Promise<ServiceResponse<CollaborationStatus>>
+  getCollaborationStatus(sessionId: SessionId): Promise<ServiceResponse<CollaborationStatus>>
 
   /**
    * Resolve conflict between AIs
@@ -531,9 +484,7 @@ export interface UserCoordinationContract {
    *
    * @param sessionId - Session to monitor
    */
-  subscribeToUpdates(
-    sessionId: SessionId
-  ): AsyncIterable<CollaborationEvent>
+  subscribeToUpdates(sessionId: SessionId): AsyncIterable<CollaborationEvent>
 }
 
 // ============================================================================
@@ -569,9 +520,7 @@ export interface FileSystemCoordinationContract {
    *
    * @param grant - Grant to release
    */
-  releaseFileAccess(
-    grant: FileAccessGrant
-  ): Promise<ServiceResponse<void>>
+  releaseFileAccess(grant: FileAccessGrant): Promise<ServiceResponse<void>>
 
   /**
    * Detect conflicts for file
@@ -588,9 +537,7 @@ export interface FileSystemCoordinationContract {
    * @param requests - Multiple file access requests
    * @returns Grants for all files or error
    */
-  requestBatchFileAccess(
-    requests: FileAccessRequest[]
-  ): Promise<ServiceResponse<FileAccessGrant[]>>
+  requestBatchFileAccess(requests: FileAccessRequest[]): Promise<ServiceResponse<FileAccessGrant[]>>
 }
 
 // ============================================================================
@@ -776,7 +723,15 @@ export interface CollaborationStatus {
  * Collaboration event for real-time updates
  */
 export interface CollaborationEvent {
-  type: 'task-created' | 'task-claimed' | 'task-completed' | 'task-failed' | 'handoff-requested' | 'conflict-detected' | 'session-paused' | 'session-resumed'
+  type:
+    | 'task-created'
+    | 'task-claimed'
+    | 'task-completed'
+    | 'task-failed'
+    | 'handoff-requested'
+    | 'conflict-detected'
+    | 'session-paused'
+    | 'session-resumed'
   timestamp: Date
   data: unknown
 }
@@ -851,10 +806,10 @@ export function generateMCPToolDefinitions(): MCPToolDefinition[] {
         type: 'object',
         properties: {
           agentId: { type: 'string', enum: ['claude-code', 'github-copilot'] },
-          capabilities: { type: 'array', items: { type: 'string' } }
+          capabilities: { type: 'array', items: { type: 'string' } },
         },
-        required: ['agentId', 'capabilities']
-      }
+        required: ['agentId', 'capabilities'],
+      },
     },
     {
       name: 'claimTask',
@@ -863,10 +818,10 @@ export function generateMCPToolDefinitions(): MCPToolDefinition[] {
         type: 'object',
         properties: {
           taskId: { type: 'string' },
-          agentId: { type: 'string' }
+          agentId: { type: 'string' },
         },
-        required: ['taskId', 'agentId']
-      }
+        required: ['taskId', 'agentId'],
+      },
     },
     {
       name: 'submitTaskResult',
@@ -879,10 +834,10 @@ export function generateMCPToolDefinitions(): MCPToolDefinition[] {
           success: { type: 'boolean' },
           output: { type: 'string' },
           filesModified: { type: 'array', items: { type: 'string' } },
-          error: { type: 'string' }
+          error: { type: 'string' },
         },
-        required: ['taskId', 'agentId', 'success', 'output']
-      }
+        required: ['taskId', 'agentId', 'success', 'output'],
+      },
     },
     {
       name: 'requestFileAccess',
@@ -892,10 +847,10 @@ export function generateMCPToolDefinitions(): MCPToolDefinition[] {
         properties: {
           path: { type: 'string' },
           operation: { type: 'string', enum: ['read', 'write', 'delete'] },
-          agentId: { type: 'string' }
+          agentId: { type: 'string' },
         },
-        required: ['path', 'operation', 'agentId']
-      }
+        required: ['path', 'operation', 'agentId'],
+      },
     },
     {
       name: 'releaseFileAccess',
@@ -904,10 +859,10 @@ export function generateMCPToolDefinitions(): MCPToolDefinition[] {
         type: 'object',
         properties: {
           lockToken: { type: 'string' },
-          agentId: { type: 'string' }
+          agentId: { type: 'string' },
         },
-        required: ['lockToken', 'agentId']
-      }
+        required: ['lockToken', 'agentId'],
+      },
     },
     {
       name: 'getCollaborationStatus',
@@ -915,9 +870,9 @@ export function generateMCPToolDefinitions(): MCPToolDefinition[] {
       inputSchema: {
         type: 'object',
         properties: {
-          sessionId: { type: 'string' }
-        }
-      }
-    }
+          sessionId: { type: 'string' },
+        },
+      },
+    },
   ]
 }

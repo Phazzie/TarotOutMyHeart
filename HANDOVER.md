@@ -1,4 +1,5 @@
 # Session Handover Document
+
 **Date**: 2025-11-15
 **Branch**: `claude/analyze-repo-status-017D5AacTjdSnxztqrnQxUpK`
 **Last Commit**: `62f9b5c` - "Complete Sprint 2: Full UI implementation (Waves 1-3)"
@@ -10,6 +11,7 @@
 ### What Was Accomplished This Session
 
 **Sprint 2: UI Components (Waves 1-3)** - FULLY COMPLETE
+
 - ✅ Wave 1: Foundation (global store, routing, layout)
 - ✅ Wave 2: 7 UI components built in parallel
 - ✅ Wave 3: 3 pages integrated with components
@@ -21,6 +23,7 @@
 ## 📊 Sprint Progress Overview
 
 ### Sprint 1: Contracts & Mocks ✅ (100% Complete)
+
 - 7 tarot seam contracts defined
 - 7 mock services implemented
 - 435 contract tests written (all passing)
@@ -28,13 +31,16 @@
 - All work committed and pushed
 
 ### Sprint 2: UI Components ✅ (100% Complete - THIS SESSION)
+
 **Wave 1: Foundation**
+
 - Global store (`appStore.svelte.ts`) - 730 lines
 - Root layout with navigation
 - Home page with welcome screen
 - Route structure for 3 main pages
 
 **Wave 2: Components (Built in Parallel)**
+
 1. ImageUploadComponent (941 lines) - Drag-and-drop upload
 2. StyleInputComponent (950 lines) - Style preferences form
 3. PromptListComponent (1,020 lines) - 22 card prompt management
@@ -44,15 +50,18 @@
 7. DownloadComponent (533 lines) - Download cards/ZIP
 
 **Wave 3: Page Integration**
+
 - Upload page: ImageUpload + StyleInput + CostDisplay
 - Generate page: PromptList + GenerationProgress
 - Gallery page: DeckGallery + Download
 
 ### Sprint 3: Grok API Integration ⏳ (0% Complete - NEXT)
+
 - Need: PromptGenerationReal service
 - Need: ImageGenerationReal service
 
 ### Sprint 4: Polish & Deploy ⏳ (0% Complete - FUTURE)
+
 - Error boundaries, loading states, responsive polish
 - Testing, deployment to Vercel
 
@@ -65,6 +74,7 @@
 Build 2 real services to replace mocks:
 
 **1. PromptGenerationReal** (`/services/real/PromptGenerationReal.ts`)
+
 - Implements `IPromptGenerationService` contract
 - Uses Grok API to generate 22 card prompts
 - Must return exact same data shape as PromptGenerationMock
@@ -72,6 +82,7 @@ Build 2 real services to replace mocks:
 - **Mock reference**: `/services/mock/PromptGenerationMock.ts`
 
 **2. ImageGenerationReal** (`/services/real/ImageGenerationReal.ts`)
+
 - Implements `IImageGenerationService` contract
 - Uses Grok API to generate card images
 - Must handle progress callbacks
@@ -80,6 +91,7 @@ Build 2 real services to replace mocks:
 - **Mock reference**: `/services/mock/ImageGenerationMock.ts`
 
 **Key Points**:
+
 - Contracts are FROZEN - don't modify them
 - Real services must pass the same contract tests that mocks pass
 - Use ServiceResponse<T> pattern for all returns
@@ -149,23 +161,27 @@ Build 2 real services to replace mocks:
 ### Essential Reading for Next Developer
 
 **Methodology**:
+
 - `AGENTS.md` - Universal AI agent instructions
 - `CLAUDE.md` - Claude-specific guidance (THIS FILE HAS NOTES!)
 - `seam-driven-development.md` - Complete SDD guide
 - `AI-CHECKLIST.md` - Task workflows
 
 **Project**:
+
 - `prd.MD` - Product requirements and sprint checklists
 - `SEAMSLIST.md` - All defined seams
 - `lessonslearned.md` - Project-specific patterns (UPDATED!)
 - `CHANGELOG.md` - All changes (UPDATED!)
 
 **Current Work**:
+
 - `HANDOVER.md` - THIS FILE
 
 ### Contracts You'll Work With
 
 **PromptGeneration Contract** (`/contracts/PromptGeneration.ts`):
+
 ```typescript
 interface IPromptGenerationService {
   generatePrompts(input: GeneratePromptsInput): Promise<ServiceResponse<CardPrompt[]>>
@@ -176,10 +192,13 @@ interface IPromptGenerationService {
 ```
 
 **ImageGeneration Contract** (`/contracts/ImageGeneration.ts`):
+
 ```typescript
 interface IImageGenerationService {
   generateImages(input: GenerateImagesInput): Promise<ServiceResponse<GeneratedCard[]>>
-  getGenerationStatus(input: GenerationStatusInput): Promise<ServiceResponse<ImageGenerationProgress>>
+  getGenerationStatus(
+    input: GenerationStatusInput
+  ): Promise<ServiceResponse<ImageGenerationProgress>>
   cancelGeneration(input: CancelGenerationInput): Promise<ServiceResponse<void>>
   retryFailedCard(input: RetryCardInput): Promise<ServiceResponse<GeneratedCard>>
 }
@@ -198,6 +217,7 @@ interface IImageGenerationService {
 ### While Building Real Services
 
 1. **Run contract tests against real service**:
+
    ```bash
    USE_MOCKS=false npm run test:contracts
    ```
@@ -228,12 +248,14 @@ interface IImageGenerationService {
 ### Lesson #9: Parallel UI Development Works!
 
 **What Worked**:
+
 - Building all 7 components in parallel with 7 agents
 - Each component built independently, integrated later
 - Total time: ~2 hours vs. ~1-2 days sequentially
 - 0 integration issues because contracts were frozen
 
 **Pattern to Reuse**:
+
 1. Define all contracts first (Phase 1)
 2. Build all mocks (Phase 2)
 3. Build all UI components in parallel (Phase 3)
@@ -245,6 +267,7 @@ interface IImageGenerationService {
 ### Lesson #10: Svelte 5 Runes Are Excellent for SDD
 
 **What Worked**:
+
 - `$state` for reactive state management
 - `$derived` for computed values (auto-memoized)
 - `$effect` for side effects
@@ -252,6 +275,7 @@ interface IImageGenerationService {
 - No need for stores in components (runes are simpler)
 
 **Pattern**:
+
 ```typescript
 let uploadedImages = $state<UploadedImage[]>([])
 let canProceed = $derived(uploadedImages.length > 0 && styleInputs !== null)
@@ -266,15 +290,18 @@ $effect(() => {
 ### Lesson #11: Global Store + Component-Local State
 
 **What Worked**:
+
 - Global store (`appStore`) for cross-page state
 - Component-local runes for UI-only state
 - Clear separation of concerns
 
 **Decision Matrix**:
+
 - **appStore**: User data, workflow state, API responses
 - **Component runes**: UI state (expanded, loading, validation)
 
 Example: PromptListComponent
+
 - `appStore.generatedPrompts` - Shared across pages
 - `expandedCards` (component rune) - UI state only
 
@@ -285,6 +312,7 @@ Example: PromptListComponent
 ### Don't Modify Contracts!
 
 Contracts are FROZEN after Phase 1. If you find an issue:
+
 1. Check if it's a real contract issue or implementation issue
 2. If truly a contract issue, discuss with team
 3. Changing contracts requires updating mocks, tests, and UI
@@ -293,15 +321,15 @@ Contracts are FROZEN after Phase 1. If you find an issue:
 ### Service Factory Pattern
 
 The factory (`/services/factory.ts`) controls mock vs. real:
+
 ```typescript
 const USE_MOCKS = process.env['USE_MOCKS'] !== 'false'
 
-export const promptService = USE_MOCKS
-  ? new PromptGenerationMock()
-  : new PromptGenerationReal()
+export const promptService = USE_MOCKS ? new PromptGenerationMock() : new PromptGenerationReal()
 ```
 
 When you build real services:
+
 1. Import them in factory.ts
 2. Add to factory conditional
 3. Test with USE_MOCKS=false
@@ -309,6 +337,7 @@ When you build real services:
 ### Grok API Setup
 
 You'll need:
+
 - Grok API key (from X.AI)
 - SDK installation: `npm install @x.ai/grok` (or whatever package name)
 - Environment variable setup in `.env.local`
@@ -345,6 +374,7 @@ You'll need:
 **Last Commit**: `62f9b5c`
 
 **Commit History** (recent):
+
 ```
 62f9b5c - Complete Sprint 2: Full UI implementation (Waves 1-3)
 ebed23d - Fix SDD violations: Remove 'any' types and improve type safety
@@ -386,16 +416,19 @@ touch services/real/PromptGenerationReal.ts
 ## 📚 Resources
 
 **Documentation**:
+
 - Grok API docs: [X.AI documentation]
 - Svelte 5 runes: https://svelte.dev/docs/svelte/$state
 - SvelteKit: https://kit.svelte.dev/
 
 **Project Docs**:
+
 - All methodology docs in root
 - Component docs in `/docs/components/`
 - Planning docs in `/docs/planning/`
 
 **Tests**:
+
 - Contract tests: `/tests/contracts/` (show exact requirements)
 - Mock tests: `/tests/mocks/` (show expected behavior)
 
@@ -404,6 +437,7 @@ touch services/real/PromptGenerationReal.ts
 ## ✅ Pre-Flight Checklist for Next Developer
 
 Before starting Wave 4:
+
 - [ ] Read this handover document completely
 - [ ] Read `CLAUDE.md` sections on real service implementation
 - [ ] Read `lessonslearned.md` for project patterns
@@ -419,6 +453,7 @@ Before starting Wave 4:
 ## 🎯 Success Metrics for Wave 4
 
 You'll know Wave 4 is complete when:
+
 - [ ] PromptGenerationReal.ts created and working
 - [ ] ImageGenerationReal.ts created and working
 - [ ] Both services pass contract tests
@@ -435,6 +470,7 @@ You'll know Wave 4 is complete when:
 ## 📞 Questions?
 
 If you get stuck:
+
 1. Check `CLAUDE.md` for Claude-specific patterns
 2. Check `lessonslearned.md` for project insights
 3. Check `AI-CHECKLIST.md` for workflows

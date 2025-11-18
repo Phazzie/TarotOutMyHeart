@@ -14,7 +14,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   Tool,
-  TextContent
+  TextContent,
 } from '@modelcontextprotocol/sdk/types.js'
 import type { CoordinationServices } from '../services/factory'
 import { generateMCPToolDefinitions } from '@contracts'
@@ -33,12 +33,12 @@ export class MCPCoordinationServer {
     this.server = new Server(
       {
         name: 'coordination-server',
-        version: '0.1.0'
+        version: '0.1.0',
       },
       {
         capabilities: {
-          tools: {}
-        }
+          tools: {},
+        },
       }
     )
 
@@ -56,7 +56,7 @@ export class MCPCoordinationServer {
       const tools: Tool[] = toolDefinitions.map(def => ({
         name: def.name,
         description: def.description,
-        inputSchema: def.inputSchema as any
+        inputSchema: def.inputSchema as any,
       }))
 
       console.log(`[MCPServer] Listing ${tools.length} available tools`)
@@ -65,7 +65,7 @@ export class MCPCoordinationServer {
     })
 
     // Handle tool invocation
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    this.server.setRequestHandler(CallToolRequestSchema, async request => {
       const { name, arguments: args } = request.params
 
       console.log(`[MCPServer] Tool invoked: ${name}`)
@@ -106,32 +106,35 @@ export class MCPCoordinationServer {
         // Format response
         const content: TextContent = {
           type: 'text',
-          text: JSON.stringify(result, null, 2)
+          text: JSON.stringify(result, null, 2),
         }
 
         return {
           content: [content],
-          isError: false
+          isError: false,
         }
-
       } catch (error) {
         console.error(`[MCPServer] Tool error: ${name}`, error)
 
         const errorContent: TextContent = {
           type: 'text',
-          text: JSON.stringify({
-            success: false,
-            error: {
-              code: 'TOOL_ERROR',
-              message: error instanceof Error ? error.message : 'Unknown error',
-              retryable: true
-            }
-          }, null, 2)
+          text: JSON.stringify(
+            {
+              success: false,
+              error: {
+                code: 'TOOL_ERROR',
+                message: error instanceof Error ? error.message : 'Unknown error',
+                retryable: true,
+              },
+            },
+            null,
+            2
+          ),
         }
 
         return {
           content: [errorContent],
-          isError: true
+          isError: true,
         }
       }
     })
@@ -140,13 +143,10 @@ export class MCPCoordinationServer {
   /**
    * Handles checkForTasks tool invocation
    */
-  private async handleCheckForTasks(args: {
-    agentId: string
-    capabilities: string[]
-  }) {
+  private async handleCheckForTasks(args: { agentId: string; capabilities: string[] }) {
     const result = await this.services.copilot.checkForTasks({
       agentId: args.agentId as any,
-      capabilities: args.capabilities as any
+      capabilities: args.capabilities as any,
     })
 
     if (result.success && result.data) {
@@ -159,13 +159,10 @@ export class MCPCoordinationServer {
   /**
    * Handles claimTask tool invocation
    */
-  private async handleClaimTask(args: {
-    taskId: string
-    agentId: string
-  }) {
+  private async handleClaimTask(args: { taskId: string; agentId: string }) {
     const result = await this.services.copilot.claimTaskTool({
       taskId: args.taskId as any,
-      agentId: args.agentId as any
+      agentId: args.agentId as any,
     })
 
     if (result.success && result.data) {
@@ -192,7 +189,7 @@ export class MCPCoordinationServer {
       success: args.success,
       output: args.output,
       filesModified: args.filesModified,
-      error: args.error
+      error: args.error,
     })
 
     console.log(`[MCPServer] Task result submitted: ${args.success ? 'SUCCESS' : 'FAILED'}`)
@@ -211,11 +208,13 @@ export class MCPCoordinationServer {
     const result = await this.services.copilot.requestFileAccess({
       path: args.path,
       operation: args.operation as 'read' | 'write' | 'delete',
-      agentId: args.agentId as any
+      agentId: args.agentId as any,
     })
 
     if (result.success && result.data) {
-      console.log(`[MCPServer] File access ${result.data.granted ? 'GRANTED' : 'DENIED'}: ${args.path}`)
+      console.log(
+        `[MCPServer] File access ${result.data.granted ? 'GRANTED' : 'DENIED'}: ${args.path}`
+      )
     }
 
     return result
@@ -224,13 +223,10 @@ export class MCPCoordinationServer {
   /**
    * Handles releaseFileAccess tool invocation
    */
-  private async handleReleaseFileAccess(args: {
-    lockToken: string
-    agentId: string
-  }) {
+  private async handleReleaseFileAccess(args: { lockToken: string; agentId: string }) {
     const result = await this.services.copilot.releaseFileAccess({
       lockToken: args.lockToken as any,
-      agentId: args.agentId as any
+      agentId: args.agentId as any,
     })
 
     console.log(`[MCPServer] File lock released: ${args.lockToken}`)
@@ -241,16 +237,16 @@ export class MCPCoordinationServer {
   /**
    * Handles getCollaborationStatus tool invocation
    */
-  private async handleGetCollaborationStatus(args: {
-    sessionId?: string
-  }) {
+  private async handleGetCollaborationStatus(args: { sessionId?: string }) {
     const result = await this.services.copilot.getCollaborationStatus({
-      sessionId: args.sessionId as any
+      sessionId: args.sessionId as any,
     })
 
     if (result.success && result.data) {
       const progress = result.data.progress
-      console.log(`[MCPServer] Collaboration status: ${progress.percentComplete}% complete (${progress.tasksCompleted}/${progress.tasksTotal})`)
+      console.log(
+        `[MCPServer] Collaboration status: ${progress.percentComplete}% complete (${progress.tasksCompleted}/${progress.tasksTotal})`
+      )
     }
 
     return result
@@ -302,7 +298,7 @@ export class MCPCoordinationServer {
   getStatus(): { isRunning: boolean; tools: number } {
     return {
       isRunning: this.isRunning,
-      tools: generateMCPToolDefinitions().length
+      tools: generateMCPToolDefinitions().length,
     }
   }
 }
@@ -320,7 +316,7 @@ export async function startMCPServerStandalone(): Promise<void> {
   // Create services (will use mocks by default)
   const services = await createServices({
     useMocks: true,
-    debug: true
+    debug: true,
   })
 
   // Seed some test data
@@ -330,19 +326,19 @@ export async function startMCPServerStandalone(): Promise<void> {
       {
         type: 'implement-feature',
         description: 'Build user authentication system',
-        priority: 'high'
+        priority: 'high',
       },
       {
         type: 'write-tests',
         description: 'Write tests for auth module',
-        priority: 'medium'
+        priority: 'medium',
       },
       {
         type: 'update-docs',
         description: 'Update API documentation',
-        priority: 'low'
-      }
-    ]
+        priority: 'low',
+      },
+    ],
   })
 
   // Create and start MCP server

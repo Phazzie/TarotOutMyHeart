@@ -30,305 +30,296 @@
 -->
 
 <script lang="ts">
-	import { appStore } from '$lib/stores/appStore.svelte'
-import { promptGenerationService } from '$services/factory'
-	import type { CardNumber } from '$contracts/index'
+  import { appStore } from '$lib/stores/appStore.svelte'
+  import { promptGenerationService } from '$services/factory'
+  import type { CardNumber } from '$contracts/index'
 
-	// ============================================================================
-	// SERVICE INITIALIZATION
-	// ============================================================================
+  // ============================================================================
+  // SERVICE INITIALIZATION
+  // ============================================================================
 
-const promptService = promptGenerationService
+  const promptService = promptGenerationService
 
-	// ============================================================================
-	// COMPONENT STATE
-	// ============================================================================
+  // ============================================================================
+  // COMPONENT STATE
+  // ============================================================================
 
-	/**
-	 * Set of expanded card numbers
-	 * Cards in this set show full prompt and edit controls
-	 */
-	let expandedCards = $state<Set<number>>(new Set())
+  /**
+   * Set of expanded card numbers
+   * Cards in this set show full prompt and edit controls
+   */
+  let expandedCards = $state<Set<number>>(new Set())
 
-	/**
-	 * Set of cards currently being edited
-	 * Shows textarea instead of read-only text
-	 */
-	let editingCards = $state<Set<number>>(new Set())
+  /**
+   * Set of cards currently being edited
+   * Shows textarea instead of read-only text
+   */
+  let editingCards = $state<Set<number>>(new Set())
 
-	/**
-	 * Map of card numbers to their edited prompt text (before save)
-	 * Allows cancel functionality
-	 */
-	let editedPromptTexts = $state<Map<number, string>>(new Map())
+  /**
+   * Map of card numbers to their edited prompt text (before save)
+   * Allows cancel functionality
+   */
+  let editedPromptTexts = $state<Map<number, string>>(new Map())
 
-	/**
-	 * Set of cards that have been user-edited
-	 * Used for visual indicators
-	 */
-	let userEditedCards = $state<Set<number>>(new Set())
+  /**
+   * Set of cards that have been user-edited
+   * Used for visual indicators
+   */
+  let userEditedCards = $state<Set<number>>(new Set())
 
-	/**
-	 * Card number currently being regenerated (for loading state)
-	 */
-	let regeneratingCard = $state<number | null>(null)
+  /**
+   * Card number currently being regenerated (for loading state)
+   */
+  let regeneratingCard = $state<number | null>(null)
 
-	// ============================================================================
-	// DERIVED STATE
-	// ============================================================================
+  // ============================================================================
+  // DERIVED STATE
+  // ============================================================================
 
-	/**
-	 * Prompts from app store (reactive)
-	 */
-	let prompts = $derived(appStore.generatedPrompts)
+  /**
+   * Prompts from app store (reactive)
+   */
+  let prompts = $derived(appStore.generatedPrompts)
 
-	/**
-	 * Whether prompts are currently being generated
-	 */
-	let isGenerating = $derived(appStore.loadingStates.generatingPrompts)
+  /**
+   * Whether prompts are currently being generated
+   */
+  let isGenerating = $derived(appStore.loadingStates.generatingPrompts)
 
-	/**
-	 * Whether we have all 22 prompts
-	 */
-	let hasAllPrompts = $derived(appStore.hasAllPrompts)
+  /**
+   * Whether we have all 22 prompts
+   */
+  let hasAllPrompts = $derived(appStore.hasAllPrompts)
 
-	/**
-	 * Whether we can generate prompts (have style inputs and reference images)
-	 */
-	let canGenerate = $derived(
-		appStore.styleInputs !== null && appStore.uploadedImages.length > 0
-	)
+  /**
+   * Whether we can generate prompts (have style inputs and reference images)
+   */
+  let canGenerate = $derived(appStore.styleInputs !== null && appStore.uploadedImages.length > 0)
 
-	/**
-	 * Sort prompts by card number for display
-	 */
-	let sortedPrompts = $derived(
-		[...prompts].sort((a, b) => a.cardNumber - b.cardNumber)
-	)
+  /**
+   * Sort prompts by card number for display
+   */
+  let sortedPrompts = $derived([...prompts].sort((a, b) => a.cardNumber - b.cardNumber))
 
-	// ============================================================================
-	// GENERATE ALL PROMPTS
-	// ============================================================================
+  // ============================================================================
+  // GENERATE ALL PROMPTS
+  // ============================================================================
 
-	/**
-	 * Generate all 22 card prompts using current style inputs and reference images
-	 */
-	async function generateAllPrompts(): Promise<void> {
-		if (!canGenerate) {
-			appStore.setError('Please upload reference images and define style inputs first')
-			return
-		}
+  /**
+   * Generate all 22 card prompts using current style inputs and reference images
+   */
+  async function generateAllPrompts(): Promise<void> {
+    if (!canGenerate) {
+      appStore.setError('Please upload reference images and define style inputs first')
+      return
+    }
 
-		appStore.setLoading('generatingPrompts', true)
-		appStore.clearError()
+    appStore.setLoading('generatingPrompts', true)
+    appStore.clearError()
 
-		try {
-			// Get reference image URLs (in real implementation, these would be uploaded to blob storage)
-			const referenceImageUrls = appStore.uploadedImages.map((img) => img.previewUrl)
+    try {
+      // Get reference image URLs (in real implementation, these would be uploaded to blob storage)
+      const referenceImageUrls = appStore.uploadedImages.map(img => img.previewUrl)
 
-			const response = await promptService.generatePrompts({
-				referenceImageUrls,
-				styleInputs: appStore.styleInputs!,
-				onProgress: (progress) => {
-					// Progress updates could be shown in UI
-					console.log(`Progress: ${progress.status} (${progress.progress}%)`)
-				}
-			})
+      const response = await promptService.generatePrompts({
+        referenceImageUrls,
+        styleInputs: appStore.styleInputs!,
+        onProgress: progress => {
+          // Progress updates could be shown in UI
+          console.log(`Progress: ${progress.status} (${progress.progress}%)`)
+        },
+      })
 
-			if (response.success && response.data) {
-				appStore.setGeneratedPrompts(response.data.cardPrompts)
-				// Clear edit state when regenerating all
-				editingCards.clear()
-				editedPromptTexts.clear()
-				userEditedCards.clear()
-			} else {
-				appStore.setError(
-					response.error?.message || 'Failed to generate prompts',
-					response.error?.code
-				)
-			}
-		} catch (error) {
-			appStore.setError(
-				error instanceof Error ? error.message : 'Unexpected error generating prompts'
-			)
-		} finally {
-			appStore.setLoading('generatingPrompts', false)
-		}
-	}
+      if (response.success && response.data) {
+        appStore.setGeneratedPrompts(response.data.cardPrompts)
+        // Clear edit state when regenerating all
+        editingCards.clear()
+        editedPromptTexts.clear()
+        userEditedCards.clear()
+      } else {
+        appStore.setError(
+          response.error?.message || 'Failed to generate prompts',
+          response.error?.code
+        )
+      }
+    } catch (error) {
+      appStore.setError(
+        error instanceof Error ? error.message : 'Unexpected error generating prompts'
+      )
+    } finally {
+      appStore.setLoading('generatingPrompts', false)
+    }
+  }
 
-	// ============================================================================
-	// REGENERATE SINGLE PROMPT
-	// ============================================================================
+  // ============================================================================
+  // REGENERATE SINGLE PROMPT
+  // ============================================================================
 
-	/**
-	 * Regenerate a single card prompt
-	 */
-	async function regeneratePrompt(cardNumber: CardNumber): Promise<void> {
-		if (!canGenerate) {
-			appStore.setError('Cannot regenerate without reference images and style inputs')
-			return
-		}
+  /**
+   * Regenerate a single card prompt
+   */
+  async function regeneratePrompt(cardNumber: CardNumber): Promise<void> {
+    if (!canGenerate) {
+      appStore.setError('Cannot regenerate without reference images and style inputs')
+      return
+    }
 
-		regeneratingCard = cardNumber
-		appStore.clearError()
+    regeneratingCard = cardNumber
+    appStore.clearError()
 
-		try {
-			const referenceImageUrls = appStore.uploadedImages.map((img) => img.previewUrl)
-			const currentPrompt = prompts.find((p) => p.cardNumber === cardNumber)
+    try {
+      const referenceImageUrls = appStore.uploadedImages.map(img => img.previewUrl)
+      const currentPrompt = prompts.find(p => p.cardNumber === cardNumber)
 
-			const response = await promptService.regeneratePrompt({
-				cardNumber,
-				referenceImageUrls,
-				styleInputs: appStore.styleInputs!,
-				previousPrompt: currentPrompt?.generatedPrompt,
-				feedback: 'User requested regeneration'
-			})
+      const response = await promptService.regeneratePrompt({
+        cardNumber,
+        referenceImageUrls,
+        styleInputs: appStore.styleInputs!,
+        previousPrompt: currentPrompt?.generatedPrompt,
+        feedback: 'User requested regeneration',
+      })
 
-			if (response.success && response.data) {
-				appStore.updatePrompt(cardNumber, response.data.cardPrompt)
-				// Clear edit state for this card
-				editingCards.delete(cardNumber)
-				editedPromptTexts.delete(cardNumber)
-				userEditedCards.delete(cardNumber)
-			} else {
-				appStore.setError(
-					response.error?.message || 'Failed to regenerate prompt',
-					response.error?.code
-				)
-			}
-		} catch (error) {
-			appStore.setError(
-				error instanceof Error ? error.message : 'Unexpected error regenerating prompt'
-			)
-		} finally {
-			regeneratingCard = null
-		}
-	}
+      if (response.success && response.data) {
+        appStore.updatePrompt(cardNumber, response.data.cardPrompt)
+        // Clear edit state for this card
+        editingCards.delete(cardNumber)
+        editedPromptTexts.delete(cardNumber)
+        userEditedCards.delete(cardNumber)
+      } else {
+        appStore.setError(
+          response.error?.message || 'Failed to regenerate prompt',
+          response.error?.code
+        )
+      }
+    } catch (error) {
+      appStore.setError(
+        error instanceof Error ? error.message : 'Unexpected error regenerating prompt'
+      )
+    } finally {
+      regeneratingCard = null
+    }
+  }
 
-	// ============================================================================
-	// EXPAND/COLLAPSE
-	// ============================================================================
+  // ============================================================================
+  // EXPAND/COLLAPSE
+  // ============================================================================
 
-	/**
-	 * Toggle expand/collapse state for a card
-	 */
-	function toggleExpand(cardNumber: number): void {
-		if (expandedCards.has(cardNumber)) {
-			expandedCards.delete(cardNumber)
-			expandedCards = expandedCards // Trigger reactivity
-		} else {
-			expandedCards.add(cardNumber)
-			expandedCards = expandedCards // Trigger reactivity
-		}
-	}
+  /**
+   * Toggle expand/collapse state for a card
+   */
+  function toggleExpand(cardNumber: number): void {
+    if (expandedCards.has(cardNumber)) {
+      expandedCards.delete(cardNumber)
+      expandedCards = expandedCards // Trigger reactivity
+    } else {
+      expandedCards.add(cardNumber)
+      expandedCards = expandedCards // Trigger reactivity
+    }
+  }
 
-	/**
-	 * Handle keyboard navigation for expand/collapse
-	 */
-	function handleCardKeydown(event: KeyboardEvent, cardNumber: number): void {
-		if (event.key === 'Enter' || event.key === ' ') {
-			event.preventDefault()
-			toggleExpand(cardNumber)
-		}
-	}
+  /**
+   * Handle keyboard navigation for expand/collapse
+   */
+  function handleCardKeydown(event: KeyboardEvent, cardNumber: number): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      toggleExpand(cardNumber)
+    }
+  }
 
-	// ============================================================================
-	// EDIT FUNCTIONALITY
-	// ============================================================================
+  // ============================================================================
+  // EDIT FUNCTIONALITY
+  // ============================================================================
 
-	/**
-	 * Enter edit mode for a card
-	 */
-	function startEditing(cardNumber: number): void {
-		const prompt = prompts.find((p) => p.cardNumber === cardNumber)
-		if (prompt) {
-			editedPromptTexts.set(cardNumber, prompt.generatedPrompt)
-			editingCards.add(cardNumber)
-			editingCards = editingCards // Trigger reactivity
-		}
-	}
+  /**
+   * Enter edit mode for a card
+   */
+  function startEditing(cardNumber: number): void {
+    const prompt = prompts.find(p => p.cardNumber === cardNumber)
+    if (prompt) {
+      editedPromptTexts.set(cardNumber, prompt.generatedPrompt)
+      editingCards.add(cardNumber)
+      editingCards = editingCards // Trigger reactivity
+    }
+  }
 
-	/**
-	 * Cancel editing without saving
-	 */
-	function cancelEditing(cardNumber: number): void {
-		editingCards.delete(cardNumber)
-		editedPromptTexts.delete(cardNumber)
-		editingCards = editingCards // Trigger reactivity
-	}
+  /**
+   * Cancel editing without saving
+   */
+  function cancelEditing(cardNumber: number): void {
+    editingCards.delete(cardNumber)
+    editedPromptTexts.delete(cardNumber)
+    editingCards = editingCards // Trigger reactivity
+  }
 
-	/**
-	 * Save edited prompt
-	 */
-	async function saveEdit(cardNumber: number): Promise<void> {
-		const editedText = editedPromptTexts.get(cardNumber)
-		const prompt = prompts.find((p) => p.cardNumber === cardNumber)
+  /**
+   * Save edited prompt
+   */
+  async function saveEdit(cardNumber: number): Promise<void> {
+    const editedText = editedPromptTexts.get(cardNumber)
+    const prompt = prompts.find(p => p.cardNumber === cardNumber)
 
-		if (!editedText || !prompt) return
+    if (!editedText || !prompt) return
 
-		appStore.clearError()
+    appStore.clearError()
 
-		try {
-			const response = await promptService.editPrompt({
-				promptId: prompt.id,
-				editedPrompt: editedText
-			})
+    try {
+      const response = await promptService.editPrompt({
+        promptId: prompt.id,
+        editedPrompt: editedText,
+      })
 
-			if (response.success && response.data) {
-				appStore.updatePrompt(cardNumber, response.data.cardPrompt)
-				userEditedCards.add(cardNumber)
-				editingCards.delete(cardNumber)
-				editedPromptTexts.delete(cardNumber)
-				editingCards = editingCards // Trigger reactivity
-			} else {
-				appStore.setError(
-					response.error?.message || 'Failed to save edit',
-					response.error?.code
-				)
-			}
-		} catch (error) {
-			appStore.setError(
-				error instanceof Error ? error.message : 'Unexpected error saving edit'
-			)
-		}
-	}
+      if (response.success && response.data) {
+        appStore.updatePrompt(cardNumber, response.data.cardPrompt)
+        userEditedCards.add(cardNumber)
+        editingCards.delete(cardNumber)
+        editedPromptTexts.delete(cardNumber)
+        editingCards = editingCards // Trigger reactivity
+      } else {
+        appStore.setError(response.error?.message || 'Failed to save edit', response.error?.code)
+      }
+    } catch (error) {
+      appStore.setError(error instanceof Error ? error.message : 'Unexpected error saving edit')
+    }
+  }
 
-	/**
-	 * Update edited prompt text as user types
-	 */
-	function updateEditText(cardNumber: number, text: string): void {
-		editedPromptTexts.set(cardNumber, text)
-	}
+  /**
+   * Update edited prompt text as user types
+   */
+  function updateEditText(cardNumber: number, text: string): void {
+    editedPromptTexts.set(cardNumber, text)
+  }
 
-	// ============================================================================
-	// UTILITY FUNCTIONS
-	// ============================================================================
+  // ============================================================================
+  // UTILITY FUNCTIONS
+  // ============================================================================
 
-	/**
-	 * Get card status for styling
-	 */
-	function getCardStatus(cardNumber: number): 'placeholder' | 'generated' | 'edited' {
-		if (!prompts.find((p) => p.cardNumber === cardNumber)) return 'placeholder'
-		if (userEditedCards.has(cardNumber)) return 'edited'
-		return 'generated'
-	}
+  /**
+   * Get card status for styling
+   */
+  function getCardStatus(cardNumber: number): 'placeholder' | 'generated' | 'edited' {
+    if (!prompts.find(p => p.cardNumber === cardNumber)) return 'placeholder'
+    if (userEditedCards.has(cardNumber)) return 'edited'
+    return 'generated'
+  }
 
-	/**
-	 * Truncate text to specified length
-	 */
-	function truncate(text: string, maxLength: number): string {
-		if (text.length <= maxLength) return text
-		return text.substring(0, maxLength) + '...'
-	}
+  /**
+   * Truncate text to specified length
+   */
+  function truncate(text: string, maxLength: number): string {
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength) + '...'
+  }
 
-	/**
-	 * Get confidence color based on score
-	 */
-	function getConfidenceColor(confidence: number): string {
-		if (confidence >= 0.9) return 'text-green-600'
-		if (confidence >= 0.75) return 'text-yellow-600'
-		return 'text-red-600'
-	}
+  /**
+   * Get confidence color based on score
+   */
+  function getConfidenceColor(confidence: number): string {
+    if (confidence >= 0.9) return 'text-green-600'
+    if (confidence >= 0.75) return 'text-yellow-600'
+    return 'text-red-600'
+  }
 </script>
 
 <!-- ============================================================================ -->
@@ -336,195 +327,192 @@ const promptService = promptGenerationService
 <!-- ============================================================================ -->
 
 <div class="prompt-list-container">
-	<!-- Header with Generate Button -->
-	<div class="header">
-		<h2 class="title">Card Prompts ({prompts.length}/22)</h2>
-		<button
-			type="button"
-			class="generate-button"
-			onclick={generateAllPrompts}
-			disabled={!canGenerate || isGenerating}
-			aria-label={hasAllPrompts ? 'Regenerate all prompts' : 'Generate all prompts'}
-		>
-			{#if isGenerating}
-				<span class="spinner" aria-hidden="true"></span>
-				Generating...
-			{:else if hasAllPrompts}
-				Regenerate All
-			{:else}
-				Generate All Prompts
-			{/if}
-		</button>
-	</div>
+  <!-- Header with Generate Button -->
+  <div class="header">
+    <h2 class="title">Card Prompts ({prompts.length}/22)</h2>
+    <button
+      type="button"
+      class="generate-button"
+      onclick={generateAllPrompts}
+      disabled={!canGenerate || isGenerating}
+      aria-label={hasAllPrompts ? 'Regenerate all prompts' : 'Generate all prompts'}
+    >
+      {#if isGenerating}
+        <span class="spinner" aria-hidden="true"></span>
+        Generating...
+      {:else if hasAllPrompts}
+        Regenerate All
+      {:else}
+        Generate All Prompts
+      {/if}
+    </button>
+  </div>
 
-	<!-- Status Message -->
-	{#if !canGenerate}
-		<div class="status-message warning" role="alert">
-			Please upload reference images and define style inputs before generating prompts.
-		</div>
-	{:else if prompts.length === 0}
-		<div class="status-message info" role="status">
-			Ready to generate prompts. Click "Generate All Prompts" to begin.
-		</div>
-	{/if}
+  <!-- Status Message -->
+  {#if !canGenerate}
+    <div class="status-message warning" role="alert">
+      Please upload reference images and define style inputs before generating prompts.
+    </div>
+  {:else if prompts.length === 0}
+    <div class="status-message info" role="status">
+      Ready to generate prompts. Click "Generate All Prompts" to begin.
+    </div>
+  {/if}
 
-	<!-- Prompt Cards -->
-	<div class="prompt-cards" role="list">
-		{#each sortedPrompts as prompt (prompt.id)}
-			{@const isExpanded = expandedCards.has(prompt.cardNumber)}
-			{@const isEditing = editingCards.has(prompt.cardNumber)}
-			{@const status = getCardStatus(prompt.cardNumber)}
-			{@const isRegenerating = regeneratingCard === prompt.cardNumber}
+  <!-- Prompt Cards -->
+  <div class="prompt-cards" role="list">
+    {#each sortedPrompts as prompt (prompt.id)}
+      {@const isExpanded = expandedCards.has(prompt.cardNumber)}
+      {@const isEditing = editingCards.has(prompt.cardNumber)}
+      {@const status = getCardStatus(prompt.cardNumber)}
+      {@const isRegenerating = regeneratingCard === prompt.cardNumber}
 
-			<div
-				class="prompt-card {status}"
-				role="listitem"
-				aria-label="Card {prompt.cardNumber}: {prompt.cardName}"
-			>
-				<!-- Card Header (Always Visible) -->
-				<div
-					class="card-header"
-					role="button"
-					tabindex="0"
-					onclick={() => toggleExpand(prompt.cardNumber)}
-					onkeydown={(e) => handleCardKeydown(e, prompt.cardNumber)}
-					aria-expanded={isExpanded}
-					aria-controls="card-content-{prompt.cardNumber}"
-				>
-					<div class="card-header-content">
-						<div class="card-number" aria-label="Card number">
-							{prompt.cardNumber}
-						</div>
-						<div class="card-info">
-							<h3 class="card-name">{prompt.cardName}</h3>
-							<p class="card-meaning">{prompt.traditionalMeaning}</p>
-						</div>
-						<div class="card-status-badge" aria-label="Status: {status}">
-							{#if status === 'edited'}
-								<span class="badge edited">Edited</span>
-							{:else if status === 'generated'}
-								<span class="badge generated">Generated</span>
-							{:else}
-								<span class="badge placeholder">Pending</span>
-							{/if}
-						</div>
-					</div>
-					<div class="expand-icon" aria-hidden="true">
-						{isExpanded ? '▼' : '▶'}
-					</div>
-				</div>
+      <div
+        class="prompt-card {status}"
+        role="listitem"
+        aria-label="Card {prompt.cardNumber}: {prompt.cardName}"
+      >
+        <!-- Card Header (Always Visible) -->
+        <div
+          class="card-header"
+          role="button"
+          tabindex="0"
+          onclick={() => toggleExpand(prompt.cardNumber)}
+          onkeydown={e => handleCardKeydown(e, prompt.cardNumber)}
+          aria-expanded={isExpanded}
+          aria-controls="card-content-{prompt.cardNumber}"
+        >
+          <div class="card-header-content">
+            <div class="card-number" aria-label="Card number">
+              {prompt.cardNumber}
+            </div>
+            <div class="card-info">
+              <h3 class="card-name">{prompt.cardName}</h3>
+              <p class="card-meaning">{prompt.traditionalMeaning}</p>
+            </div>
+            <div class="card-status-badge" aria-label="Status: {status}">
+              {#if status === 'edited'}
+                <span class="badge edited">Edited</span>
+              {:else if status === 'generated'}
+                <span class="badge generated">Generated</span>
+              {:else}
+                <span class="badge placeholder">Pending</span>
+              {/if}
+            </div>
+          </div>
+          <div class="expand-icon" aria-hidden="true">
+            {isExpanded ? '▼' : '▶'}
+          </div>
+        </div>
 
-				<!-- Collapsed Preview -->
-				{#if !isExpanded}
-					<div class="card-preview">
-						{truncate(prompt.generatedPrompt, 100)}
-					</div>
-				{/if}
+        <!-- Collapsed Preview -->
+        {#if !isExpanded}
+          <div class="card-preview">
+            {truncate(prompt.generatedPrompt, 100)}
+          </div>
+        {/if}
 
-				<!-- Expanded Content -->
-				{#if isExpanded}
-					<div
-						class="card-content"
-						id="card-content-{prompt.cardNumber}"
-					>
-						<!-- Metadata -->
-						<div class="card-metadata">
-							<div class="metadata-item">
-								<strong>Confidence:</strong>
-								<span class={getConfidenceColor(prompt.confidence)}>
-									{(prompt.confidence * 100).toFixed(0)}%
-								</span>
-							</div>
-							<div class="metadata-item">
-								<strong>Generated:</strong>
-								{new Date(prompt.generatedAt).toLocaleString()}
-							</div>
-						</div>
+        <!-- Expanded Content -->
+        {#if isExpanded}
+          <div class="card-content" id="card-content-{prompt.cardNumber}">
+            <!-- Metadata -->
+            <div class="card-metadata">
+              <div class="metadata-item">
+                <strong>Confidence:</strong>
+                <span class={getConfidenceColor(prompt.confidence)}>
+                  {(prompt.confidence * 100).toFixed(0)}%
+                </span>
+              </div>
+              <div class="metadata-item">
+                <strong>Generated:</strong>
+                {new Date(prompt.generatedAt).toLocaleString()}
+              </div>
+            </div>
 
-						<!-- Prompt Display/Edit -->
-						{#if isEditing}
-							<!-- Edit Mode -->
-							<div class="edit-container">
-								<label for="edit-{prompt.cardNumber}" class="sr-only">
-									Edit prompt for {prompt.cardName}
-								</label>
-								<textarea
-									id="edit-{prompt.cardNumber}"
-									class="prompt-textarea"
-									value={editedPromptTexts.get(prompt.cardNumber) || ''}
-									oninput={(e) => updateEditText(prompt.cardNumber, e.currentTarget.value)}
-									rows="8"
-									aria-label="Edit prompt text"
-								></textarea>
-								<div class="edit-actions">
-									<button
-										type="button"
-										class="button-save"
-										onclick={() => saveEdit(prompt.cardNumber)}
-										aria-label="Save changes"
-									>
-										Save
-									</button>
-									<button
-										type="button"
-										class="button-cancel"
-										onclick={() => cancelEditing(prompt.cardNumber)}
-										aria-label="Cancel editing"
-									>
-										Cancel
-									</button>
-								</div>
-							</div>
-						{:else}
-							<!-- Display Mode -->
-							<div class="prompt-display">
-								<p class="prompt-text">{prompt.generatedPrompt}</p>
-							</div>
-						{/if}
+            <!-- Prompt Display/Edit -->
+            {#if isEditing}
+              <!-- Edit Mode -->
+              <div class="edit-container">
+                <label for="edit-{prompt.cardNumber}" class="sr-only">
+                  Edit prompt for {prompt.cardName}
+                </label>
+                <textarea
+                  id="edit-{prompt.cardNumber}"
+                  class="prompt-textarea"
+                  value={editedPromptTexts.get(prompt.cardNumber) || ''}
+                  oninput={e => updateEditText(prompt.cardNumber, e.currentTarget.value)}
+                  rows="8"
+                  aria-label="Edit prompt text"
+                ></textarea>
+                <div class="edit-actions">
+                  <button
+                    type="button"
+                    class="button-save"
+                    onclick={() => saveEdit(prompt.cardNumber)}
+                    aria-label="Save changes"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    class="button-cancel"
+                    onclick={() => cancelEditing(prompt.cardNumber)}
+                    aria-label="Cancel editing"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            {:else}
+              <!-- Display Mode -->
+              <div class="prompt-display">
+                <p class="prompt-text">{prompt.generatedPrompt}</p>
+              </div>
+            {/if}
 
-						<!-- Actions -->
-						{#if !isEditing}
-							<div class="card-actions">
-								<button
-									type="button"
-									class="button-edit"
-									onclick={() => startEditing(prompt.cardNumber)}
-									aria-label="Edit prompt for {prompt.cardName}"
-								>
-									Edit
-								</button>
-								<button
-									type="button"
-									class="button-regenerate"
-									onclick={() => regeneratePrompt(prompt.cardNumber)}
-									disabled={isRegenerating || !canGenerate}
-									aria-label="Regenerate prompt for {prompt.cardName}"
-								>
-									{#if isRegenerating}
-										<span class="spinner-small" aria-hidden="true"></span>
-										Regenerating...
-									{:else}
-										Regenerate
-									{/if}
-								</button>
-							</div>
-						{/if}
-					</div>
-				{/if}
-			</div>
-		{/each}
-	</div>
+            <!-- Actions -->
+            {#if !isEditing}
+              <div class="card-actions">
+                <button
+                  type="button"
+                  class="button-edit"
+                  onclick={() => startEditing(prompt.cardNumber)}
+                  aria-label="Edit prompt for {prompt.cardName}"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  class="button-regenerate"
+                  onclick={() => regeneratePrompt(prompt.cardNumber)}
+                  disabled={isRegenerating || !canGenerate}
+                  aria-label="Regenerate prompt for {prompt.cardName}"
+                >
+                  {#if isRegenerating}
+                    <span class="spinner-small" aria-hidden="true"></span>
+                    Regenerating...
+                  {:else}
+                    Regenerate
+                  {/if}
+                </button>
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+    {/each}
+  </div>
 
-	<!-- Empty State -->
-	{#if prompts.length === 0 && canGenerate}
-		<div class="empty-state" role="status">
-			<p class="empty-icon" aria-hidden="true">✨</p>
-			<p class="empty-text">No prompts generated yet</p>
-			<p class="empty-subtext">
-				Click "Generate All Prompts" to create AI-generated prompts for all 22 Major Arcana cards
-			</p>
-		</div>
-	{/if}
+  <!-- Empty State -->
+  {#if prompts.length === 0 && canGenerate}
+    <div class="empty-state" role="status">
+      <p class="empty-icon" aria-hidden="true">✨</p>
+      <p class="empty-text">No prompts generated yet</p>
+      <p class="empty-subtext">
+        Click "Generate All Prompts" to create AI-generated prompts for all 22 Major Arcana cards
+      </p>
+    </div>
+  {/if}
 </div>
 
 <!-- ============================================================================ -->
@@ -532,489 +520,489 @@ const promptService = promptGenerationService
 <!-- ============================================================================ -->
 
 <style>
-	/* Container */
-	.prompt-list-container {
-		width: 100%;
-		max-width: 1200px;
-		margin: 0 auto;
-		padding: 2rem 1rem;
-	}
-
-	/* Header */
-	.header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 2rem;
-		flex-wrap: wrap;
-		gap: 1rem;
-	}
-
-	.title {
-		font-size: 1.875rem;
-		font-weight: 700;
-		color: #7c3aed; /* Purple */
-		margin: 0;
-	}
-
-	/* Generate Button */
-	.generate-button {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.75rem 1.5rem;
-		background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
-		color: white;
-		border: none;
-		border-radius: 0.5rem;
-		font-size: 1rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.2s;
-		box-shadow: 0 4px 6px rgba(124, 58, 237, 0.25);
-	}
-
-	.generate-button:hover:not(:disabled) {
-		transform: translateY(-2px);
-		box-shadow: 0 6px 12px rgba(124, 58, 237, 0.35);
-	}
-
-	.generate-button:active:not(:disabled) {
-		transform: translateY(0);
-	}
-
-	.generate-button:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	/* Status Messages */
-	.status-message {
-		padding: 1rem;
-		border-radius: 0.5rem;
-		margin-bottom: 1.5rem;
-	}
-
-	.status-message.warning {
-		background-color: #fef3c7;
-		border: 1px solid #f59e0b;
-		color: #92400e;
-	}
-
-	.status-message.info {
-		background-color: #dbeafe;
-		border: 1px solid #3b82f6;
-		color: #1e40af;
-	}
-
-	/* Prompt Cards Container */
-	.prompt-cards {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-	}
-
-	/* Individual Prompt Card */
-	.prompt-card {
-		background: white;
-		border: 2px solid #e5e7eb;
-		border-radius: 0.75rem;
-		overflow: hidden;
-		transition: all 0.3s;
-	}
-
-	.prompt-card.generated {
-		border-color: #7c3aed;
-	}
-
-	.prompt-card.edited {
-		border-color: #f59e0b;
-		background-color: #fffbeb;
-	}
-
-	.prompt-card.placeholder {
-		border-color: #d1d5db;
-		opacity: 0.6;
-	}
-
-	.prompt-card:hover {
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-	}
-
-	/* Card Header */
-	.card-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 1.25rem;
-		cursor: pointer;
-		user-select: none;
-		background: linear-gradient(to right, #faf5ff, #ffffff);
-	}
-
-	.card-header:hover {
-		background: linear-gradient(to right, #f3e8ff, #faf5ff);
-	}
-
-	.card-header:focus {
-		outline: 2px solid #7c3aed;
-		outline-offset: -2px;
-	}
-
-	.card-header-content {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		flex: 1;
-	}
-
-	/* Card Number */
-	.card-number {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 3rem;
-		height: 3rem;
-		background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
-		color: white;
-		border-radius: 50%;
-		font-size: 1.25rem;
-		font-weight: 700;
-		flex-shrink: 0;
-	}
-
-	/* Card Info */
-	.card-info {
-		flex: 1;
-		min-width: 0; /* Allow text truncation */
-	}
-
-	.card-name {
-		font-size: 1.25rem;
-		font-weight: 600;
-		color: #1f2937;
-		margin: 0 0 0.25rem 0;
-	}
-
-	.card-meaning {
-		font-size: 0.875rem;
-		color: #6b7280;
-		margin: 0;
-	}
-
-	/* Status Badge */
-	.card-status-badge {
-		flex-shrink: 0;
-	}
-
-	.badge {
-		display: inline-block;
-		padding: 0.25rem 0.75rem;
-		border-radius: 9999px;
-		font-size: 0.75rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-
-	.badge.generated {
-		background-color: #ddd6fe;
-		color: #5b21b6;
-	}
-
-	.badge.edited {
-		background-color: #fef3c7;
-		color: #92400e;
-	}
-
-	.badge.placeholder {
-		background-color: #f3f4f6;
-		color: #6b7280;
-	}
-
-	/* Expand Icon */
-	.expand-icon {
-		font-size: 1rem;
-		color: #7c3aed;
-		margin-left: 1rem;
-		transition: transform 0.2s;
-	}
-
-	/* Card Preview (Collapsed) */
-	.card-preview {
-		padding: 0 1.25rem 1.25rem 1.25rem;
-		color: #6b7280;
-		font-size: 0.875rem;
-		line-height: 1.5;
-	}
-
-	/* Card Content (Expanded) */
-	.card-content {
-		padding: 0 1.25rem 1.25rem 1.25rem;
-		border-top: 1px solid #e5e7eb;
-	}
-
-	/* Metadata */
-	.card-metadata {
-		display: flex;
-		gap: 2rem;
-		padding: 1rem 0;
-		font-size: 0.875rem;
-		color: #6b7280;
-		border-bottom: 1px solid #e5e7eb;
-		margin-bottom: 1rem;
-	}
-
-	.metadata-item strong {
-		color: #374151;
-	}
-
-	/* Prompt Display */
-	.prompt-display {
-		padding: 1rem;
-		background-color: #f9fafb;
-		border-radius: 0.5rem;
-		margin-bottom: 1rem;
-	}
-
-	.prompt-text {
-		margin: 0;
-		line-height: 1.6;
-		color: #1f2937;
-		white-space: pre-wrap;
-		word-wrap: break-word;
-	}
-
-	/* Edit Container */
-	.edit-container {
-		margin-bottom: 1rem;
-	}
-
-	.prompt-textarea {
-		width: 100%;
-		padding: 1rem;
-		border: 2px solid #d1d5db;
-		border-radius: 0.5rem;
-		font-family: inherit;
-		font-size: 1rem;
-		line-height: 1.6;
-		resize: vertical;
-		margin-bottom: 0.75rem;
-		transition: border-color 0.2s;
-	}
-
-	.prompt-textarea:focus {
-		outline: none;
-		border-color: #7c3aed;
-		box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
-	}
-
-	/* Edit Actions */
-	.edit-actions {
-		display: flex;
-		gap: 0.75rem;
-	}
-
-	/* Card Actions */
-	.card-actions {
-		display: flex;
-		gap: 0.75rem;
-		flex-wrap: wrap;
-	}
-
-	/* Buttons */
-	button {
-		font-family: inherit;
-	}
-
-	.button-save,
-	.button-edit,
-	.button-regenerate {
-		padding: 0.5rem 1rem;
-		border: none;
-		border-radius: 0.375rem;
-		font-size: 0.875rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.2s;
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.button-save {
-		background-color: #7c3aed;
-		color: white;
-	}
-
-	.button-save:hover {
-		background-color: #6d28d9;
-	}
-
-	.button-cancel {
-		padding: 0.5rem 1rem;
-		border: 1px solid #d1d5db;
-		background-color: white;
-		border-radius: 0.375rem;
-		font-size: 0.875rem;
-		font-weight: 600;
-		color: #6b7280;
-		cursor: pointer;
-		transition: all 0.2s;
-	}
-
-	.button-cancel:hover {
-		background-color: #f9fafb;
-		border-color: #9ca3af;
-	}
-
-	.button-edit {
-		background-color: #3b82f6;
-		color: white;
-	}
-
-	.button-edit:hover {
-		background-color: #2563eb;
-	}
-
-	.button-regenerate {
-		background-color: #f59e0b;
-		color: white;
-	}
-
-	.button-regenerate:hover:not(:disabled) {
-		background-color: #d97706;
-	}
-
-	.button-regenerate:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	/* Empty State */
-	.empty-state {
-		text-align: center;
-		padding: 4rem 2rem;
-		color: #6b7280;
-	}
-
-	.empty-icon {
-		font-size: 4rem;
-		margin: 0 0 1rem 0;
-	}
-
-	.empty-text {
-		font-size: 1.5rem;
-		font-weight: 600;
-		color: #374151;
-		margin: 0 0 0.5rem 0;
-	}
-
-	.empty-subtext {
-		font-size: 1rem;
-		margin: 0;
-	}
-
-	/* Spinners */
-	.spinner,
-	.spinner-small {
-		display: inline-block;
-		width: 1rem;
-		height: 1rem;
-		border: 2px solid rgba(255, 255, 255, 0.3);
-		border-top-color: white;
-		border-radius: 50%;
-		animation: spin 0.6s linear infinite;
-	}
-
-	.spinner-small {
-		width: 0.875rem;
-		height: 0.875rem;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
-	/* Screen Reader Only */
-	.sr-only {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		padding: 0;
-		margin: -1px;
-		overflow: hidden;
-		clip: rect(0, 0, 0, 0);
-		white-space: nowrap;
-		border-width: 0;
-	}
-
-	/* Responsive Design */
-	@media (max-width: 768px) {
-		.header {
-			flex-direction: column;
-			align-items: stretch;
-		}
-
-		.generate-button {
-			width: 100%;
-			justify-content: center;
-		}
-
-		.card-header-content {
-			flex-wrap: wrap;
-		}
-
-		.card-number {
-			width: 2.5rem;
-			height: 2.5rem;
-			font-size: 1rem;
-		}
-
-		.card-name {
-			font-size: 1.125rem;
-		}
-
-		.card-metadata {
-			flex-direction: column;
-			gap: 0.5rem;
-		}
-
-		.card-actions,
-		.edit-actions {
-			flex-direction: column;
-		}
-
-		.button-save,
-		.button-cancel,
-		.button-edit,
-		.button-regenerate {
-			width: 100%;
-			justify-content: center;
-		}
-	}
-
-	/* Accessibility - High Contrast Mode */
-	@media (prefers-contrast: high) {
-		.prompt-card {
-			border-width: 3px;
-		}
-
-		.card-header:focus {
-			outline-width: 3px;
-		}
-	}
-
-	/* Accessibility - Reduced Motion */
-	@media (prefers-reduced-motion: reduce) {
-		.prompt-card,
-		.expand-icon,
-		.spinner,
-		.spinner-small {
-			animation: none;
-			transition: none;
-		}
-	}
+  /* Container */
+  .prompt-list-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #7c3aed; /* Purple */
+    margin: 0;
+  }
+
+  /* Generate Button */
+  .generate-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px rgba(124, 58, 237, 0.25);
+  }
+
+  .generate-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(124, 58, 237, 0.35);
+  }
+
+  .generate-button:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .generate-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Status Messages */
+  .status-message {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .status-message.warning {
+    background-color: #fef3c7;
+    border: 1px solid #f59e0b;
+    color: #92400e;
+  }
+
+  .status-message.info {
+    background-color: #dbeafe;
+    border: 1px solid #3b82f6;
+    color: #1e40af;
+  }
+
+  /* Prompt Cards Container */
+  .prompt-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  /* Individual Prompt Card */
+  .prompt-card {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+
+  .prompt-card.generated {
+    border-color: #7c3aed;
+  }
+
+  .prompt-card.edited {
+    border-color: #f59e0b;
+    background-color: #fffbeb;
+  }
+
+  .prompt-card.placeholder {
+    border-color: #d1d5db;
+    opacity: 0.6;
+  }
+
+  .prompt-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Card Header */
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem;
+    cursor: pointer;
+    user-select: none;
+    background: linear-gradient(to right, #faf5ff, #ffffff);
+  }
+
+  .card-header:hover {
+    background: linear-gradient(to right, #f3e8ff, #faf5ff);
+  }
+
+  .card-header:focus {
+    outline: 2px solid #7c3aed;
+    outline-offset: -2px;
+  }
+
+  .card-header-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+  }
+
+  /* Card Number */
+  .card-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+    color: white;
+    border-radius: 50%;
+    font-size: 1.25rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* Card Info */
+  .card-info {
+    flex: 1;
+    min-width: 0; /* Allow text truncation */
+  }
+
+  .card-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 0.25rem 0;
+  }
+
+  .card-meaning {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0;
+  }
+
+  /* Status Badge */
+  .card-status-badge {
+    flex-shrink: 0;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .badge.generated {
+    background-color: #ddd6fe;
+    color: #5b21b6;
+  }
+
+  .badge.edited {
+    background-color: #fef3c7;
+    color: #92400e;
+  }
+
+  .badge.placeholder {
+    background-color: #f3f4f6;
+    color: #6b7280;
+  }
+
+  /* Expand Icon */
+  .expand-icon {
+    font-size: 1rem;
+    color: #7c3aed;
+    margin-left: 1rem;
+    transition: transform 0.2s;
+  }
+
+  /* Card Preview (Collapsed) */
+  .card-preview {
+    padding: 0 1.25rem 1.25rem 1.25rem;
+    color: #6b7280;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  /* Card Content (Expanded) */
+  .card-content {
+    padding: 0 1.25rem 1.25rem 1.25rem;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  /* Metadata */
+  .card-metadata {
+    display: flex;
+    gap: 2rem;
+    padding: 1rem 0;
+    font-size: 0.875rem;
+    color: #6b7280;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 1rem;
+  }
+
+  .metadata-item strong {
+    color: #374151;
+  }
+
+  /* Prompt Display */
+  .prompt-display {
+    padding: 1rem;
+    background-color: #f9fafb;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .prompt-text {
+    margin: 0;
+    line-height: 1.6;
+    color: #1f2937;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  /* Edit Container */
+  .edit-container {
+    margin-bottom: 1rem;
+  }
+
+  .prompt-textarea {
+    width: 100%;
+    padding: 1rem;
+    border: 2px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.6;
+    resize: vertical;
+    margin-bottom: 0.75rem;
+    transition: border-color 0.2s;
+  }
+
+  .prompt-textarea:focus {
+    outline: none;
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+  }
+
+  /* Edit Actions */
+  .edit-actions {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  /* Card Actions */
+  .card-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  /* Buttons */
+  button {
+    font-family: inherit;
+  }
+
+  .button-save,
+  .button-edit,
+  .button-regenerate {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .button-save {
+    background-color: #7c3aed;
+    color: white;
+  }
+
+  .button-save:hover {
+    background-color: #6d28d9;
+  }
+
+  .button-cancel {
+    padding: 0.5rem 1rem;
+    border: 1px solid #d1d5db;
+    background-color: white;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .button-cancel:hover {
+    background-color: #f9fafb;
+    border-color: #9ca3af;
+  }
+
+  .button-edit {
+    background-color: #3b82f6;
+    color: white;
+  }
+
+  .button-edit:hover {
+    background-color: #2563eb;
+  }
+
+  .button-regenerate {
+    background-color: #f59e0b;
+    color: white;
+  }
+
+  .button-regenerate:hover:not(:disabled) {
+    background-color: #d97706;
+  }
+
+  .button-regenerate:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6b7280;
+  }
+
+  .empty-icon {
+    font-size: 4rem;
+    margin: 0 0 1rem 0;
+  }
+
+  .empty-text {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .empty-subtext {
+    font-size: 1rem;
+    margin: 0;
+  }
+
+  /* Spinners */
+  .spinner,
+  .spinner-small {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  .spinner-small {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Screen Reader Only */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .generate-button {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .card-header-content {
+      flex-wrap: wrap;
+    }
+
+    .card-number {
+      width: 2.5rem;
+      height: 2.5rem;
+      font-size: 1rem;
+    }
+
+    .card-name {
+      font-size: 1.125rem;
+    }
+
+    .card-metadata {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .card-actions,
+    .edit-actions {
+      flex-direction: column;
+    }
+
+    .button-save,
+    .button-cancel,
+    .button-edit,
+    .button-regenerate {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  /* Accessibility - High Contrast Mode */
+  @media (prefers-contrast: high) {
+    .prompt-card {
+      border-width: 3px;
+    }
+
+    .card-header:focus {
+      outline-width: 3px;
+    }
+  }
+
+  /* Accessibility - Reduced Motion */
+  @media (prefers-reduced-motion: reduce) {
+    .prompt-card,
+    .expand-icon,
+    .spinner,
+    .spinner-small {
+      animation: none;
+      transition: none;
+    }
+  }
 </style>

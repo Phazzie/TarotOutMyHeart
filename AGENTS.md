@@ -5,11 +5,13 @@
 ## 🚨 **CRITICAL REMINDER FOR ALL AI AGENTS** 🚨
 
 **BEFORE ENDING YOUR SESSION:**
+
 1. ✅ **UPDATE `lessonslearned.md`** - Add new lessons from this session
 2. ✅ **UPDATE `CHANGELOG.md`** - Document all changes made
 3. ✅ **COMMIT AND PUSH** - Never leave uncommitted work
 
 **AFTER COMPLETING ANY MAJOR TASK:**
+
 - Document patterns that worked well
 - Document mistakes to avoid
 - Update both files IMMEDIATELY, not at end of session
@@ -160,8 +162,9 @@ npm run test:contracts
 ```
 
 **⚠️ Phase 2 Completion Checklist:**
+
 - [ ] Mock implements interface EXACTLY
-- [ ] `npm run check` passes with 0 TypeScript errors  
+- [ ] `npm run check` passes with 0 TypeScript errors
 - [ ] No `as any` type escapes
 - [ ] All interface methods implemented
 - [ ] Return types match contract exactly
@@ -281,6 +284,7 @@ npm run format:check
 ```
 
 **Required for**:
+
 - ✅ Contract files (`/contracts/*.ts`)
 - ✅ Service implementations (`/services/mock/*.ts`, `/services/real/*.ts`)
 - ✅ Svelte components (`/src/lib/components/*.svelte`)
@@ -288,12 +292,14 @@ npm run format:check
 - ✅ Test files (`/tests/**/*.test.ts`)
 
 **Why this matters**:
+
 - AI agents can understand context without reading entire file
 - Humans can quickly grasp purpose and usage
 - Documentation enforces clear thinking about responsibilities
 - Reduces integration errors by making boundaries explicit
 
 **Blueprints Available**:
+
 - `/docs/blueprints/CONTRACT-BLUEPRINT.md` - Template for contract files
 - `/docs/blueprints/STUB-BLUEPRINT.md` - Template for service stubs
 - `/docs/blueprints/COMPONENT-BLUEPRINT.md` - Template for Svelte components
@@ -677,6 +683,7 @@ Escalate to human developer if:
 ## Documentation Structure
 
 ### Root Documentation (Original Scaffolding)
+
 - **`/seam-driven-development.md`** - Complete SDD methodology guide
 - **`/SEAMSLIST.md`** - Catalog of all defined seams
 - **`/CHANGELOG.md`** - Version history
@@ -690,7 +697,9 @@ Escalate to human developer if:
 - **`/prd.MD`** - Product Requirements Document
 
 ### Development Documents (Created During Project)
+
 All documents created during development go in **`/docs/planning/`**:
+
 - **`docs/planning/DATA-BOUNDARIES.md`** - Data boundary analysis (IDENTIFY phase)
 - **`docs/planning/RECOMMENDATIONS.md`** - Technical decisions and recommendations
 - **Future**: Contract drafts, architecture diagrams, sprint retrospectives, etc.

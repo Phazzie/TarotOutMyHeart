@@ -22,7 +22,7 @@ import type {
   ContextId,
   RegistrationToken,
   HandoffId,
-  ServiceResponse
+  ServiceResponse,
 } from '@contracts'
 
 /**
@@ -62,7 +62,7 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
         const existing = this.registeredAgents.get(params.agentId)!
         return {
           success: true,
-          data: existing.token
+          data: existing.token,
         }
       }
 
@@ -71,16 +71,18 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
       const agent: RegisteredAgent = {
         ...params,
         registeredAt: new Date(),
-        token
+        token,
       }
 
       this.registeredAgents.set(params.agentId, agent)
 
-      console.log(`[ClaudeCoordination] Agent ${params.agentId} registered with capabilities: ${params.capabilities.join(', ')}`)
+      console.log(
+        `[ClaudeCoordination] Agent ${params.agentId} registered with capabilities: ${params.capabilities.join(', ')}`
+      )
 
       return {
         success: true,
-        data: token
+        data: token,
       }
     } catch (error) {
       return {
@@ -88,8 +90,8 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
         error: {
           code: 'REGISTRATION_ERROR',
           message: `Failed to register agent: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -106,7 +108,7 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
       if (!result.success) {
         return {
           success: false,
-          error: result.error!
+          error: result.error!,
         }
       }
 
@@ -116,7 +118,7 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
 
       return {
         success: true,
-        data: tasks
+        data: tasks,
       }
     } catch (error) {
       return {
@@ -124,8 +126,8 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
         error: {
           code: 'GET_TASKS_ERROR',
           message: `Failed to get available tasks: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -140,7 +142,7 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
       if (!taskResult.success) {
         return {
           success: false,
-          error: taskResult.error!
+          error: taskResult.error!,
         }
       }
 
@@ -150,8 +152,8 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
           error: {
             code: 'TASK_NOT_FOUND',
             message: `Task ${taskId} not found`,
-            retryable: false
-          }
+            retryable: false,
+          },
         }
       }
 
@@ -164,8 +166,8 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
           error: {
             code: 'TASK_ALREADY_CLAIMED',
             message: `Task ${taskId} is already ${task.status}`,
-            retryable: false
-          }
+            retryable: false,
+          },
         }
       }
 
@@ -174,7 +176,7 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
       if (!updateResult.success) {
         return {
           success: false,
-          error: updateResult.error!
+          error: updateResult.error!,
         }
       }
 
@@ -182,8 +184,8 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
         success: true,
         data: {
           ...task,
-          status: 'claimed'
-        }
+          status: 'claimed',
+        },
       }
     } catch (error) {
       return {
@@ -191,8 +193,8 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
         error: {
           code: 'CLAIM_TASK_ERROR',
           message: `Failed to claim task: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -210,8 +212,8 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
           error: {
             code: 'TASK_NOT_FOUND',
             message: `Task ${taskId} not found`,
-            retryable: false
-          }
+            retryable: false,
+          },
         }
       }
 
@@ -219,7 +221,9 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
         await this.stateStore.updateTaskStatus(taskId, 'in-progress')
       }
 
-      console.log(`[ClaudeCoordination] Task ${taskId} progress: ${progress.percentComplete}% - ${progress.currentStep}`)
+      console.log(
+        `[ClaudeCoordination] Task ${taskId} progress: ${progress.percentComplete}% - ${progress.currentStep}`
+      )
 
       return { success: true }
     } catch (error) {
@@ -228,8 +232,8 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
         error: {
           code: 'REPORT_PROGRESS_ERROR',
           message: `Failed to report progress: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -242,7 +246,9 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
       const updateResult = await this.stateStore.updateTaskResult(taskId, result)
 
       if (updateResult.success) {
-        console.log(`[ClaudeCoordination] Task ${taskId} completed: ${result.success ? 'success' : 'failed'}`)
+        console.log(
+          `[ClaudeCoordination] Task ${taskId} completed: ${result.success ? 'success' : 'failed'}`
+        )
       }
 
       return updateResult
@@ -252,8 +258,8 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
         error: {
           code: 'COMPLETE_TASK_ERROR',
           message: `Failed to complete task: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -268,7 +274,7 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
       if (!result.success) {
         return {
           success: false,
-          error: result.error!
+          error: result.error!,
         }
       }
 
@@ -278,14 +284,14 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
           error: {
             code: 'CONTEXT_NOT_FOUND',
             message: `Context ${contextId} not found`,
-            retryable: false
-          }
+            retryable: false,
+          },
         }
       }
 
       return {
         success: true,
-        data: result.data
+        data: result.data,
       }
     } catch (error) {
       return {
@@ -293,8 +299,8 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
         error: {
           code: 'RETRIEVE_CONTEXT_ERROR',
           message: `Failed to retrieve context: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -302,7 +308,10 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
   /**
    * Save conversation context
    */
-  async saveContext(contextId: ContextId, context: ConversationContext): Promise<ServiceResponse<void>> {
+  async saveContext(
+    contextId: ContextId,
+    context: ConversationContext
+  ): Promise<ServiceResponse<void>> {
     try {
       return await this.stateStore.saveContext(contextId, context)
     } catch (error) {
@@ -311,8 +320,8 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
         error: {
           code: 'SAVE_CONTEXT_ERROR',
           message: `Failed to save context: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -334,11 +343,13 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
       // Generate handoff ID
       const handoffId = `handoff_${uuidv4()}` as HandoffId
 
-      console.log(`[ClaudeCoordination] Task ${params.taskId} handed off to ${params.toAgent}: ${params.reason}`)
+      console.log(
+        `[ClaudeCoordination] Task ${params.taskId} handed off to ${params.toAgent}: ${params.reason}`
+      )
 
       return {
         success: true,
-        data: handoffId
+        data: handoffId,
       }
     } catch (error) {
       return {
@@ -346,8 +357,8 @@ export class ClaudeCoordinationService implements ClaudeCoordinationContract {
         error: {
           code: 'HANDOFF_ERROR',
           message: `Failed to request handoff: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }

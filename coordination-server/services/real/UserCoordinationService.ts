@@ -20,7 +20,7 @@ import type {
   ConflictId,
   ConflictResolution,
   AgentId,
-  ServiceResponse
+  ServiceResponse,
 } from '@contracts'
 
 /**
@@ -56,17 +56,17 @@ export class UserCoordinationService implements UserCoordinationContract {
         context: {
           files: [],
           conversationHistory: [],
-          requirements: params.task
+          requirements: params.task,
         },
         sessionId,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
 
       if (!taskResult.success) {
         return {
           success: false,
-          error: taskResult.error!
+          error: taskResult.error!,
         }
       }
 
@@ -80,7 +80,7 @@ export class UserCoordinationService implements UserCoordinationContract {
         status: 'active',
         createdAt: new Date(),
         updatedAt: new Date(),
-        contextId: params.contextId || (taskResult.data! as unknown as ContextId)
+        contextId: params.contextId || (taskResult.data! as unknown as ContextId),
       }
 
       this.activeSessions.set(sessionId, session)
@@ -89,7 +89,7 @@ export class UserCoordinationService implements UserCoordinationContract {
 
       return {
         success: true,
-        data: session
+        data: session,
       }
     } catch (error) {
       return {
@@ -97,8 +97,8 @@ export class UserCoordinationService implements UserCoordinationContract {
         error: {
           code: 'START_COLLABORATION_ERROR',
           message: `Failed to start collaboration: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -115,8 +115,8 @@ export class UserCoordinationService implements UserCoordinationContract {
           error: {
             code: 'SESSION_NOT_FOUND',
             message: `Session ${sessionId} not found`,
-            retryable: false
-          }
+            retryable: false,
+          },
         }
       }
 
@@ -132,8 +132,8 @@ export class UserCoordinationService implements UserCoordinationContract {
         error: {
           code: 'PAUSE_ERROR',
           message: `Failed to pause collaboration: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -150,8 +150,8 @@ export class UserCoordinationService implements UserCoordinationContract {
           error: {
             code: 'SESSION_NOT_FOUND',
             message: `Session ${sessionId} not found`,
-            retryable: false
-          }
+            retryable: false,
+          },
         }
       }
 
@@ -167,8 +167,8 @@ export class UserCoordinationService implements UserCoordinationContract {
         error: {
           code: 'RESUME_ERROR',
           message: `Failed to resume collaboration: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -185,8 +185,8 @@ export class UserCoordinationService implements UserCoordinationContract {
           error: {
             code: 'SESSION_NOT_FOUND',
             message: `Session ${sessionId} not found`,
-            retryable: false
-          }
+            retryable: false,
+          },
         }
       }
 
@@ -202,8 +202,8 @@ export class UserCoordinationService implements UserCoordinationContract {
         error: {
           code: 'CANCEL_ERROR',
           message: `Failed to cancel collaboration: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -211,7 +211,9 @@ export class UserCoordinationService implements UserCoordinationContract {
   /**
    * Get collaboration status
    */
-  async getCollaborationStatus(sessionId: SessionId): Promise<ServiceResponse<CollaborationStatus>> {
+  async getCollaborationStatus(
+    sessionId: SessionId
+  ): Promise<ServiceResponse<CollaborationStatus>> {
     try {
       const session = this.activeSessions.get(sessionId)
       if (!session) {
@@ -220,8 +222,8 @@ export class UserCoordinationService implements UserCoordinationContract {
           error: {
             code: 'SESSION_NOT_FOUND',
             message: `Session ${sessionId} not found`,
-            retryable: false
-          }
+            retryable: false,
+          },
         }
       }
 
@@ -242,13 +244,18 @@ export class UserCoordinationService implements UserCoordinationContract {
         progress: {
           tasksTotal: tasks.length,
           tasksCompleted: tasks.filter(t => t.status === 'completed').length,
-          percentComplete: tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100) : 0
-        }
+          percentComplete:
+            tasks.length > 0
+              ? Math.round(
+                  (tasks.filter(t => t.status === 'completed').length / tasks.length) * 100
+                )
+              : 0,
+        },
       }
 
       return {
         success: true,
-        data: status
+        data: status,
       }
     } catch (error) {
       return {
@@ -256,8 +263,8 @@ export class UserCoordinationService implements UserCoordinationContract {
         error: {
           code: 'GET_STATUS_ERROR',
           message: `Failed to get collaboration status: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -276,7 +283,9 @@ export class UserCoordinationService implements UserCoordinationContract {
       // 3. Update affected files/tasks
       // 4. Notify agents of resolution
 
-      console.log(`[UserCoordination] Conflict ${conflictId} resolved with strategy: ${resolution.strategy}`)
+      console.log(
+        `[UserCoordination] Conflict ${conflictId} resolved with strategy: ${resolution.strategy}`
+      )
 
       return { success: true }
     } catch (error) {
@@ -285,8 +294,8 @@ export class UserCoordinationService implements UserCoordinationContract {
         error: {
           code: 'RESOLVE_CONFLICT_ERROR',
           message: `Failed to resolve conflict: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -309,7 +318,7 @@ export class UserCoordinationService implements UserCoordinationContract {
         for (const task of tasksResult.data) {
           yield {
             type: 'task_update',
-            data: task
+            data: task,
           }
         }
       }

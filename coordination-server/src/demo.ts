@@ -23,7 +23,7 @@ const colors = {
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
   magenta: '\x1b[35m',
-  cyan: '\x1b[36m'
+  cyan: '\x1b[36m',
 }
 
 function log(agent: 'system' | 'claude' | 'copilot' | 'user', message: string) {
@@ -31,7 +31,7 @@ function log(agent: 'system' | 'claude' | 'copilot' | 'user', message: string) {
     system: colors.yellow,
     claude: colors.blue,
     copilot: colors.green,
-    user: colors.magenta
+    user: colors.magenta,
   }
 
   const color = agentColors[agent]
@@ -56,7 +56,7 @@ async function demoOrchestratorWorker() {
   const sessionResult = await services.user.startCollaboration({
     task: 'Build user authentication with email/password',
     preferredLead: 'claude-code',
-    mode: 'orchestrator-worker'
+    mode: 'orchestrator-worker',
   })
 
   if (!sessionResult.success || !sessionResult.data) {
@@ -75,7 +75,7 @@ async function demoOrchestratorWorker() {
   const claudeReg = await services.claude.registerAgent({
     agentId: 'claude-code',
     capabilities: ['typescript-development', 'contract-definition', 'testing'],
-    version: '1.0.0'
+    version: '1.0.0',
   })
 
   if (claudeReg.success) {
@@ -112,11 +112,11 @@ async function demoOrchestratorWorker() {
         context: {
           files: ['src/components/Login.tsx'],
           conversationHistory: [],
-          requirements: 'Email/password fields with validation'
+          requirements: 'Email/password fields with validation',
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-        sessionId: session.id
+        sessionId: session.id,
       })
 
       log('claude', 'Creating subtask: "Implement signup component"')
@@ -128,11 +128,11 @@ async function demoOrchestratorWorker() {
         context: {
           files: ['src/components/Signup.tsx'],
           conversationHistory: [],
-          requirements: 'Email/password/confirm with strength indicator'
+          requirements: 'Email/password/confirm with strength indicator',
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-        sessionId: session.id
+        sessionId: session.id,
       })
 
       // Report progress
@@ -140,7 +140,7 @@ async function demoOrchestratorWorker() {
         percentComplete: 30,
         currentStep: 'Subtasks created, waiting for Copilot',
         filesModified: [],
-        estimatedTimeRemaining: 300
+        estimatedTimeRemaining: 300,
       })
     }
   }
@@ -152,7 +152,7 @@ async function demoOrchestratorWorker() {
 
   const copilotTasks = await services.copilot.checkForTasks({
     agentId: 'github-copilot',
-    capabilities: ['svelte-development', 'typescript-development']
+    capabilities: ['svelte-development', 'typescript-development'],
   })
 
   if (copilotTasks.success && copilotTasks.data && copilotTasks.data.length > 0) {
@@ -163,7 +163,7 @@ async function demoOrchestratorWorker() {
     log('copilot', 'Claiming task via MCP tool...')
     const claimResult = await services.copilot.claimTaskTool({
       taskId: task.id,
-      agentId: 'github-copilot'
+      agentId: 'github-copilot',
     })
 
     if (claimResult.success && claimResult.data) {
@@ -175,7 +175,7 @@ async function demoOrchestratorWorker() {
       const fileAccess = await services.copilot.requestFileAccess({
         path: 'src/components/Login.tsx',
         operation: 'write',
-        agentId: 'github-copilot'
+        agentId: 'github-copilot',
       })
 
       if (fileAccess.success && fileAccess.data?.granted) {
@@ -192,7 +192,7 @@ async function demoOrchestratorWorker() {
           agentId: 'github-copilot',
           success: true,
           output: 'Login component implemented with form validation',
-          filesModified: ['src/components/Login.tsx']
+          filesModified: ['src/components/Login.tsx'],
         })
 
         log('copilot', 'Task completed successfully!')
@@ -201,7 +201,7 @@ async function demoOrchestratorWorker() {
         if (fileAccess.data.lockToken) {
           await services.copilot.releaseFileAccess({
             lockToken: fileAccess.data.lockToken,
-            agentId: 'github-copilot'
+            agentId: 'github-copilot',
           })
           log('copilot', 'File lock released')
         }
@@ -240,7 +240,7 @@ async function demoParallelWork() {
 
   const sessionResult = await services.user.startCollaboration({
     task: 'Add dark mode toggle and theme switching',
-    mode: 'parallel'
+    mode: 'parallel',
   })
 
   if (!sessionResult.success || !sessionResult.data) {
@@ -261,11 +261,11 @@ async function demoParallelWork() {
     context: {
       files: ['services/theme/ThemeService.ts'],
       conversationHistory: [],
-      requirements: 'Theme switching with persistence'
+      requirements: 'Theme switching with persistence',
     },
     createdAt: new Date(),
     updatedAt: new Date(),
-    sessionId: session.id
+    sessionId: session.id,
   })
 
   await services.stateStore.enqueueTask({
@@ -276,11 +276,11 @@ async function demoParallelWork() {
     context: {
       files: ['components/DarkModeToggle.tsx'],
       conversationHistory: [],
-      requirements: 'Toggle switch with animation'
+      requirements: 'Toggle switch with animation',
     },
     createdAt: new Date(),
     updatedAt: new Date(),
-    sessionId: session.id
+    sessionId: session.id,
   })
 
   // Both AIs work simultaneously
@@ -298,7 +298,7 @@ async function demoParallelWork() {
       const access = await services.fileSystem.requestFileAccess({
         path: 'services/theme/ThemeService.ts',
         operation: 'write',
-        agentId: 'claude-code'
+        agentId: 'claude-code',
       })
 
       if (access.success && access.data?.granted) {
@@ -308,7 +308,7 @@ async function demoParallelWork() {
         await services.claude.completeTask(task.id, {
           success: true,
           output: 'Theme service contract defined',
-          filesModified: ['services/theme/ThemeService.ts']
+          filesModified: ['services/theme/ThemeService.ts'],
         })
 
         log('claude', 'Contract complete!')
@@ -325,21 +325,21 @@ async function demoParallelWork() {
     log('copilot', 'Working on dark mode toggle UI...')
     const tasks = await services.copilot.checkForTasks({
       agentId: 'github-copilot',
-      capabilities: ['svelte-development']
+      capabilities: ['svelte-development'],
     })
 
     if (tasks.success && tasks.data && tasks.data[0]) {
       const task = tasks.data[0]
       await services.copilot.claimTaskTool({
         taskId: task.id,
-        agentId: 'github-copilot'
+        agentId: 'github-copilot',
       })
 
       // Request file access
       const access = await services.copilot.requestFileAccess({
         path: 'components/DarkModeToggle.tsx',
         operation: 'write',
-        agentId: 'github-copilot'
+        agentId: 'github-copilot',
       })
 
       if (access.success && access.data?.granted) {
@@ -351,7 +351,7 @@ async function demoParallelWork() {
           agentId: 'github-copilot',
           success: true,
           output: 'Dark mode toggle implemented',
-          filesModified: ['components/DarkModeToggle.tsx']
+          filesModified: ['components/DarkModeToggle.tsx'],
         })
 
         log('copilot', 'UI component complete!')
@@ -359,7 +359,7 @@ async function demoParallelWork() {
         if (access.data.lockToken) {
           await services.copilot.releaseFileAccess({
             lockToken: access.data.lockToken,
-            agentId: 'github-copilot'
+            agentId: 'github-copilot',
           })
         }
       }

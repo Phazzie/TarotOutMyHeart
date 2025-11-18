@@ -133,9 +133,7 @@ export class CostCalculationMock implements ICostCalculationService {
    * - Vision API: 1 request per reference image
    * - Image generation: imageCount * $0.10
    */
-  async estimateCost(
-    input: EstimateCostInput
-  ): Promise<ServiceResponse<EstimateCostOutput>> {
+  async estimateCost(input: EstimateCostInput): Promise<ServiceResponse<EstimateCostOutput>> {
     // Simulate minimal processing delay
     await this.simulateDelay(10, 30)
 
@@ -207,9 +205,7 @@ export class CostCalculationMock implements ICostCalculationService {
    * - summary: Simple dollar amount
    * - minimal: Approximate dollar amount with ~ prefix
    */
-  async formatCost(
-    input: FormatCostInput
-  ): Promise<ServiceResponse<FormatCostOutput>> {
+  async formatCost(input: FormatCostInput): Promise<ServiceResponse<FormatCostOutput>> {
     // Simulate minimal processing delay
     await this.simulateDelay(5, 15)
 
@@ -224,7 +220,7 @@ export class CostCalculationMock implements ICostCalculationService {
           // For detailed format, we need to estimate breakdown
           // In real implementation, this would use actual breakdown data
           const textCostEstimate = cost * 0.05 // ~5% for text
-          const imageCostEstimate = cost * 0.90 // ~90% for images
+          const imageCostEstimate = cost * 0.9 // ~90% for images
           const visionCostEstimate = cost * 0.05 // ~5% for vision
           formatted = `${formatCurrency(cost)} (prompts: ${formatCurrency(textCostEstimate)}, images: ${formatCurrency(imageCostEstimate)}, vision: ${formatCurrency(visionCostEstimate)})`
           break
@@ -272,10 +268,7 @@ export class CostCalculationMock implements ICostCalculationService {
   /**
    * Calculate text generation costs from token usage
    */
-  private calculateTextCost(
-    inputTokens: number,
-    outputTokens: number
-  ): TextCostBreakdown {
+  private calculateTextCost(inputTokens: number, outputTokens: number): TextCostBreakdown {
     const inputCost = inputTokens * GROK_PRICING.textInputTokens
     const outputCost = outputTokens * GROK_PRICING.textOutputTokens
     const totalCost = inputCost + outputCost

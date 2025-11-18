@@ -1,9 +1,11 @@
 # GitHub Coding Agent Task: Write Missing Tarot Contract Tests
 
 ## Objective
+
 Write contract validation tests for 7 Tarot application seams following the existing test patterns from AI Coordination tests. All mocks exist and need validation tests to prove they match contracts exactly per SDD Phase 3 requirements.
 
 ## Context
+
 - **Project**: TarotUpMyHeart - Seam-Driven Development (SDD) Tarot deck generator
 - **Phase**: Phase 3 - Mock validation (REQUIRED before UI development)
 - **Methodology**: See `/seam-driven-development.md` and `/AGENTS.md`
@@ -11,7 +13,9 @@ Write contract validation tests for 7 Tarot application seams following the exis
 - **Location**: `/tests/contracts/`
 
 ## Existing Test Examples (FOLLOW THESE PATTERNS)
+
 Study these existing tests as templates:
+
 - `/tests/contracts/StateStore.test.ts` - Shows async operations, error handling
 - `/tests/contracts/ClaudeCoordination.test.ts` - Shows interface compliance
 - `/tests/contracts/CopilotCoordination.test.ts` - Shows MCP tools testing
@@ -21,9 +25,11 @@ Study these existing tests as templates:
 ## Missing Test Files (CREATE THESE 7 FILES)
 
 ### 1. `/tests/contracts/ImageUpload.test.ts`
+
 **Contract**: `/contracts/ImageUpload.ts`  
 **Mock**: `/services/mock/ImageUploadMock.ts`  
 **Test Requirements**:
+
 - ✅ Mock implements `IImageUploadService` interface
 - ✅ `uploadImages()` validates MIN_IMAGES (1) and MAX_IMAGES (5)
 - ✅ `uploadImages()` validates file size <= MAX_IMAGE_SIZE_BYTES (10MB)
@@ -39,9 +45,11 @@ Study these existing tests as templates:
 - ✅ All return types match contract exactly
 
 ### 2. `/tests/contracts/StyleInput.test.ts`
+
 **Contract**: `/contracts/StyleInput.ts`  
 **Mock**: `/services/mock/StyleInputMock.ts`  
 **Test Requirements**:
+
 - ✅ Mock implements `IStyleInputService` interface
 - ✅ `saveStyleInput()` validates theme (not empty, <= MAX_THEME_LENGTH)
 - ✅ `saveStyleInput()` validates tone (not empty, <= MAX_TONE_LENGTH)
@@ -56,9 +64,11 @@ Study these existing tests as templates:
 - ✅ Return types match contract exactly
 
 ### 3. `/tests/contracts/PromptGeneration.test.ts`
+
 **Contract**: `/contracts/PromptGeneration.ts`  
 **Mock**: `/services/mock/PromptGenerationMock.ts`  
 **Test Requirements**:
+
 - ✅ Mock implements `IPromptGenerationService` interface
 - ✅ `generatePrompts()` requires imageUrls array (1-5 images)
 - ✅ `generatePrompts()` requires styleInput object
@@ -72,9 +82,11 @@ Study these existing tests as templates:
 - ✅ Return type matches `ServiceResponse<CardPrompt[]>` exactly
 
 ### 4. `/tests/contracts/ImageGeneration.test.ts`
+
 **Contract**: `/contracts/ImageGeneration.ts`  
 **Mock**: `/services/mock/ImageGenerationMock.ts`  
 **Test Requirements**:
+
 - ✅ Mock implements `IImageGenerationService` interface
 - ✅ `generateImage()` requires cardNumber (0-21)
 - ✅ `generateImage()` requires prompt (non-empty string)
@@ -90,9 +102,11 @@ Study these existing tests as templates:
 - ✅ All return types match contract exactly
 
 ### 5. `/tests/contracts/DeckDisplay.test.ts`
+
 **Contract**: `/contracts/DeckDisplay.ts`  
 **Mock**: `/services/mock/DeckDisplayMock.ts`  
 **Test Requirements**:
+
 - ✅ Mock implements `IDeckDisplayService` interface
 - ✅ `saveDeck()` requires cards array (1-22 cards)
 - ✅ `saveDeck()` requires deckMetadata with name, createdAt, styleInput
@@ -106,9 +120,11 @@ Study these existing tests as templates:
 - ✅ All return types match contract exactly
 
 ### 6. `/tests/contracts/CostCalculation.test.ts`
+
 **Contract**: `/contracts/CostCalculation.ts`  
 **Mock**: `/services/mock/CostCalculationMock.ts`  
 **Test Requirements**:
+
 - ✅ Mock implements `ICostCalculationService` interface
 - ✅ `calculatePromptCost()` returns cost for prompt generation (vision API)
 - ✅ `calculatePromptCost()` includes: imageCount, estimatedTokens, costUSD, breakdown
@@ -122,9 +138,11 @@ Study these existing tests as templates:
 - ✅ All return types match contract exactly
 
 ### 7. `/tests/contracts/Download.test.ts`
+
 **Contract**: `/contracts/Download.ts`  
 **Mock**: `/services/mock/DownloadMock.ts`  
 **Test Requirements**:
+
 - ✅ Mock implements `IDownloadService` interface
 - ✅ `downloadDeck()` requires cards array (1-22 cards)
 - ✅ `downloadDeck()` requires format ('zip' or 'individual')
@@ -174,7 +192,9 @@ describe('[Feature] Contract Compliance', () => {
 
   describe('methodName()', () => {
     it('should return valid response for valid input', async () => {
-      const request: FeatureRequest = { /* valid data */ }
+      const request: FeatureRequest = {
+        /* valid data */
+      }
       const response = await service.methodName(request)
 
       expect(response.success).toBe(true)
@@ -187,7 +207,9 @@ describe('[Feature] Contract Compliance', () => {
     })
 
     it('should return error for invalid input', async () => {
-      const request: FeatureRequest = { /* invalid data */ }
+      const request: FeatureRequest = {
+        /* invalid data */
+      }
       const response = await service.methodName(request)
 
       expect(response.success).toBe(false)
@@ -202,7 +224,7 @@ describe('[Feature] Contract Compliance', () => {
       // Test min/max constraints
       const tooMany: FeatureRequest = { items: new Array(100) } // Over MAX
       const response = await service.methodName(tooMany)
-      
+
       expect(response.success).toBe(false)
       expect(response.error?.code).toBe(FeatureErrorCode.TOO_MANY_ITEMS)
     })
@@ -215,6 +237,7 @@ describe('[Feature] Contract Compliance', () => {
 ## Implementation Guidelines
 
 ### 1. Import Patterns
+
 ```typescript
 // ✅ CORRECT: Import types with 'type', enums without
 import type { IFeatureService, FeatureData } from '$contracts/Feature'
@@ -225,13 +248,14 @@ import type { FeatureErrorCode } from '$contracts/Feature' // Error: cannot use 
 ```
 
 ### 2. Service Factory Pattern
+
 ```typescript
 // ✅ CORRECT: Get service from factory (uses mock by default)
 import { featureService } from '$services/factory'
 
 describe('Feature Tests', () => {
   let service: IFeatureService
-  
+
   beforeEach(() => {
     service = featureService // Mock instance
   })
@@ -239,11 +263,13 @@ describe('Feature Tests', () => {
 ```
 
 ### 3. Test Organization
+
 - One `describe` block per contract interface
 - One `describe` block per interface method
 - Multiple `it` blocks for: success case, error cases, edge cases, validation
 
 ### 4. Async Testing
+
 ```typescript
 // All service methods are async
 it('should handle async operation', async () => {
@@ -253,6 +279,7 @@ it('should handle async operation', async () => {
 ```
 
 ### 5. Type Narrowing for ServiceResponse
+
 ```typescript
 const response = await service.getData()
 
@@ -312,6 +339,7 @@ npm test tests/contracts/StyleInput.test.ts
 ## Questions/Clarifications
 
 If anything is unclear:
+
 1. Check existing AI coordination tests for patterns
 2. Read the contract file to understand expected behavior
 3. Run the mock in isolation to see what it returns

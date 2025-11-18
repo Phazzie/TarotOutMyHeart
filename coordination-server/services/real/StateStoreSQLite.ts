@@ -25,7 +25,7 @@ import type {
   ContextId,
   Message,
   SessionId,
-  ServiceResponse
+  ServiceResponse,
 } from '@contracts'
 
 /**
@@ -50,7 +50,7 @@ export class StateStoreSQLite implements StateStoreContract {
     if (this.initialized) return
 
     return new Promise((resolve, reject) => {
-      this.db = new sqlite3.Database(this.dbPath, (err) => {
+      this.db = new sqlite3.Database(this.dbPath, err => {
         if (err) {
           reject(new Error(`Failed to open database: ${err.message}`))
           return
@@ -90,7 +90,7 @@ export class StateStoreSQLite implements StateStoreContract {
             created_at INTEGER NOT NULL,
             updated_at INTEGER NOT NULL
           )`,
-          (err) => {
+          err => {
             if (err) {
               reject(new Error(`Failed to create tasks table: ${err.message}`))
               return
@@ -108,7 +108,7 @@ export class StateStoreSQLite implements StateStoreContract {
             acquired_at INTEGER NOT NULL,
             expires_at INTEGER NOT NULL
           )`,
-          (err) => {
+          err => {
             if (err) {
               reject(new Error(`Failed to create file_locks table: ${err.message}`))
               return
@@ -124,7 +124,7 @@ export class StateStoreSQLite implements StateStoreContract {
             shared_state TEXT NOT NULL,
             last_updated INTEGER NOT NULL
           )`,
-          (err) => {
+          err => {
             if (err) {
               reject(new Error(`Failed to create contexts table: ${err.message}`))
             } else {
@@ -143,7 +143,7 @@ export class StateStoreSQLite implements StateStoreContract {
     if (!this.db) throw new Error('Database not initialized')
 
     return new Promise((resolve, reject) => {
-      this.db!.run(sql, params, (err) => {
+      this.db!.run(sql, params, err => {
         if (err) reject(err)
         else resolve()
       })
@@ -185,13 +185,13 @@ export class StateStoreSQLite implements StateStoreContract {
     const mapping: Record<AgentCapability, string[]> = {
       'typescript-development': ['implement-feature', 'refactor-code', 'fix-bug'],
       'svelte-development': ['implement-feature', 'refactor-code'],
-      'testing': ['write-tests'],
+      testing: ['write-tests'],
       'code-review': ['review-code'],
-      'refactoring': ['refactor-code'],
-      'documentation': ['update-docs'],
-      'debugging': ['fix-bug'],
+      refactoring: ['refactor-code'],
+      documentation: ['update-docs'],
+      debugging: ['fix-bug'],
       'contract-definition': ['define-contract'],
-      'mock-implementation': ['implement-mock']
+      'mock-implementation': ['implement-mock'],
     }
     return mapping[capability] || []
   }
@@ -216,7 +216,7 @@ export class StateStoreSQLite implements StateStoreContract {
           task.result ? JSON.stringify(task.result) : null,
           task.sessionId,
           task.createdAt?.getTime() || now,
-          task.updatedAt?.getTime() || now
+          task.updatedAt?.getTime() || now,
         ]
       )
 
@@ -227,8 +227,8 @@ export class StateStoreSQLite implements StateStoreContract {
         error: {
           code: 'ENQUEUE_ERROR',
           message: `Failed to enqueue task: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -247,7 +247,9 @@ export class StateStoreSQLite implements StateStoreContract {
       }
 
       // Find highest priority queued task
-      const placeholders = Array.from(taskTypes).map(() => '?').join(',')
+      const placeholders = Array.from(taskTypes)
+        .map(() => '?')
+        .join(',')
       const row = await this.get<any>(
         `SELECT * FROM tasks
          WHERE status = 'queued' AND type IN (${placeholders})
@@ -277,7 +279,7 @@ export class StateStoreSQLite implements StateStoreContract {
         result: row.result ? JSON.parse(row.result) : undefined,
         sessionId: row.session_id as SessionId,
         createdAt: new Date(row.created_at),
-        updatedAt: new Date(row.updated_at)
+        updatedAt: new Date(row.updated_at),
       }
 
       return { success: true, data: task }
@@ -287,18 +289,15 @@ export class StateStoreSQLite implements StateStoreContract {
         error: {
           code: 'DEQUEUE_ERROR',
           message: `Failed to dequeue task: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
 
   async getTask(taskId: TaskId): Promise<ServiceResponse<Task | null>> {
     try {
-      const row = await this.get<any>(
-        `SELECT * FROM tasks WHERE id = ?`,
-        [taskId]
-      )
+      const row = await this.get<any>(`SELECT * FROM tasks WHERE id = ?`, [taskId])
 
       if (!row) {
         return { success: true, data: null }
@@ -314,7 +313,7 @@ export class StateStoreSQLite implements StateStoreContract {
         result: row.result ? JSON.parse(row.result) : undefined,
         sessionId: row.session_id as SessionId,
         createdAt: new Date(row.created_at),
-        updatedAt: new Date(row.updated_at)
+        updatedAt: new Date(row.updated_at),
       }
 
       return { success: true, data: task }
@@ -324,18 +323,19 @@ export class StateStoreSQLite implements StateStoreContract {
         error: {
           code: 'GET_TASK_ERROR',
           message: `Failed to get task: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
 
   async updateTaskStatus(taskId: TaskId, status: TaskStatus): Promise<ServiceResponse<void>> {
     try {
-      await this.run(
-        `UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?`,
-        [status, Date.now(), taskId]
-      )
+      await this.run(`UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?`, [
+        status,
+        Date.now(),
+        taskId,
+      ])
 
       return { success: true }
     } catch (error) {
@@ -344,18 +344,20 @@ export class StateStoreSQLite implements StateStoreContract {
         error: {
           code: 'UPDATE_TASK_ERROR',
           message: `Failed to update task status: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
 
   async updateTaskResult(taskId: TaskId, result: TaskResult): Promise<ServiceResponse<void>> {
     try {
-      await this.run(
-        `UPDATE tasks SET result = ?, status = ?, updated_at = ? WHERE id = ?`,
-        [JSON.stringify(result), result.success ? 'completed' : 'failed', Date.now(), taskId]
-      )
+      await this.run(`UPDATE tasks SET result = ?, status = ?, updated_at = ? WHERE id = ?`, [
+        JSON.stringify(result),
+        result.success ? 'completed' : 'failed',
+        Date.now(),
+        taskId,
+      ])
 
       return { success: true }
     } catch (error) {
@@ -364,8 +366,8 @@ export class StateStoreSQLite implements StateStoreContract {
         error: {
           code: 'UPDATE_RESULT_ERROR',
           message: `Failed to update task result: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -387,7 +389,7 @@ export class StateStoreSQLite implements StateStoreContract {
         result: row.result ? JSON.parse(row.result) : undefined,
         sessionId: row.session_id as SessionId,
         createdAt: new Date(row.created_at),
-        updatedAt: new Date(row.updated_at)
+        updatedAt: new Date(row.updated_at),
       }))
 
       return { success: true, data: tasks }
@@ -397,8 +399,8 @@ export class StateStoreSQLite implements StateStoreContract {
         error: {
           code: 'GET_SESSION_TASKS_ERROR',
           message: `Failed to get session tasks: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -408,10 +410,7 @@ export class StateStoreSQLite implements StateStoreContract {
   async acquireLock(path: string, owner: AgentId): Promise<ServiceResponse<LockToken>> {
     try {
       // Clean up expired locks first
-      await this.run(
-        `DELETE FROM file_locks WHERE expires_at < ?`,
-        [Date.now()]
-      )
+      await this.run(`DELETE FROM file_locks WHERE expires_at < ?`, [Date.now()])
 
       // Check if file is already locked
       const existing = await this.get<any>(
@@ -428,9 +427,9 @@ export class StateStoreSQLite implements StateStoreContract {
             retryable: true,
             details: {
               lockedBy: existing.owner,
-              expiresAt: new Date(existing.expires_at).toISOString()
-            }
-          }
+              expiresAt: new Date(existing.expires_at).toISOString(),
+            },
+          },
         }
       }
 
@@ -452,18 +451,15 @@ export class StateStoreSQLite implements StateStoreContract {
         error: {
           code: 'ACQUIRE_LOCK_ERROR',
           message: `Failed to acquire lock: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
 
   async releaseLock(lockToken: LockToken): Promise<ServiceResponse<void>> {
     try {
-      await this.run(
-        `DELETE FROM file_locks WHERE lock_token = ?`,
-        [lockToken]
-      )
+      await this.run(`DELETE FROM file_locks WHERE lock_token = ?`, [lockToken])
 
       return { success: true }
     } catch (error) {
@@ -472,8 +468,8 @@ export class StateStoreSQLite implements StateStoreContract {
         error: {
           code: 'RELEASE_LOCK_ERROR',
           message: `Failed to release lock: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -481,15 +477,9 @@ export class StateStoreSQLite implements StateStoreContract {
   async isLocked(path: string): Promise<ServiceResponse<FileLock | null>> {
     try {
       // Clean up expired locks first
-      await this.run(
-        `DELETE FROM file_locks WHERE expires_at < ?`,
-        [Date.now()]
-      )
+      await this.run(`DELETE FROM file_locks WHERE expires_at < ?`, [Date.now()])
 
-      const row = await this.get<any>(
-        `SELECT * FROM file_locks WHERE path = ?`,
-        [path]
-      )
+      const row = await this.get<any>(`SELECT * FROM file_locks WHERE path = ?`, [path])
 
       if (!row) {
         return { success: true, data: null }
@@ -501,7 +491,7 @@ export class StateStoreSQLite implements StateStoreContract {
         lockToken: row.lock_token as LockToken,
         operation: row.operation,
         acquiredAt: new Date(row.acquired_at),
-        expiresAt: new Date(row.expires_at)
+        expiresAt: new Date(row.expires_at),
       }
 
       return { success: true, data: lock }
@@ -511,8 +501,8 @@ export class StateStoreSQLite implements StateStoreContract {
         error: {
           code: 'IS_LOCKED_ERROR',
           message: `Failed to check lock: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -520,14 +510,9 @@ export class StateStoreSQLite implements StateStoreContract {
   async getAllLocks(): Promise<ServiceResponse<FileLock[]>> {
     try {
       // Clean up expired locks first
-      await this.run(
-        `DELETE FROM file_locks WHERE expires_at < ?`,
-        [Date.now()]
-      )
+      await this.run(`DELETE FROM file_locks WHERE expires_at < ?`, [Date.now()])
 
-      const rows = await this.all<any>(
-        `SELECT * FROM file_locks ORDER BY acquired_at ASC`
-      )
+      const rows = await this.all<any>(`SELECT * FROM file_locks ORDER BY acquired_at ASC`)
 
       const locks: FileLock[] = rows.map(row => ({
         path: row.path,
@@ -535,7 +520,7 @@ export class StateStoreSQLite implements StateStoreContract {
         lockToken: row.lock_token as LockToken,
         operation: row.operation,
         acquiredAt: new Date(row.acquired_at),
-        expiresAt: new Date(row.expires_at)
+        expiresAt: new Date(row.expires_at),
       }))
 
       return { success: true, data: locks }
@@ -545,8 +530,8 @@ export class StateStoreSQLite implements StateStoreContract {
         error: {
           code: 'GET_ALL_LOCKS_ERROR',
           message: `Failed to get all locks: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -554,14 +539,10 @@ export class StateStoreSQLite implements StateStoreContract {
   async releaseAllLocksForAgent(owner: AgentId): Promise<ServiceResponse<number>> {
     try {
       const result = await new Promise<number>((resolve, reject) => {
-        this.db!.run(
-          `DELETE FROM file_locks WHERE owner = ?`,
-          [owner],
-          function(err) {
-            if (err) reject(err)
-            else resolve(this.changes)
-          }
-        )
+        this.db!.run(`DELETE FROM file_locks WHERE owner = ?`, [owner], function (err) {
+          if (err) reject(err)
+          else resolve(this.changes)
+        })
       })
 
       return { success: true, data: result }
@@ -571,15 +552,18 @@ export class StateStoreSQLite implements StateStoreContract {
         error: {
           code: 'RELEASE_ALL_LOCKS_ERROR',
           message: `Failed to release all locks: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
 
   // ========== Context Operations ==========
 
-  async saveContext(contextId: ContextId, context: ConversationContext): Promise<ServiceResponse<void>> {
+  async saveContext(
+    contextId: ContextId,
+    context: ConversationContext
+  ): Promise<ServiceResponse<void>> {
     try {
       await this.run(
         `INSERT OR REPLACE INTO contexts (id, messages, shared_state, last_updated)
@@ -588,7 +572,7 @@ export class StateStoreSQLite implements StateStoreContract {
           contextId,
           JSON.stringify(context.messages),
           JSON.stringify(context.sharedState),
-          Date.now()
+          Date.now(),
         ]
       )
 
@@ -599,18 +583,15 @@ export class StateStoreSQLite implements StateStoreContract {
         error: {
           code: 'CONTEXT_SAVE_ERROR',
           message: `Failed to save context: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
 
   async loadContext(contextId: ContextId): Promise<ServiceResponse<ConversationContext | null>> {
     try {
-      const row = await this.get<any>(
-        `SELECT * FROM contexts WHERE id = ?`,
-        [contextId]
-      )
+      const row = await this.get<any>(`SELECT * FROM contexts WHERE id = ?`, [contextId])
 
       if (!row) {
         return { success: true, data: null }
@@ -620,7 +601,7 @@ export class StateStoreSQLite implements StateStoreContract {
         id: contextId,
         messages: JSON.parse(row.messages),
         sharedState: JSON.parse(row.shared_state),
-        lastUpdated: new Date(row.last_updated)
+        lastUpdated: new Date(row.last_updated),
       }
 
       return { success: true, data: context }
@@ -630,8 +611,8 @@ export class StateStoreSQLite implements StateStoreContract {
         error: {
           code: 'CONTEXT_LOAD_ERROR',
           message: `Failed to load context: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -643,7 +624,7 @@ export class StateStoreSQLite implements StateStoreContract {
       if (!contextResult.success) {
         return {
           success: false,
-          error: contextResult.error!
+          error: contextResult.error!,
         }
       }
 
@@ -653,8 +634,8 @@ export class StateStoreSQLite implements StateStoreContract {
           error: {
             code: 'CONTEXT_NOT_FOUND',
             message: `Context ${contextId} not found`,
-            retryable: false
-          }
+            retryable: false,
+          },
         }
       }
 
@@ -662,7 +643,7 @@ export class StateStoreSQLite implements StateStoreContract {
       const updatedContext = {
         ...contextResult.data,
         messages: [...contextResult.data.messages, message],
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       }
 
       return await this.saveContext(contextId, updatedContext)
@@ -672,8 +653,8 @@ export class StateStoreSQLite implements StateStoreContract {
         error: {
           code: 'APPEND_MESSAGE_ERROR',
           message: `Failed to append message: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -685,7 +666,7 @@ export class StateStoreSQLite implements StateStoreContract {
     if (!this.db) return
 
     return new Promise((resolve, reject) => {
-      this.db!.close((err) => {
+      this.db!.close(err => {
         if (err) {
           reject(new Error(`Failed to close database: ${err.message}`))
         } else {

@@ -69,58 +69,42 @@
   /**
    * Percent complete (0-100)
    */
-  let percentComplete = $derived(
-    progress?.percentComplete ?? 0
-  )
+  let percentComplete = $derived(progress?.percentComplete ?? 0)
 
   /**
    * Cards completed successfully
    */
-  let completedCount = $derived(
-    progress?.completed ?? 0
-  )
+  let completedCount = $derived(progress?.completed ?? 0)
 
   /**
    * Total cards to generate (always 22)
    */
-  let totalCards = $derived(
-    progress?.total ?? 22
-  )
+  let totalCards = $derived(progress?.total ?? 22)
 
   /**
    * Failed card count
    */
-  let failedCount = $derived(
-    progress?.failed ?? 0
-  )
+  let failedCount = $derived(progress?.failed ?? 0)
 
   /**
    * Current card being generated
    */
-  let currentCardNumber = $derived(
-    progress?.current
-  )
+  let currentCardNumber = $derived(progress?.current)
 
   /**
    * Current status message
    */
-  let statusMessage = $derived(
-    progress?.status ?? 'Waiting to start...'
-  )
+  let statusMessage = $derived(progress?.status ?? 'Waiting to start...')
 
   /**
    * Estimated time remaining (seconds)
    */
-  let timeRemaining = $derived(
-    progress?.estimatedTimeRemaining ?? 0
-  )
+  let timeRemaining = $derived(progress?.estimatedTimeRemaining ?? 0)
 
   /**
    * Whether all cards are complete
    */
-  let isComplete = $derived(
-    completedCount === 22
-  )
+  let isComplete = $derived(completedCount === 22)
 
   /**
    * Failed cards from generated cards
@@ -245,7 +229,8 @@
     <div class="failed-cards-section" role="alert">
       <h3 class="failed-cards-title">
         <span class="warning-icon" aria-hidden="true">⚠️</span>
-        {failedCount} {failedCount === 1 ? 'card' : 'cards'} failed
+        {failedCount}
+        {failedCount === 1 ? 'card' : 'cards'} failed
       </h3>
       <div class="failed-cards-list">
         {#each failedCards as card}
@@ -289,11 +274,7 @@
   <!-- Cancel Button -->
   {#if isGenerating && !isComplete && onCancel}
     <div class="actions-section">
-      <button
-        class="cancel-button"
-        onclick={handleCancel}
-        aria-label="Cancel generation"
-      >
+      <button class="cancel-button" onclick={handleCancel} aria-label="Cancel generation">
         Cancel Generation
       </button>
     </div>
@@ -383,7 +364,8 @@
   }
 
   @keyframes pulse {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
@@ -555,7 +537,9 @@
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s, transform 0.1s;
+    transition:
+      background 0.2s,
+      transform 0.1s;
   }
 
   .retry-button:hover {
@@ -591,7 +575,8 @@
   }
 
   @keyframes celebrate {
-    0%, 100% {
+    0%,
+    100% {
       transform: scale(1) rotate(0deg);
     }
     25% {

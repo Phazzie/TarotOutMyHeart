@@ -62,14 +62,14 @@ const claude = new ClaudeCoordinationMock()
 const task = await stateStore.enqueueTask({
   description: 'Review code changes',
   priority: TaskPriority.HIGH,
-  status: TaskStatus.PENDING
+  status: TaskStatus.PENDING,
 })
 
 // Assign to Claude
 const assignment = await claude.assignTask({
   taskType: ClaudeTaskType.CODE_REVIEW,
   prompt: 'Review the authentication module',
-  contextFiles: ['/src/auth.ts']
+  contextFiles: ['/src/auth.ts'],
 })
 
 // Wait for completion
@@ -87,17 +87,19 @@ console.log(result.data?.content)
 **Purpose**: Manages shared state for coordination between AI agents
 
 **Key Operations**:
+
 - Task queue management (enqueue, dequeue, update status)
 - File lock coordination (acquire, release, check)
 - Shared context storage (set, get, delete)
 
 **Example**:
+
 ```typescript
 // Task queue
 await stateStore.enqueueTask({
   description: 'Generate tests',
   priority: TaskPriority.HIGH,
-  status: TaskStatus.PENDING
+  status: TaskStatus.PENDING,
 })
 
 const task = await stateStore.dequeueTask('claude')
@@ -117,6 +119,7 @@ const context = await stateStore.getContext('current-feature')
 **Purpose**: Interface for coordinating with Claude AI agent
 
 **Task Types**:
+
 - CODE_REVIEW
 - CODE_GENERATION
 - DOCUMENTATION
@@ -125,13 +128,14 @@ const context = await stateStore.getContext('current-feature')
 - ANALYSIS
 
 **Example**:
+
 ```typescript
 // Assign task
 const response = await claude.assignTask({
   taskType: ClaudeTaskType.CODE_GENERATION,
   prompt: 'Implement user authentication',
   contextFiles: ['/src/auth.ts'],
-  priority: 2
+  priority: 2,
 })
 
 // Check status
@@ -148,6 +152,7 @@ console.log(result.data?.content)
 **Purpose**: Interface for coordinating with GitHub Copilot agent
 
 **Task Types**:
+
 - CODE_COMPLETION
 - CODE_SUGGESTION
 - INLINE_CHAT
@@ -155,6 +160,7 @@ console.log(result.data?.content)
 - UNIT_TEST
 
 **Example**:
+
 ```typescript
 // Assign task
 const response = await copilot.assignTask({
@@ -162,7 +168,7 @@ const response = await copilot.assignTask({
   prompt: 'Complete this function',
   filePath: '/src/utils.ts',
   codeContext: 'function authenticate(user) {',
-  priority: 1
+  priority: 1,
 })
 
 // Get result with confidence score
@@ -175,6 +181,7 @@ console.log(result.data?.confidence) // 0.85
 **Purpose**: Interface for user interaction in the AI coordination system
 
 **Request Types**:
+
 - APPROVE_CHANGE
 - PROVIDE_INPUT
 - RESOLVE_CONFLICT
@@ -182,6 +189,7 @@ console.log(result.data?.confidence) // 0.85
 - REVIEW_OUTPUT
 
 **Example**:
+
 ```typescript
 // Create user request
 const request = await userCoord.createRequest({
@@ -189,7 +197,7 @@ const request = await userCoord.createRequest({
   title: 'Review code changes',
   description: 'Claude has completed the implementation',
   requestedBy: 'claude',
-  context: { files: ['/src/feature.ts'] }
+  context: { files: ['/src/feature.ts'] },
 })
 
 // User responds
@@ -197,14 +205,14 @@ await userCoord.respondToRequest({
   requestId: request.data!.id,
   approved: true,
   comment: 'Looks good!',
-  respondedAt: new Date()
+  respondedAt: new Date(),
 })
 
 // Send notification
 await userCoord.sendNotification({
   level: 'success',
   message: 'Task completed',
-  from: 'claude'
+  from: 'claude',
 })
 ```
 
@@ -213,12 +221,14 @@ await userCoord.sendNotification({
 **Purpose**: Coordinated file system operations for multiple agents
 
 **Operations**:
+
 - Read, write, create, delete files
 - Track change history
 - Detect and resolve conflicts
 - Revert changes
 
 **Example**:
+
 ```typescript
 // Create file
 await fs.createFile('/src/feature.ts', '// Initial code', 'user')
@@ -241,7 +251,7 @@ if (conflicts.data && conflicts.data.length > 0) {
     resolvedBy: 'user',
     resolvedAt: new Date(),
     finalContent: 'merged version',
-    strategy: 'merge'
+    strategy: 'merge',
   })
 }
 ```
@@ -286,7 +296,7 @@ await fs.createFile('/src/feature.ts', 'initial code', 'user')
 const copilotTask = await copilot.assignTask({
   taskType: CopilotTaskType.CODE_COMPLETION,
   prompt: 'Complete the function',
-  filePath: '/src/feature.ts'
+  filePath: '/src/feature.ts',
 })
 
 await waitForCompletion(150)
@@ -300,21 +310,21 @@ const request = await userCoord.createRequest({
   type: UserRequestType.APPROVE_CHANGE,
   title: 'Review Copilot changes',
   description: 'Code is ready for review',
-  requestedBy: 'copilot'
+  requestedBy: 'copilot',
 })
 
 // 5. User approves
 await userCoord.respondToRequest({
   requestId: request.data!.id,
   approved: true,
-  respondedAt: new Date()
+  respondedAt: new Date(),
 })
 
 // 6. Claude reviews
 const reviewTask = await claude.assignTask({
   taskType: ClaudeTaskType.CODE_REVIEW,
   prompt: 'Review implementation',
-  contextFiles: ['/src/feature.ts']
+  contextFiles: ['/src/feature.ts'],
 })
 
 await waitForCompletion(150)
@@ -325,7 +335,7 @@ await userCoord.sendNotification({
   level: 'success',
   message: 'Code review complete',
   from: 'claude',
-  data: { review: review.data!.content }
+  data: { review: review.data!.content },
 })
 ```
 
@@ -345,7 +355,7 @@ const request = await userCoord.createRequest({
   type: UserRequestType.RESOLVE_CONFLICT,
   title: 'Resolve file conflict',
   description: 'Multiple agents modified the file',
-  requestedBy: 'system' as 'claude'
+  requestedBy: 'system' as 'claude',
 })
 
 // 4. User resolves
@@ -353,7 +363,7 @@ await userCoord.respondToRequest({
   requestId: request.data!.id,
   approved: true,
   value: 'merge',
-  respondedAt: new Date()
+  respondedAt: new Date(),
 })
 
 // 5. Apply resolution
@@ -362,7 +372,7 @@ if (conflicts.data && conflicts.data.length > 0) {
     resolvedBy: 'user',
     resolvedAt: new Date(),
     finalContent: 'merged version',
-    strategy: 'merge'
+    strategy: 'merge',
   })
 }
 ```
@@ -420,11 +430,15 @@ await claude.assignTask({ ... })
 
 ```typescript
 // ✅ Good: Share context between agents
-await stateStore.setContext('current-feature', {
-  name: 'authentication',
-  status: 'in-progress',
-  files: ['/src/auth.ts']
-}, 'claude')
+await stateStore.setContext(
+  'current-feature',
+  {
+    name: 'authentication',
+    status: 'in-progress',
+    files: ['/src/auth.ts'],
+  },
+  'claude'
+)
 
 // Copilot can use this context
 const context = await stateStore.getContext('current-feature')

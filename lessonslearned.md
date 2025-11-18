@@ -22,12 +22,14 @@ _This document captures insights specific to applying Seam-Driven Development (S
 **What happened**: Almost jumped straight to defining contracts without doing proper data boundary analysis first.
 
 **What we learned**:
+
 - The 8-step SDD process exists for a reason!
 - Step 2 (IDENTIFY) is critical - can't define good contracts without identifying ALL data boundaries first
 - Creating a `DATA-BOUNDARIES.md` document BEFORE writing any contracts helps ensure nothing is missed
 - Also need to create a "Contract Blueprint" template to ensure consistency across all contracts
 
 **What we did**:
+
 1. Created `DATA-BOUNDARIES.md` to document:
    - All 10 data boundaries identified from user flow
    - Open questions to resolve before defining contracts
@@ -36,6 +38,7 @@ _This document captures insights specific to applying Seam-Driven Development (S
 3. Identified 7 primary seams + 3 secondary seams
 
 **Reusable pattern**:
+
 ```
 Before defining contracts:
 1. Read PRD completely
@@ -47,6 +50,7 @@ Before defining contracts:
 ```
 
 **Prevention**:
+
 - Add "Create DATA-BOUNDARIES.md" as first item in Sprint 1 checklist
 - Reference this in AI-CHECKLIST.md before contract definition
 - Don't let urgency skip the IDENTIFY phase!
@@ -60,6 +64,7 @@ Before defining contracts:
 **What happened**: Started creating contract and stub files without establishing documentation standards first.
 
 **What we learned**:
+
 - Every file should have comprehensive top-level comments explaining:
   - **What**: What this file does
   - **Why**: Purpose and business context
@@ -70,36 +75,39 @@ Before defining contracts:
 - Makes onboarding, debugging, and maintenance dramatically easier
 
 **What we did**:
+
 1. Created contract blueprint template with required documentation sections
 2. Created stub blueprint template for mock and real implementations
 3. Added file documentation standards to lessons learned
 4. Will enforce this pattern for ALL files (contracts, services, components, utilities)
 
 **Required file header format**:
+
 ```typescript
 /**
  * @fileoverview [One-line description of file purpose]
  * @module [Module name if applicable]
- * 
+ *
  * PURPOSE:
  * [2-3 sentences explaining why this file exists and what problem it solves]
- * 
+ *
  * DATA FLOW:
  * [Describe how data enters and exits this module]
  * Input: [What comes in and from where]
  * Transform: [What this file does to the data]
  * Output: [What goes out and to where]
- * 
+ *
  * DEPENDENCIES:
  * - Depends on: [List files/modules this file imports]
  * - Used by: [List files/modules that import this file]
- * 
+ *
  * @see Related documentation or contracts
  * @updated YYYY-MM-DD
  */
 ```
 
 **Prevention**:
+
 - Add file documentation checklist to contract definition phase
 - Include documentation templates in all blueprints
 - AI agents must follow documentation template for every file created
@@ -114,6 +122,7 @@ Before defining contracts:
 **What happened**: Tarot app mock services were created but marked "complete" without running type checks. When `npm run check` was finally run, discovered **122 TypeScript errors** initially, later reduced to 13 after fixes.
 
 **What went wrong**:
+
 1. AI agent saw mock files existed and assumed they were correct
 2. Marked mocks as "completed" without validation
 3. Didn't run `npm run check` to verify mocks compile
@@ -121,6 +130,7 @@ Before defining contracts:
 5. Moved to commit/push without ensuring Phase 3 was truly complete
 
 **Root cause**:
+
 - **AI-CHECKLIST.md Phase 3 is too permissive** - says "Build Mock Service" but doesn't enforce validation
 - No hard requirement to run `npm run check` before marking complete
 - Contract tests mentioned but not enforced (can skip without consequence)
@@ -128,12 +138,14 @@ Before defining contracts:
 
 **Why this is critical**:
 The entire SDD methodology is built on the principle that **mocks must match contracts exactly**. If this fails:
+
 - UI development will be blocked (type errors prevent compilation)
 - Integration will fail (mock shape ≠ contract shape ≠ real service shape)
 - The core SDD promise ("integration works first try") is violated
 - You lose all the benefits of contract-first development
 
 **Common errors found in our mocks**:
+
 1. **Import errors**: Enums imported as `import type` but used as values
 2. **Missing methods**: Mocks don't implement all interface methods
 3. **Field mismatches**: Mock outputs have wrong field names vs contract
@@ -141,6 +153,7 @@ The entire SDD methodology is built on the principle that **mocks must match con
 5. **Type assertions**: Using `as any` to bypass type checking
 
 **What we should have done**:
+
 ```bash
 # After creating EACH mock service file:
 npm run check              # Must pass with 0 errors
@@ -152,6 +165,7 @@ git grep "as any" services/mock/  # Must return nothing
 ```
 
 **Solution**:
+
 1. Update AI-CHECKLIST.md Phase 3 to be more strict:
    - Make `npm run check` a hard requirement after Step 12
    - Add explicit validation step: "Step 12.5: Validate Mock Compiles"
@@ -161,6 +175,7 @@ git grep "as any" services/mock/  # Must return nothing
 4. Consider pre-commit hook that fails if mocks have type errors
 
 **Prevention checklist** (add to Phase 3):
+
 ```markdown
 ### Step 12.5: Validate Mock Compiles (REQUIRED)
 
@@ -175,24 +190,28 @@ git grep "as any" services/mock/  # Must return nothing
 ```
 
 **Reusable pattern**:
+
 - **Mocks are not "done" until they compile without errors**
 - Run type checking after creating EACH file, not at the end
 - Type errors compound - fix them immediately
 - "Looks right" ≠ "compiles correctly" - always verify
 
 **Impact**:
+
 - Lost time: ~30 minutes marking things "complete" that weren't
 - Technical debt: 115 errors to fix before proceeding
 - Broken SDD flow: Can't build UI (Phase 4) until Phase 3 is truly complete
 - Trust issue: Commits claimed "mocks implemented" when they weren't working
 
 **Key takeaway**:
+
 > **In SDD, a mock service is NOT complete until it:**
+>
 > 1. Implements the interface exactly
 > 2. Compiles with zero type errors
 > 3. Passes contract tests (shape validation)
 > 4. Returns realistic data matching contract structure
-> 
+>
 > **If npm run check fails, the mock is NOT done. Period.**
 
 ---
@@ -204,6 +223,7 @@ git grep "as any" services/mock/  # Must return nothing
 **What happened**: AI Coordination Server completed Phase 3 with **100% success** - all contracts, mocks, and tests working perfectly.
 
 **What we did RIGHT**:
+
 1. ✅ Defined all 5 contracts completely before any implementation
 2. ✅ Ran `npm run check` after EACH mock service file created
 3. ✅ Wrote comprehensive tests (143 tests total: 117 contract + 18 mock + 8 integration)
@@ -212,6 +232,7 @@ git grep "as any" services/mock/  # Must return nothing
 6. ✅ No `as any` type escapes anywhere in the codebase
 
 **Results**:
+
 - **Zero integration issues** - contracts, mocks, and tests all align perfectly
 - **143 tests passing** with no failures
 - **TypeScript strict mode compliance** (only 20 cosmetic unused variable warnings)
@@ -219,6 +240,7 @@ git grep "as any" services/mock/  # Must return nothing
 - **Documentation complete** - other developers can understand the system immediately
 
 **Why it worked**:
+
 - We **learned from Lesson #3** and enforced validation at every step
 - We **didn't skip any SDD phases** - IDENTIFY → DEFINE → BUILD MOCKS → TEST
 - We **ran type checks continuously** - caught errors immediately, not in batch
@@ -234,6 +256,7 @@ git grep "as any" services/mock/  # Must return nothing
 | Phase 3 status | Blocked | Complete ✅ |
 
 **Reusable pattern** - The "Green Path" for SDD Phase 3:
+
 ```bash
 # For EACH mock service:
 1. Create mock file (services/mock/[Feature]Mock.ts)
@@ -255,13 +278,16 @@ git grep "as any" services/mock/  # Must return nothing
 ```
 
 **Impact**:
+
 - **Confidence level**: 95%+ that Phase 4 will integrate smoothly
 - **Time saved**: Zero debugging time wasted on contract mismatches
 - **Documentation quality**: Excellent - other AIs/devs can pick this up easily
 - **Proof SDD works**: When followed strictly, it delivers on promises
 
 **Key takeaway**:
+
 > **SDD Phase 3 done correctly looks like:**
+>
 > - All tests passing (100+ tests is great!)
 > - Zero TypeScript errors (warnings ok)
 > - Mocks match contracts exactly (proven by tests, not assumptions)
@@ -271,10 +297,12 @@ git grep "as any" services/mock/  # Must return nothing
 > **The AI Coordination Server is the GOLD STANDARD example for this project.**
 
 **Contrast with Lesson #3**:
+
 - Lesson #3: What happens when you skip validation (122 errors, blocked progress)
 - Lesson #4: What happens when you follow SDD strictly (0 errors, smooth sailing)
 
 **Recommendation**:
+
 - Use AI Coordination Server as the reference implementation
 - When in doubt about "is Phase 3 complete?", compare to coordination server status
 - Apply the same rigor to Tarot app Phase 3 completion
@@ -288,6 +316,7 @@ git grep "as any" services/mock/  # Must return nothing
 **What happened**: Returned to Tarot app after 3 days. Ran `npm run check` expecting ~13 errors. Got **96 TypeScript errors** across all 6 mock files.
 
 **What went wrong**:
+
 1. Mock files were created in commit `316856f` but never validated against contracts
 2. Mocks have wrong field names (`cardMeaning` instead of `traditionalMeaning`, `prompt` instead of `generatedPrompt`)
 3. Mocks have extra fields not in contracts (`currency` in `ApiUsage`, `total` in `GenerationProgress`)
@@ -296,6 +325,7 @@ git grep "as any" services/mock/  # Must return nothing
 6. The initial "13 errors" was just truncated terminal output - real count was always 96
 
 **Root cause**:
+
 - **Mocks were written by AI without carefully reading contracts**
 - AI likely guessed field names instead of copying from contract definitions
 - No validation step before marking "complete"
@@ -303,9 +333,10 @@ git grep "as any" services/mock/  # Must return nothing
 - The phrase "mock files exist" was confused with "mocks are correct"
 
 **Error distribution**:
+
 ```
 24 errors: ImageGenerationMock.ts
-19 errors: PromptGenerationMock.ts  
+19 errors: PromptGenerationMock.ts
 14 errors: DownloadMock.ts
 14 errors: DeckDisplayMock.ts
 10 errors: StyleInputMock.ts
@@ -316,6 +347,7 @@ git grep "as any" services/mock/  # Must return nothing
 ```
 
 **Common pattern of errors**:
+
 ```typescript
 // Contract defines:
 export interface CardPrompt {
@@ -326,18 +358,20 @@ export interface CardPrompt {
 
 // Mock returns:
 return {
-  prompt: "...",           // ❌ Wrong field name!
-  cardMeaning: "...",      // ❌ Wrong field name!
+  prompt: '...', // ❌ Wrong field name!
+  cardMeaning: '...', // ❌ Wrong field name!
   // ❌ Missing confidence!
 }
 ```
 
 **Why this is worse than Lesson #3**:
+
 - Lesson #3: Mocks created but not validated (type errors caught late)
 - Lesson #5: Mocks created **incorrectly** (didn't even read contracts!)
 - This is double failure: skipped validation AND didn't reference source of truth
 
 **What should have happened**:
+
 ```bash
 # When creating mock:
 1. Open contract file side-by-side
@@ -350,6 +384,7 @@ return {
 ```
 
 **Impact**:
+
 - **Cannot build UI** - TypeScript compilation blocked
 - **Lost 3 days** - Mocks marked "complete" but actually broken
 - **96 fixes required** - Each error must be manually corrected
@@ -357,6 +392,7 @@ return {
 - **Integration will fail** - Even if we fix mocks, real services may have same issue
 
 **Solution implemented**:
+
 1. Created comprehensive `GITHUB_AGENT_TASK.md` with:
    - List of all 7 missing contract tests
    - Detailed test requirements for each seam
@@ -367,6 +403,7 @@ return {
 4. Use tests to validate fixes are correct
 
 **Prevention checklist** (add to AI-CHECKLIST.md Phase 3):
+
 ```markdown
 ### Step 11.5: Reference Contract While Coding (CRITICAL)
 
@@ -384,15 +421,16 @@ return {
 
 **Key differences from Lesson #3 vs #5**:
 
-| Aspect | Lesson #3 (Validation) | Lesson #5 (Implementation) |
-|--------|----------------------|---------------------------|
-| Problem | Skipped `npm run check` | Didn't read contract |
-| Symptom | Type errors on fields | Wrong field names |
-| Fix time | 15 minutes (validation) | 2+ hours (rewrite mocks) |
-| Prevention | Run type check | Reference contract |
-| Impact | Caught late | Fundamentally wrong |
+| Aspect     | Lesson #3 (Validation)  | Lesson #5 (Implementation) |
+| ---------- | ----------------------- | -------------------------- |
+| Problem    | Skipped `npm run check` | Didn't read contract       |
+| Symptom    | Type errors on fields   | Wrong field names          |
+| Fix time   | 15 minutes (validation) | 2+ hours (rewrite mocks)   |
+| Prevention | Run type check          | Reference contract         |
+| Impact     | Caught late             | Fundamentally wrong        |
 
 **Reusable pattern**:
+
 ```
 Contract = Single Source of Truth
   ↓
@@ -410,20 +448,24 @@ Integration = Works First Try ✅
 ```
 
 **Key takeaway**:
+
 > **Three levels of SDD compliance:**
+>
 > 1. ❌ **Bad**: Mocks written, not validated, don't match contracts (Lesson #5)
-> 2. ⚠️ **Better**: Mocks match contracts, but not validated (Lesson #3)  
+> 2. ⚠️ **Better**: Mocks match contracts, but not validated (Lesson #3)
 > 3. ✅ **Best**: Mocks match contracts, tests prove it (Lesson #4)
 >
 > **Always aim for level 3. Never accept level 1.**
 
 **Action items**:
+
 1. ✅ Fix critical TypeScript errors (env vars, imports) - DONE
 2. ⏳ Fix all 96 mock-contract mismatches - IN PROGRESS
 3. ⏳ Write 7 contract tests (via GitHub Coding Agent)
 4. ⏳ Validate all tests pass before marking Phase 3 complete
 
 **Success will look like**:
+
 - 0 TypeScript errors (down from 96)
 - 7 contract test files written
 - All tests passing (following AI Coordination pattern)
@@ -438,6 +480,7 @@ Integration = Works First Try ✅
 **What happened**: PR review comments on PR#20 and PR#21 identified that enums were imported with `import type` but used as values, causing TypeScript errors.
 
 **The problem**:
+
 ```typescript
 // ❌ WRONG: Enum imported as type
 import type { StyleInputErrorCode } from '$contracts/StyleInput'
@@ -448,12 +491,14 @@ errors.push({ code: StyleInputErrorCode.THEME_INVALID })
 ```
 
 **Why this happens**:
+
 - TypeScript's `import type` is for **type-only imports** (interfaces, type aliases)
 - Enums are **runtime values** in JavaScript, not just compile-time types
 - When you import an enum with `import type`, TypeScript strips it from the output
 - At runtime, the enum reference becomes `undefined`, causing errors
 
 **The fix**:
+
 ```typescript
 // ✅ CORRECT: Separate type and value imports
 import type {
@@ -470,10 +515,12 @@ errors.push({ code: StyleInputErrorCode.THEME_INVALID }) // ✅
 ```
 
 **Files affected**:
+
 - `StyleInputMock.ts`: `StyleInputErrorCode` import fixed
 - `PromptGenerationMock.ts`: `PromptGenerationErrorCode` import fixed
 
 **Related contract field fixes** (from same PR):
+
 - Changed `prompt` → `generatedPrompt` (correct field name per `CardPrompt` interface)
 - Changed `cardMeaning` → `traditionalMeaning` (correct field name per `CardPrompt` interface)
 - Removed `total` from `GenerationProgress` (field doesn't exist in contract)
@@ -482,15 +529,18 @@ errors.push({ code: StyleInputErrorCode.THEME_INVALID }) // ✅
 - Added missing `estimateCost` method to `PromptGenerationMockService`
 
 **Prevention**:
+
 ```markdown
 ### When importing from contracts:
 
 ✅ DO:
+
 - `import type { Interface, Type }` for interfaces and type aliases
 - `import { Enum, CONSTANT }` for enums and constants (no 'type' keyword)
 - Check contract: if it's defined with `enum`, import without 'type'
 
 ❌ DON'T:
+
 - `import type { Enum }` - Enums are values!
 - Guess field names - copy exact names from contract
 - Add fields not in contract (like `currency`, `total`)
@@ -498,22 +548,27 @@ errors.push({ code: StyleInputErrorCode.THEME_INVALID }) // ✅
 ```
 
 **Rule of thumb**:
+
 > **If you can use it with a dot (`.`), don't import it with `import type`**
+>
 > - `ErrorCode.INVALID` → import without 'type'
 > - `CONSTANTS.MAX_SIZE` → import without 'type'
 > - `UserType` (interface) → import with 'type'
 
 **Key takeaway**:
+
 > **Enums and constants are JavaScript runtime values that exist at runtime.**
 > **Types and interfaces are TypeScript compile-time constructs that disappear.**
 > **Import accordingly: values without 'type', types with 'type'.**
 
 **Testing validation**:
+
 - Ran `npm run check` - 0 TypeScript errors in fixed files ✅
 - All 143 tests passing ✅
 - CodeQL security scan - 0 vulnerabilities ✅
 
 **Documentation updated**:
+
 - Added to CHANGELOG.md under "Fixed" section
 - Created `docs/planning/PR20-REVIEW-FIXES.md` for PR#20 branch fixes
 

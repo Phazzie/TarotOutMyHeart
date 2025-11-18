@@ -5,7 +5,7 @@
  * @boundary Seam #7: DownloadSeam - Package and download complete tarot deck
  * @requirement PRD Section: "User Flow Step 8 - Download Cards"
  * @updated 2025-11-07
- * 
+ *
  * @example
  * ```typescript
  * const result = await downloadService.downloadDeck({
@@ -47,7 +47,7 @@ export const CARD_FILENAME_PATTERN = '{number:02d}-{name}.png' // e.g., "00-the-
 /**
  * Download format type
  */
-export type DownloadFormat = typeof DOWNLOAD_FORMATS[number]
+export type DownloadFormat = (typeof DOWNLOAD_FORMATS)[number]
 
 /**
  * Image format type
@@ -60,7 +60,7 @@ export type ImageFormat = typeof IMAGE_FORMAT
 
 /**
  * Metadata included in deck download
- * 
+ *
  * @property generatedAt - When deck was created
  * @property deckName - User-provided deck name
  * @property styleInputs - Style parameters used
@@ -77,7 +77,7 @@ export interface DeckMetadata {
 
 /**
  * Individual card file in download
- * 
+ *
  * @property filename - Filename for this card
  * @property cardNumber - Card number (0-21)
  * @property cardName - Traditional card name
@@ -94,7 +94,7 @@ export interface CardFile {
 
 /**
  * Download progress tracking
- * 
+ *
  * @property status - Current status message
  * @property progress - Progress percentage (0-100)
  * @property currentStep - Current operation
@@ -111,7 +111,7 @@ export interface DownloadProgress {
 
 /**
  * Input for downloading complete deck as ZIP
- * 
+ *
  * @property generatedCards - All 22 generated cards
  * @property styleInputs - Style parameters used for generation
  * @property deckName - Optional custom deck name
@@ -130,7 +130,7 @@ export interface DownloadDeckInput {
 
 /**
  * Input for downloading a single card
- * 
+ *
  * @property card - Card to download
  * @property filename - Optional custom filename
  */
@@ -142,7 +142,7 @@ export interface DownloadCardInput {
 /**
  * Input for preparing download (without triggering browser download)
  * Useful for preview or custom download handling
- * 
+ *
  * @property generatedCards - Cards to prepare
  * @property styleInputs - Style parameters
  * @property deckName - Optional deck name
@@ -161,7 +161,7 @@ export interface PrepareDownloadInput {
 
 /**
  * Result of downloading deck
- * 
+ *
  * @property downloaded - Whether download was triggered successfully
  * @property filename - Downloaded filename
  * @property fileSize - Total size in bytes
@@ -178,7 +178,7 @@ export interface DownloadDeckOutput {
 
 /**
  * Result of downloading single card
- * 
+ *
  * @property downloaded - Whether download was triggered
  * @property filename - Downloaded filename
  * @property fileSize - File size in bytes
@@ -191,7 +191,7 @@ export interface DownloadCardOutput {
 
 /**
  * Result of preparing download (without downloading)
- * 
+ *
  * @property blob - Download blob (ZIP or image)
  * @property filename - Suggested filename
  * @property fileSize - Size in bytes
@@ -217,17 +217,17 @@ export enum DownloadErrorCode {
   INCOMPLETE_CARDS = 'INCOMPLETE_CARDS',
   MISSING_IMAGES = 'MISSING_IMAGES',
   INVALID_FORMAT = 'INVALID_FORMAT',
-  
+
   // Processing errors
   FETCH_IMAGE_FAILED = 'FETCH_IMAGE_FAILED',
   ZIP_CREATION_FAILED = 'ZIP_CREATION_FAILED',
   BLOB_CREATION_FAILED = 'BLOB_CREATION_FAILED',
-  
+
   // Browser errors
   DOWNLOAD_BLOCKED = 'DOWNLOAD_BLOCKED',
   BLOB_API_NOT_SUPPORTED = 'BLOB_API_NOT_SUPPORTED',
   JSZIP_NOT_AVAILABLE = 'JSZIP_NOT_AVAILABLE',
-  
+
   // File system errors
   INSUFFICIENT_STORAGE = 'INSUFFICIENT_STORAGE',
   DOWNLOAD_FAILED = 'DOWNLOAD_FAILED',
@@ -239,7 +239,7 @@ export enum DownloadErrorCode {
 
 /**
  * Download Service Contract
- * 
+ *
  * Defines all operations for downloading generated tarot cards.
  * Implementation handles:
  * - Fetching image blobs from URLs
@@ -247,13 +247,13 @@ export enum DownloadErrorCode {
  * - Generating metadata JSON files
  * - Triggering browser downloads
  * - Progress tracking
- * 
+ *
  * @interface IDownloadService
  */
 export interface IDownloadService {
   /**
    * Download complete deck as ZIP
-   * 
+   *
    * Workflow:
    * 1. Validate all cards have images
    * 2. Fetch image blobs from URLs
@@ -263,12 +263,12 @@ export interface IDownloadService {
    * 4. Generate blob and object URL
    * 5. Trigger browser download
    * 6. Revoke object URL after download
-   * 
+   *
    * @param input - Cards and download options
    * @returns Promise<ServiceResponse<DownloadDeckOutput>> - Download result
-   * 
+   *
    * @throws Never throws - all errors returned in ServiceResponse
-   * 
+   *
    * @example
    * ```typescript
    * const result = await service.downloadDeck({
@@ -281,27 +281,25 @@ export interface IDownloadService {
    *     console.log(`${progress.status}: ${progress.progress}%`);
    *   }
    * });
-   * 
+   *
    * if (result.success) {
    *   console.log(`Downloaded ${result.data.filename}`);
    *   console.log(`Size: ${(result.data.fileSize / 1024 / 1024).toFixed(2)} MB`);
    * }
    * ```
    */
-  downloadDeck(
-    input: DownloadDeckInput
-  ): Promise<ServiceResponse<DownloadDeckOutput>>
+  downloadDeck(input: DownloadDeckInput): Promise<ServiceResponse<DownloadDeckOutput>>
 
   /**
    * Download a single card image
-   * 
+   *
    * Triggers browser download for one card.
-   * 
+   *
    * @param input - Card to download
    * @returns Promise<ServiceResponse<DownloadCardOutput>> - Download result
-   * 
+   *
    * @throws Never throws - all errors returned in ServiceResponse
-   * 
+   *
    * @example
    * ```typescript
    * const result = await service.downloadCard({
@@ -310,23 +308,21 @@ export interface IDownloadService {
    * });
    * ```
    */
-  downloadCard(
-    input: DownloadCardInput
-  ): Promise<ServiceResponse<DownloadCardOutput>>
+  downloadCard(input: DownloadCardInput): Promise<ServiceResponse<DownloadCardOutput>>
 
   /**
    * Prepare download without triggering (returns blob)
-   * 
+   *
    * Useful for:
    * - Custom download handling
    * - Preview before download
    * - Saving to IndexedDB
-   * 
+   *
    * @param input - Cards to prepare
    * @returns Promise<ServiceResponse<PrepareDownloadOutput>> - Blob and URL
-   * 
+   *
    * @throws Never throws - all errors returned in ServiceResponse
-   * 
+   *
    * @example
    * ```typescript
    * const result = await service.prepareDownload({
@@ -334,16 +330,14 @@ export interface IDownloadService {
    *   styleInputs: style,
    *   deckName: 'My Deck'
    * });
-   * 
+   *
    * if (result.success) {
    *   // Use the blob URL for custom handling
    *   showPreviewLink(result.data.url, result.data.filename);
    * }
    * ```
    */
-  prepareDownload(
-    input: PrepareDownloadInput
-  ): Promise<ServiceResponse<PrepareDownloadOutput>>
+  prepareDownload(input: PrepareDownloadInput): Promise<ServiceResponse<PrepareDownloadOutput>>
 }
 
 // ============================================================================
@@ -354,33 +348,23 @@ export interface IDownloadService {
  * Maps error codes to user-friendly messages
  */
 export const DOWNLOAD_ERROR_MESSAGES: Record<DownloadErrorCode, string> = {
-  [DownloadErrorCode.NO_CARDS_PROVIDED]: 
-    'No cards provided for download',
-  [DownloadErrorCode.INCOMPLETE_CARDS]: 
-    'Some cards are not fully generated yet',
-  [DownloadErrorCode.MISSING_IMAGES]: 
-    'Some cards are missing images',
-  [DownloadErrorCode.INVALID_FORMAT]: 
-    'Invalid download format specified',
-  
-  [DownloadErrorCode.FETCH_IMAGE_FAILED]: 
-    'Failed to fetch card images for download',
-  [DownloadErrorCode.ZIP_CREATION_FAILED]: 
-    'Failed to create ZIP file',
-  [DownloadErrorCode.BLOB_CREATION_FAILED]: 
-    'Failed to create download file',
-  
-  [DownloadErrorCode.DOWNLOAD_BLOCKED]: 
+  [DownloadErrorCode.NO_CARDS_PROVIDED]: 'No cards provided for download',
+  [DownloadErrorCode.INCOMPLETE_CARDS]: 'Some cards are not fully generated yet',
+  [DownloadErrorCode.MISSING_IMAGES]: 'Some cards are missing images',
+  [DownloadErrorCode.INVALID_FORMAT]: 'Invalid download format specified',
+
+  [DownloadErrorCode.FETCH_IMAGE_FAILED]: 'Failed to fetch card images for download',
+  [DownloadErrorCode.ZIP_CREATION_FAILED]: 'Failed to create ZIP file',
+  [DownloadErrorCode.BLOB_CREATION_FAILED]: 'Failed to create download file',
+
+  [DownloadErrorCode.DOWNLOAD_BLOCKED]:
     'Download was blocked by browser - please check popup blocker',
-  [DownloadErrorCode.BLOB_API_NOT_SUPPORTED]: 
+  [DownloadErrorCode.BLOB_API_NOT_SUPPORTED]:
     'Your browser does not support downloads - please use a modern browser',
-  [DownloadErrorCode.JSZIP_NOT_AVAILABLE]: 
-    'ZIP library not available - please refresh the page',
-  
-  [DownloadErrorCode.INSUFFICIENT_STORAGE]: 
-    'Insufficient storage space for download',
-  [DownloadErrorCode.DOWNLOAD_FAILED]: 
-    'Download failed - please try again',
+  [DownloadErrorCode.JSZIP_NOT_AVAILABLE]: 'ZIP library not available - please refresh the page',
+
+  [DownloadErrorCode.INSUFFICIENT_STORAGE]: 'Insufficient storage space for download',
+  [DownloadErrorCode.DOWNLOAD_FAILED]: 'Download failed - please try again',
 }
 
 // ============================================================================
@@ -390,7 +374,7 @@ export const DOWNLOAD_ERROR_MESSAGES: Record<DownloadErrorCode, string> = {
 /**
  * Generate filename for a card
  * Follows pattern: {number:02d}-{name}.png
- * 
+ *
  * @param cardNumber - Card number (0-21)
  * @param cardName - Card name (e.g., "The Fool")
  * @returns Filename (e.g., "00-the-fool.png")
@@ -404,7 +388,7 @@ export function generateCardFilename(cardNumber: number, cardName: string): stri
 /**
  * Generate filename for deck ZIP
  * Follows pattern: {deckName}-{timestamp}.zip
- * 
+ *
  * @param deckName - Deck name
  * @returns Filename (e.g., "cyberpunk-tarot-1699382400000.zip")
  */

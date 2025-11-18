@@ -22,7 +22,7 @@
 
 <script lang="ts">
   import { appStore } from '$lib/stores/appStore.svelte'
-import { downloadService as downloadServiceFactory } from '$services/factory'
+  import { downloadService as downloadServiceFactory } from '$services/factory'
   import type {
     DownloadDeckInput,
     DownloadCardInput,
@@ -38,7 +38,7 @@ import { downloadService as downloadServiceFactory } from '$services/factory'
    * Download service instance
    * Uses mock for development, will switch to real service in production
    */
-const downloadService = downloadServiceFactory
+  const downloadService = downloadServiceFactory
 
   // ============================================================================
   // COMPONENT STATE (Svelte 5 $state runes)
@@ -299,9 +299,7 @@ const downloadService = downloadServiceFactory
           aria-label="Include metadata JSON file in ZIP"
         />
         <span>Include metadata JSON</span>
-        <span class="label-hint">
-          (style inputs, generation date, card list)
-        </span>
+        <span class="label-hint"> (style inputs, generation date, card list) </span>
       </label>
     </div>
   </div>
@@ -358,11 +356,7 @@ const downloadService = downloadServiceFactory
     <div class="message success-message" role="alert">
       <span class="message-icon" aria-hidden="true">✓</span>
       <span class="message-text">{successMessage}</span>
-      <button
-        class="message-close"
-        onclick={clearSuccess}
-        aria-label="Dismiss success message"
-      >
+      <button class="message-close" onclick={clearSuccess} aria-label="Dismiss success message">
         ×
       </button>
     </div>
@@ -373,11 +367,7 @@ const downloadService = downloadServiceFactory
     <div class="message error-message" role="alert">
       <span class="message-icon" aria-hidden="true">⚠</span>
       <span class="message-text">{errorMessage}</span>
-      <button
-        class="message-close"
-        onclick={clearError}
-        aria-label="Dismiss error message"
-      >
+      <button class="message-close" onclick={clearError} aria-label="Dismiss error message">
         ×
       </button>
     </div>
@@ -393,12 +383,7 @@ const downloadService = downloadServiceFactory
             <!-- Card Preview (if image available) -->
             {#if card.imageUrl}
               <div class="card-image-container">
-                <img
-                  src={card.imageUrl}
-                  alt={card.cardName}
-                  class="card-image"
-                  loading="lazy"
-                />
+                <img src={card.imageUrl} alt={card.cardName} class="card-image" loading="lazy" />
               </div>
             {:else}
               <div class="card-placeholder">

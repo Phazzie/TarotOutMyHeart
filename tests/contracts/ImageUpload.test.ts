@@ -22,11 +22,7 @@ describe('ImageUpload Contract', () => {
   })
 
   // Helper function to create mock File objects
-  const createMockFile = (
-    name: string,
-    type: string,
-    sizeInBytes: number
-  ): File => {
+  const createMockFile = (name: string, type: string, sizeInBytes: number): File => {
     const buffer = new ArrayBuffer(sizeInBytes)
     return new File([buffer], name, { type })
   }
@@ -414,9 +410,11 @@ describe('ImageUpload Contract', () => {
 
         expect(response.success).toBe(true)
         expect(response.data?.invalidImages.length).toBeGreaterThan(0)
-        expect(response.data?.invalidImages.some(err =>
-          err.code === ImageUploadErrorCode.INVALID_FILE_TYPE
-        )).toBe(true)
+        expect(
+          response.data?.invalidImages.some(
+            err => err.code === ImageUploadErrorCode.INVALID_FILE_TYPE
+          )
+        ).toBe(true)
       })
 
       it('should detect oversized files', async () => {
@@ -643,7 +641,7 @@ describe('ImageUpload Contract', () => {
 
       // Validate (checking internal state consistency)
       const validateResponse = await service.validateImages({
-        files: [createMockFile('test3.jpg', 'image/jpeg', 1000)]
+        files: [createMockFile('test3.jpg', 'image/jpeg', 1000)],
       })
       expect(validateResponse.data?.canProceed).toBe(true)
 

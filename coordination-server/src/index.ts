@@ -23,7 +23,7 @@ import type {
   AgentCapability,
   TaskProgress,
   TaskResult,
-  ConflictResolution
+  ConflictResolution,
 } from '@contracts'
 
 // Load environment variables
@@ -37,7 +37,7 @@ const config = {
   useMocks: process.env.USE_MOCKS !== 'false',
   debug: process.env.DEBUG === 'true',
   enableMCP: process.env.ENABLE_MCP !== 'false',
-  enableWebSocket: process.env.ENABLE_WEBSOCKET !== 'false'
+  enableWebSocket: process.env.ENABLE_WEBSOCKET !== 'false',
 }
 
 /**
@@ -90,8 +90,8 @@ app.get('/health', (req: Request, res: Response) => {
     config: {
       useMocks: config.useMocks,
       mcpEnabled: config.enableMCP,
-      webSocketEnabled: config.enableWebSocket
-    }
+      webSocketEnabled: config.enableWebSocket,
+    },
   })
 })
 
@@ -115,18 +115,18 @@ app.get('/status', async (req: Request, res: Response) => {
         claude: 'ready',
         copilot: mcpStatus.isRunning ? 'ready' : 'not started',
         user: 'ready',
-        fileSystem: 'ready'
+        fileSystem: 'ready',
       },
       metrics: {
         activeLocks: locksResult.success ? locksResult.data?.length : 0,
         mcpTools: mcpStatus.tools,
-        wsConnections
-      }
+        wsConnections,
+      },
     })
   } catch (error) {
     res.status(500).json({
       status: 'error',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     })
   }
 })
@@ -149,8 +149,8 @@ app.post('/api/claude/register', async (req: Request, res: Response) => {
       error: {
         code: 'INTERNAL_ERROR',
         message: error instanceof Error ? error.message : 'Unknown error',
-        retryable: true
-      }
+        retryable: true,
+      },
     })
   }
 })
@@ -172,8 +172,8 @@ app.get('/api/claude/tasks', async (req: Request, res: Response) => {
       error: {
         code: 'INTERNAL_ERROR',
         message: error instanceof Error ? error.message : 'Unknown error',
-        retryable: true
-      }
+        retryable: true,
+      },
     })
   }
 })
@@ -195,8 +195,8 @@ app.post('/api/claude/tasks/:taskId/claim', async (req: Request, res: Response) 
       error: {
         code: 'INTERNAL_ERROR',
         message: error instanceof Error ? error.message : 'Unknown error',
-        retryable: true
-      }
+        retryable: true,
+      },
     })
   }
 })
@@ -219,8 +219,8 @@ app.post('/api/claude/tasks/:taskId/progress', async (req: Request, res: Respons
       error: {
         code: 'INTERNAL_ERROR',
         message: error instanceof Error ? error.message : 'Unknown error',
-        retryable: true
-      }
+        retryable: true,
+      },
     })
   }
 })
@@ -243,8 +243,8 @@ app.post('/api/claude/tasks/:taskId/complete', async (req: Request, res: Respons
       error: {
         code: 'INTERNAL_ERROR',
         message: error instanceof Error ? error.message : 'Unknown error',
-        retryable: true
-      }
+        retryable: true,
+      },
     })
   }
 })
@@ -266,8 +266,8 @@ app.get('/api/claude/context/:contextId', async (req: Request, res: Response) =>
       error: {
         code: 'INTERNAL_ERROR',
         message: error instanceof Error ? error.message : 'Unknown error',
-        retryable: true
-      }
+        retryable: true,
+      },
     })
   }
 })
@@ -289,8 +289,8 @@ app.put('/api/claude/context/:contextId', async (req: Request, res: Response) =>
       error: {
         code: 'INTERNAL_ERROR',
         message: error instanceof Error ? error.message : 'Unknown error',
-        retryable: true
-      }
+        retryable: true,
+      },
     })
   }
 })
@@ -311,8 +311,8 @@ app.post('/api/claude/handoff', async (req: Request, res: Response) => {
       error: {
         code: 'INTERNAL_ERROR',
         message: error instanceof Error ? error.message : 'Unknown error',
-        retryable: true
-      }
+        retryable: true,
+      },
     })
   }
 })
@@ -335,8 +335,8 @@ app.post('/api/user/collaboration/start', async (req: Request, res: Response) =>
       error: {
         code: 'INTERNAL_ERROR',
         message: error instanceof Error ? error.message : 'Unknown error',
-        retryable: true
-      }
+        retryable: true,
+      },
     })
   }
 })
@@ -358,8 +358,8 @@ app.post('/api/user/collaboration/:sessionId/pause', async (req: Request, res: R
       error: {
         code: 'INTERNAL_ERROR',
         message: error instanceof Error ? error.message : 'Unknown error',
-        retryable: true
-      }
+        retryable: true,
+      },
     })
   }
 })
@@ -381,8 +381,8 @@ app.post('/api/user/collaboration/:sessionId/resume', async (req: Request, res: 
       error: {
         code: 'INTERNAL_ERROR',
         message: error instanceof Error ? error.message : 'Unknown error',
-        retryable: true
-      }
+        retryable: true,
+      },
     })
   }
 })
@@ -404,8 +404,8 @@ app.post('/api/user/collaboration/:sessionId/cancel', async (req: Request, res: 
       error: {
         code: 'INTERNAL_ERROR',
         message: error instanceof Error ? error.message : 'Unknown error',
-        retryable: true
-      }
+        retryable: true,
+      },
     })
   }
 })
@@ -427,8 +427,8 @@ app.get('/api/user/collaboration/:sessionId/status', async (req: Request, res: R
       error: {
         code: 'INTERNAL_ERROR',
         message: error instanceof Error ? error.message : 'Unknown error',
-        retryable: true
-      }
+        retryable: true,
+      },
     })
   }
 })
@@ -451,8 +451,8 @@ app.post('/api/user/conflict/:conflictId/resolve', async (req: Request, res: Res
       error: {
         code: 'INTERNAL_ERROR',
         message: error instanceof Error ? error.message : 'Unknown error',
-        retryable: true
-      }
+        retryable: true,
+      },
     })
   }
 })
@@ -470,7 +470,7 @@ function setupWebSocketServer(): void {
   wsServer.on('connection', (ws, req) => {
     console.log(`[WebSocket] New connection from ${req.socket.remoteAddress}`)
 
-    ws.on('message', async (data) => {
+    ws.on('message', async data => {
       try {
         const message = JSON.parse(data.toString())
         console.log('[WebSocket] Received message:', message)
@@ -491,10 +491,12 @@ function setupWebSocketServer(): void {
         }
       } catch (error) {
         console.error('[WebSocket] Error handling message:', error)
-        ws.send(JSON.stringify({
-          type: 'error',
-          error: error instanceof Error ? error.message : 'Unknown error'
-        }))
+        ws.send(
+          JSON.stringify({
+            type: 'error',
+            error: error instanceof Error ? error.message : 'Unknown error',
+          })
+        )
       }
     })
 
@@ -502,15 +504,17 @@ function setupWebSocketServer(): void {
       console.log('[WebSocket] Connection closed')
     })
 
-    ws.on('error', (error) => {
+    ws.on('error', error => {
       console.error('[WebSocket] Connection error:', error)
     })
 
     // Send welcome message
-    ws.send(JSON.stringify({
-      type: 'connected',
-      timestamp: new Date().toISOString()
-    }))
+    ws.send(
+      JSON.stringify({
+        type: 'connected',
+        timestamp: new Date().toISOString(),
+      })
+    )
   })
 
   console.log('[WebSocket] WebSocket server initialized')
@@ -531,7 +535,7 @@ async function initializeServer(): Promise<void> {
     console.log(`[Init] Creating services (USE_MOCKS=${config.useMocks})...`)
     const services = await createServices({
       useMocks: config.useMocks,
-      debug: config.debug
+      debug: config.debug,
     })
 
     // Seed test data if using mocks
@@ -542,19 +546,19 @@ async function initializeServer(): Promise<void> {
           {
             type: 'implement-feature',
             description: 'Build user authentication system',
-            priority: 'high'
+            priority: 'high',
           },
           {
             type: 'write-tests',
             description: 'Write tests for auth module',
-            priority: 'medium'
+            priority: 'medium',
           },
           {
             type: 'update-docs',
             description: 'Update API documentation',
-            priority: 'low'
-          }
-        ]
+            priority: 'low',
+          },
+        ],
       })
     }
 
@@ -594,7 +598,6 @@ async function initializeServer(): Promise<void> {
     // Handle graceful shutdown
     process.on('SIGINT', gracefulShutdown)
     process.on('SIGTERM', gracefulShutdown)
-
   } catch (error) {
     console.error('[Init] Failed to initialize server:', error)
     process.exit(1)

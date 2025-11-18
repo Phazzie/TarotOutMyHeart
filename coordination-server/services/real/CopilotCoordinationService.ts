@@ -21,7 +21,7 @@ import type {
   CollaborationStatus,
   SessionId,
   ContextId,
-  ServiceResponse
+  ServiceResponse,
 } from '@contracts'
 
 /**
@@ -52,7 +52,7 @@ export class CopilotCoordinationService implements CopilotCoordinationContract {
       if (!result.success) {
         return {
           success: false,
-          error: result.error!
+          error: result.error!,
         }
       }
 
@@ -62,7 +62,7 @@ export class CopilotCoordinationService implements CopilotCoordinationContract {
 
       return {
         success: true,
-        data: tasks
+        data: tasks,
       }
     } catch (error) {
       return {
@@ -70,8 +70,8 @@ export class CopilotCoordinationService implements CopilotCoordinationContract {
         error: {
           code: 'CHECK_TASKS_ERROR',
           message: `Failed to check for tasks: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -92,8 +92,8 @@ export class CopilotCoordinationService implements CopilotCoordinationContract {
           error: {
             code: 'TASK_NOT_FOUND',
             message: `Task ${params.taskId} not found`,
-            retryable: false
-          }
+            retryable: false,
+          },
         }
       }
 
@@ -106,8 +106,8 @@ export class CopilotCoordinationService implements CopilotCoordinationContract {
           error: {
             code: 'TASK_ALREADY_CLAIMED',
             message: `Task ${params.taskId} is already ${task.status}`,
-            retryable: false
-          }
+            retryable: false,
+          },
         }
       }
 
@@ -121,8 +121,8 @@ export class CopilotCoordinationService implements CopilotCoordinationContract {
         data: {
           ...task,
           status: 'in-progress',
-          assignedTo: params.agentId
-        }
+          assignedTo: params.agentId,
+        },
       }
     } catch (error) {
       return {
@@ -130,8 +130,8 @@ export class CopilotCoordinationService implements CopilotCoordinationContract {
         error: {
           code: 'CLAIM_TASK_ERROR',
           message: `Failed to claim task: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -151,18 +151,22 @@ export class CopilotCoordinationService implements CopilotCoordinationContract {
       const result = {
         success: params.success,
         output: params.output,
-        error: params.error ? {
-          code: 'TASK_FAILED',
-          message: params.error,
-          retryable: true
-        } : undefined,
-        filesModified: params.filesModified || []
+        error: params.error
+          ? {
+              code: 'TASK_FAILED',
+              message: params.error,
+              retryable: true,
+            }
+          : undefined,
+        filesModified: params.filesModified || [],
       }
 
       const updateResult = await this.stateStore.updateTaskResult(params.taskId, result)
 
       if (updateResult.success) {
-        console.log(`[CopilotCoordination] Task ${params.taskId} completed by ${params.agentId}: ${params.success ? 'success' : 'failed'}`)
+        console.log(
+          `[CopilotCoordination] Task ${params.taskId} completed by ${params.agentId}: ${params.success ? 'success' : 'failed'}`
+        )
       }
 
       return updateResult
@@ -172,8 +176,8 @@ export class CopilotCoordinationService implements CopilotCoordinationContract {
         error: {
           code: 'SUBMIT_RESULT_ERROR',
           message: `Failed to submit task result: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -194,8 +198,8 @@ export class CopilotCoordinationService implements CopilotCoordinationContract {
         error: {
           code: 'FILE_ACCESS_ERROR',
           message: `Failed to request file access: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -212,7 +216,7 @@ export class CopilotCoordinationService implements CopilotCoordinationContract {
         path: '',
         operation: 'write',
         lockToken: params.lockToken,
-        granted: true
+        granted: true,
       }
 
       return await this.fileSystem.releaseFileAccess(grant)
@@ -222,8 +226,8 @@ export class CopilotCoordinationService implements CopilotCoordinationContract {
         error: {
           code: 'RELEASE_ACCESS_ERROR',
           message: `Failed to release file access: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -259,7 +263,7 @@ export class CopilotCoordinationService implements CopilotCoordinationContract {
           status: 'active',
           createdAt: new Date(),
           updatedAt: new Date(),
-          contextId: '' as ContextId
+          contextId: '' as ContextId,
         },
         activeTasks: tasks.filter(t => t.status === 'in-progress' || t.status === 'claimed'),
         completedTasks: tasks.filter(t => t.status === 'completed'),
@@ -268,13 +272,18 @@ export class CopilotCoordinationService implements CopilotCoordinationContract {
         progress: {
           tasksTotal: tasks.length,
           tasksCompleted: tasks.filter(t => t.status === 'completed').length,
-          percentComplete: tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100) : 0
-        }
+          percentComplete:
+            tasks.length > 0
+              ? Math.round(
+                  (tasks.filter(t => t.status === 'completed').length / tasks.length) * 100
+                )
+              : 0,
+        },
       }
 
       return {
         success: true,
-        data: status
+        data: status,
       }
     } catch (error) {
       return {
@@ -282,8 +291,8 @@ export class CopilotCoordinationService implements CopilotCoordinationContract {
         error: {
           code: 'GET_STATUS_ERROR',
           message: `Failed to get collaboration status: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
