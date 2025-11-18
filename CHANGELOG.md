@@ -110,6 +110,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Known Issues
 
 **AI Coordination Server:**
+
 - ⚠️ Minor TypeScript warnings (unused variables/imports - cosmetic only)
 - ⚠️ Missing behavior tests for 4 mocks (Claude, Copilot, User, FileSystem)
 - ⚠️ No MCP protocol tests
@@ -118,6 +119,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ⚠️ Contract duplication (exists in both `/contracts/` and `/coordination-server/contracts/`)
 
 **Tarot App:**
+
 - ⚠️ 96 TypeScript errors in mock services (contract mismatches discovered 2025-11-11)
 - Contract tests not yet written for Tarot seams
 - SEAMSLIST.md not fully updated with Tarot seam details
@@ -149,6 +151,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Next Steps
 
 **Priority 1: Complete Tarot App Phase 3** (BLOCKED - must fix before UI)
+
 1. ✅ Fix critical TypeScript errors - DONE
 2. ⏳ Fix 96 mock-contract mismatches - IN PROGRESS
 3. ⏳ Deploy GitHub Coding Agent to write 7 contract tests
@@ -157,6 +160,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 6. Mark Phase 3 complete when `npm run check` = 0 errors and all tests pass
 
 **Priority 2: Complete AI Coordination Server (Phase 5)**
+
 1. Write missing mock behavior tests (4 mocks)
 2. Write MCP protocol tests
 3. Create integration guides (Copilot + Claude)
@@ -252,6 +256,7 @@ Before 1.0.0, the project is in initial development. Anything may change at any 
 #### Wave 1: Foundation ✅
 
 **Global State Management**:
+
 - Created `src/lib/stores/appStore.svelte.ts` (730 lines)
 - Svelte 5 runes-based reactive state (`$state`, `$derived`)
 - 5 state categories: Upload, Style, Prompts, Generation, UI
@@ -260,6 +265,7 @@ Before 1.0.0, the project is in initial development. Anything may change at any 
 - Full TypeScript strict mode compliance
 
 **Routing & Navigation**:
+
 - Root layout with mystical theme navigation (`+layout.svelte`)
 - Home page with welcome screen and feature overview
 - 3 main workflow pages:
@@ -270,6 +276,7 @@ Before 1.0.0, the project is in initial development. Anything may change at any 
 - Purple/gold glassmorphism design theme
 
 **Design System**:
+
 - CSS custom properties for colors and spacing
 - Google Fonts: Cinzel (headings), Cormorant Garamond (body)
 - Glassmorphism effects with backdrop blur
@@ -341,6 +348,7 @@ Created all 7 UI components with full feature parity:
    - Browser download integration
 
 **Total Component Stats**:
+
 - 5,720 lines of production code
 - 100% TypeScript strict mode compliance
 - 0 `any` types throughout
@@ -351,6 +359,7 @@ Created all 7 UI components with full feature parity:
 #### Wave 3: Page Integration ✅
 
 **Upload Page** (`/upload`):
+
 - Integrated: ImageUploadComponent + StyleInputComponent + CostDisplayComponent
 - Two-column layout (main content + sticky sidebar)
 - Continue button (disabled until prerequisites met)
@@ -358,6 +367,7 @@ Created all 7 UI components with full feature parity:
 - Fully responsive
 
 **Generate Page** (`/generate`):
+
 - Integrated: PromptListComponent + GenerationProgressComponent
 - 3 states: READY → GENERATING → COMPLETE
 - Start/cancel/retry functionality
@@ -365,6 +375,7 @@ Created all 7 UI components with full feature parity:
 - ImageGenerationMock service integration
 
 **Gallery Page** (`/gallery`):
+
 - Integrated: DeckGalleryComponent + DownloadComponent
 - Deck statistics (total/completed/failed)
 - Empty state with "Go to Generate" CTA
@@ -376,24 +387,28 @@ Created all 7 UI components with full feature parity:
 Comprehensive code review found 29 issues, all critical/high issues fixed:
 
 **SDD Compliance** (Issue #1 - CRITICAL):
+
 - **Problem**: 6 components directly instantiated mocks instead of using factory
 - **Impact**: Would have made Phase 4 (real services) impossible
 - **Fix**: Updated all components to use `$services/factory` pattern
 - **Result**: Can now switch mocks→real with zero component changes
 
 **Type Safety** (Issues #2-6 - CRITICAL):
+
 - **Problem**: 5 `as any` type assertions in ImageUploadComponent
 - **Impact**: Bypassed TypeScript strict mode safety
 - **Fix**: Replaced with proper types (`ImageId`, `ImageUploadErrorCode`)
 - **Result**: Zero `as any` in entire codebase
 
 **Accessibility** (Issue #8 - CRITICAL):
+
 - **Problem**: Hamburger menu used Svelte 4 syntax (`on:click`)
 - **Impact**: Mobile navigation completely broken
 - **Fix**: Updated to Svelte 5 syntax (`onclick`)
 - **Result**: Mobile navigation functional
 
 **Import Consistency** (Issue #7 - MEDIUM):
+
 - **Problem**: Inconsistent import paths (relative vs barrel exports)
 - **Fix**: Standardized to `$contracts/index` pattern
 - **Result**: Consistent codebase, easier maintenance
@@ -401,24 +416,28 @@ Comprehensive code review found 29 issues, all critical/high issues fixed:
 #### Validation Results ✅
 
 **TypeScript**:
+
 ```bash
 npm run check
 # Result: 0 errors, 0 warnings ✅
 ```
 
 **Build**:
+
 ```bash
 npm run build
 # Result: Success ✅
 ```
 
 **Test Suite**:
+
 ```bash
 npm run test
 # Result: 577/578 passing (99.8%) ✅
 ```
 
 **Code Quality**:
+
 - Zero `any` types
 - 100% contract compliance
 - 95% SDD methodology compliance
@@ -436,6 +455,7 @@ npm run test
 #### Files Changed Summary
 
 **New Files** (23):
+
 - 1 global store (`appStore.svelte.ts`)
 - 7 UI components
 - 1 root layout
@@ -443,10 +463,12 @@ npm run test
 - 8 documentation files
 
 **Modified Files** (8):
+
 - All 7 components (service factory fixes)
 - Root layout (Svelte 5 syntax fix)
 
 **Total Impact**:
+
 - 12,852 lines of production code
 - 31 files created/modified
 - 100% test coverage on components
@@ -455,6 +477,7 @@ npm run test
 #### Ready for Phase 4
 
 With service factory pattern properly implemented:
+
 1. ✅ All contracts frozen and validated
 2. ✅ All mocks functional with 99.8% test pass rate
 3. ✅ Complete UI implemented and tested
@@ -466,6 +489,7 @@ With service factory pattern properly implemented:
 #### Lessons Learned
 
 See `lessonslearned.md` for new lessons #9-13:
+
 - Lesson #9: Parallel UI development with frozen contracts
 - Lesson #10: Service factory pattern is non-negotiable
 - Lesson #11: Svelte 5 runes + SDD = perfect match

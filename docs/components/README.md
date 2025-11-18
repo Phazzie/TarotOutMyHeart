@@ -7,6 +7,7 @@ This directory contains detailed documentation for all Svelte components in the 
 ## Available Components
 
 ### GenerationProgressComponent ✅
+
 **Status**: Complete
 **File**: `/src/lib/components/GenerationProgressComponent.svelte`
 **Documentation**: [GenerationProgressComponent.md](./GenerationProgressComponent.md)
@@ -14,6 +15,7 @@ This directory contains detailed documentation for all Svelte components in the 
 Real-time progress tracking for the 22-card image generation process.
 
 **Key Features**:
+
 - Animated progress bar with gradient
 - Live stats (X/22 cards, percentage)
 - Current card display with spinner
@@ -31,7 +33,9 @@ Real-time progress tracking for the 22-card image generation process.
 All components in this project follow these standards:
 
 ### 1. File Documentation
+
 Every component must have comprehensive top-level comments:
+
 ```svelte
 <!--
   @fileoverview Brief description
@@ -49,12 +53,14 @@ Every component must have comprehensive top-level comments:
 ```
 
 ### 2. TypeScript Strict Mode
+
 - All components use `<script lang="ts">`
 - Type all props with TypeScript
 - No `any` types allowed
 - Use Svelte 5 runes (`$state`, `$derived`, `$props`)
 
 ### 3. Accessibility
+
 - Semantic HTML elements
 - ARIA attributes where needed
 - Keyboard navigation support
@@ -62,12 +68,14 @@ Every component must have comprehensive top-level comments:
 - Color contrast compliance (WCAG AA)
 
 ### 4. Responsive Design
+
 - Mobile-first approach
 - Media queries for tablet/desktop
 - Touch-friendly interactive elements
 - Readable text sizes on all devices
 
 ### 5. Styling
+
 - Scoped component styles (no global leakage)
 - CSS custom properties for theming
 - Consistent with app branding (purple/gold)
@@ -75,12 +83,14 @@ Every component must have comprehensive top-level comments:
 - `prefers-reduced-motion` respect (future)
 
 ### 6. Testing
+
 - Test page for interactive demo
 - Unit tests (future)
 - Integration tests (future)
 - Manual QA checklist
 
 ### 7. Documentation
+
 - Component-specific markdown file in `/docs/components/`
 - Usage examples
 - Props documentation
@@ -92,6 +102,7 @@ Every component must have comprehensive top-level comments:
 ## Component Development Workflow
 
 ### Step 1: Plan
+
 1. Review PRD requirements
 2. Identify data contracts needed
 3. Sketch component structure
@@ -99,6 +110,7 @@ Every component must have comprehensive top-level comments:
 5. Plan accessibility features
 
 ### Step 2: Build
+
 1. Create `.svelte` file in `/src/lib/components/`
 2. Add comprehensive file header comments
 3. Import contracts and types
@@ -108,6 +120,7 @@ Every component must have comprehensive top-level comments:
 7. Add scoped styles
 
 ### Step 3: Test
+
 1. Create test page in `/src/routes/test-[name]/`
 2. Test all states (idle, loading, success, error)
 3. Test responsive design (mobile, tablet, desktop)
@@ -116,6 +129,7 @@ Every component must have comprehensive top-level comments:
 6. Run `npm run check` (no errors)
 
 ### Step 4: Document
+
 1. Create markdown file in `/docs/components/`
 2. Document all props
 3. Show usage examples
@@ -124,6 +138,7 @@ Every component must have comprehensive top-level comments:
 6. Update this README
 
 ### Step 5: Integrate
+
 1. Import into page components
 2. Wire up appStore integration
 3. Test with real services
@@ -135,6 +150,7 @@ Every component must have comprehensive top-level comments:
 ## Svelte 5 Patterns
 
 ### Reactive State
+
 ```svelte
 <script lang="ts">
   import { appStore } from '$lib/stores/appStore.svelte'
@@ -151,11 +167,12 @@ Every component must have comprehensive top-level comments:
 ```
 
 ### Props
+
 ```svelte
 <script lang="ts">
   interface Props {
     title: string
-    count?: number  // Optional with default
+    count?: number // Optional with default
     onSubmit: (data: FormData) => void
   }
 
@@ -165,6 +182,7 @@ Every component must have comprehensive top-level comments:
 ```
 
 ### Event Handlers
+
 ```svelte
 <script lang="ts">
   function handleClick() {
@@ -177,22 +195,23 @@ Every component must have comprehensive top-level comments:
   }
 </script>
 
-<button onclick={handleClick}>Click Me</button>
-<form onsubmit={handleSubmit}>...</form>
+<button onclick={handleClick}>Click Me</button><form onsubmit={handleSubmit}>...</form>
 ```
 
 ### Conditional Rendering
+
 ```svelte
 {#if isLoading}
   <Spinner />
 {:else if hasError}
   <Error message={errorMessage} />
 {:else}
-  <Content data={data} />
+  <Content {data} />
 {/if}
 ```
 
 ### List Rendering
+
 ```svelte
 {#each items as item (item.id)}
   <Card data={item} />
@@ -213,10 +232,10 @@ Every component must have comprehensive top-level comments:
   --color-primary-dark: #5a67d8;
 
   /* Status Colors */
-  --color-success: #48bb78;  /* Green */
-  --color-warning: #ed8936;  /* Orange */
-  --color-danger: #f56565;   /* Red */
-  --color-info: #4299e1;     /* Blue */
+  --color-success: #48bb78; /* Green */
+  --color-warning: #ed8936; /* Orange */
+  --color-danger: #f56565; /* Red */
+  --color-info: #4299e1; /* Blue */
 
   /* Neutrals */
   --color-text-primary: #1a1a1a;
@@ -255,13 +274,13 @@ Every component must have comprehensive top-level comments:
   --font-mono: 'Courier New', monospace;
 
   /* Font Sizes */
-  --text-xs: 0.75rem;    /* 12px */
-  --text-sm: 0.875rem;   /* 14px */
-  --text-base: 1rem;     /* 16px */
-  --text-lg: 1.125rem;   /* 18px */
-  --text-xl: 1.25rem;    /* 20px */
-  --text-2xl: 1.5rem;    /* 24px */
-  --text-3xl: 2rem;      /* 32px */
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.875rem; /* 14px */
+  --text-base: 1rem; /* 16px */
+  --text-lg: 1.125rem; /* 18px */
+  --text-xl: 1.25rem; /* 20px */
+  --text-2xl: 1.5rem; /* 24px */
+  --text-3xl: 2rem; /* 32px */
 
   /* Font Weights */
   --font-normal: 400;
@@ -313,6 +332,7 @@ Before marking a component as "complete", ensure:
 ## Questions?
 
 For component development questions:
+
 1. Check this README
 2. Review existing components
 3. Read component-specific docs

@@ -56,7 +56,11 @@ describe('StyleInput Contract', () => {
 
         expect(response.success).toBe(true) // Validation returns success, but field is invalid
         expect(response.data?.validation.fields.theme.isValid).toBe(false)
-        expect(response.data?.errors.some((e: StyleInputValidationError) => e.code === StyleInputErrorCode.THEME_REQUIRED)).toBe(true)
+        expect(
+          response.data?.errors.some(
+            (e: StyleInputValidationError) => e.code === StyleInputErrorCode.THEME_REQUIRED
+          )
+        ).toBe(true)
       })
 
       it('should fail with THEME_TOO_LONG when theme exceeds 50 chars', async () => {
@@ -68,7 +72,11 @@ describe('StyleInput Contract', () => {
 
         expect(response.success).toBe(true)
         expect(response.data?.validation.fields.theme.isValid).toBe(false)
-        expect(response.data?.errors.some((e: StyleInputValidationError) => e.code === StyleInputErrorCode.THEME_TOO_LONG)).toBe(true)
+        expect(
+          response.data?.errors.some(
+            (e: StyleInputValidationError) => e.code === StyleInputErrorCode.THEME_TOO_LONG
+          )
+        ).toBe(true)
       })
     })
 
@@ -105,7 +113,11 @@ describe('StyleInput Contract', () => {
 
         expect(response.success).toBe(true)
         expect(response.data?.validation.fields.tone.isValid).toBe(false)
-        expect(response.data?.errors.some((e: StyleInputValidationError) => e.code === StyleInputErrorCode.TONE_REQUIRED)).toBe(true)
+        expect(
+          response.data?.errors.some(
+            (e: StyleInputValidationError) => e.code === StyleInputErrorCode.TONE_REQUIRED
+          )
+        ).toBe(true)
       })
 
       it('should fail with TONE_TOO_LONG when tone exceeds 50 chars', async () => {
@@ -117,14 +129,19 @@ describe('StyleInput Contract', () => {
 
         expect(response.success).toBe(true)
         expect(response.data?.validation.fields.tone.isValid).toBe(false)
-        expect(response.data?.errors.some((e: StyleInputValidationError) => e.code === StyleInputErrorCode.TONE_TOO_LONG)).toBe(true)
+        expect(
+          response.data?.errors.some(
+            (e: StyleInputValidationError) => e.code === StyleInputErrorCode.TONE_TOO_LONG
+          )
+        ).toBe(true)
       })
     })
 
     describe('Description Validation', () => {
       it('should accept valid description (10-500 chars)', async () => {
         const input: ValidateStyleInputsInput = {
-          description: 'Neon-lit dystopian future with advanced technology and megacorporation control',
+          description:
+            'Neon-lit dystopian future with advanced technology and megacorporation control',
         }
 
         const response = await service.validateStyleInputs(input)
@@ -165,7 +182,11 @@ describe('StyleInput Contract', () => {
 
         expect(response.success).toBe(true)
         expect(response.data?.validation.fields.description.isValid).toBe(false)
-        expect(response.data?.errors.some((e: StyleInputValidationError) => e.code === StyleInputErrorCode.DESCRIPTION_REQUIRED)).toBe(true)
+        expect(
+          response.data?.errors.some(
+            (e: StyleInputValidationError) => e.code === StyleInputErrorCode.DESCRIPTION_REQUIRED
+          )
+        ).toBe(true)
       })
 
       it('should fail with DESCRIPTION_TOO_SHORT when description < 10 chars', async () => {
@@ -177,7 +198,11 @@ describe('StyleInput Contract', () => {
 
         expect(response.success).toBe(true)
         expect(response.data?.validation.fields.description.isValid).toBe(false)
-        expect(response.data?.errors.some((e: StyleInputValidationError) => e.code === StyleInputErrorCode.DESCRIPTION_TOO_SHORT)).toBe(true)
+        expect(
+          response.data?.errors.some(
+            (e: StyleInputValidationError) => e.code === StyleInputErrorCode.DESCRIPTION_TOO_SHORT
+          )
+        ).toBe(true)
       })
 
       it('should fail with DESCRIPTION_TOO_LONG when description > 500 chars', async () => {
@@ -189,7 +214,11 @@ describe('StyleInput Contract', () => {
 
         expect(response.success).toBe(true)
         expect(response.data?.validation.fields.description.isValid).toBe(false)
-        expect(response.data?.errors.some((e: StyleInputValidationError) => e.code === StyleInputErrorCode.DESCRIPTION_TOO_LONG)).toBe(true)
+        expect(
+          response.data?.errors.some(
+            (e: StyleInputValidationError) => e.code === StyleInputErrorCode.DESCRIPTION_TOO_LONG
+          )
+        ).toBe(true)
       })
 
       it('should accept description with special characters if valid length', async () => {
@@ -226,7 +255,11 @@ describe('StyleInput Contract', () => {
         const response = await service.validateStyleInputs(input)
 
         expect(response.success).toBe(true)
-        expect(response.data?.errors.some((e: StyleInputValidationError) => e.code === StyleInputErrorCode.CONCEPT_TOO_LONG)).toBe(true)
+        expect(
+          response.data?.errors.some(
+            (e: StyleInputValidationError) => e.code === StyleInputErrorCode.CONCEPT_TOO_LONG
+          )
+        ).toBe(true)
       })
 
       it('should accept characters ≤ 200 chars', async () => {
@@ -250,7 +283,11 @@ describe('StyleInput Contract', () => {
         const response = await service.validateStyleInputs(input)
 
         expect(response.success).toBe(true)
-        expect(response.data?.errors.some((e: StyleInputValidationError) => e.code === StyleInputErrorCode.CHARACTERS_TOO_LONG)).toBe(true)
+        expect(
+          response.data?.errors.some(
+            (e: StyleInputValidationError) => e.code === StyleInputErrorCode.CHARACTERS_TOO_LONG
+          )
+        ).toBe(true)
       })
 
       it('should pass validation when optional fields are omitted', async () => {
@@ -297,7 +334,8 @@ describe('StyleInput Contract', () => {
         const input: ValidateStyleInputsInput = {
           theme: 'Cyberpunk',
           tone: 'Dark',
-          description: 'Neon-lit dystopian future with advanced technology and megacorporation control',
+          description:
+            'Neon-lit dystopian future with advanced technology and megacorporation control',
           concept: 'Technology vs humanity',
           characters: 'Augmented humans, AIs, corporate agents',
         }
@@ -357,7 +395,8 @@ describe('StyleInput Contract', () => {
       const styleInputs: StyleInputs = {
         theme: 'Cyberpunk',
         tone: 'Dark',
-        description: 'Neon-lit dystopian future with advanced technology and megacorporation control',
+        description:
+          'Neon-lit dystopian future with advanced technology and megacorporation control',
         concept: 'Technology vs humanity',
         characters: 'Augmented humans, AIs, corporate agents',
       }

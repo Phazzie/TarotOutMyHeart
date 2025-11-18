@@ -6,33 +6,33 @@ Use this template when creating new contract files in `/contracts/`.
 
 ## File Template
 
-```typescript
+````typescript
 /**
  * @fileoverview [One-line description - e.g., "Image Upload Service Contract"]
  * @module contracts/[FeatureName]
- * 
+ *
  * PURPOSE:
  * This contract defines the boundary between [Component A] and [Component B].
  * It ensures [specific goal or requirement from PRD].
  * [Add 1-2 more sentences about business context]
- * 
+ *
  * DATA FLOW:
  * Input: [What data enters this seam and from where]
  *   - Example: User file objects from browser file input
- *   
+ *
  * Transform: [What validation/processing happens at this boundary]
  *   - Example: Validates file type, size, count; generates preview URLs
- *   
+ *
  * Output: [What data exits this seam and to where]
  *   - Example: UploadedImage objects to application state store
- * 
+ *
  * DEPENDENCIES:
  * - Depends on: contracts/types/common.ts (ServiceResponse wrapper)
- * - Used by: 
+ * - Used by:
  *   - services/mock/[Feature]Mock.ts (mock implementation)
  *   - services/real/[Feature]Service.ts (real implementation)
  *   - UI components that consume this service
- * 
+ *
  * @see /docs/planning/DATA-BOUNDARIES.md - Seam #X
  * @see /SEAMSLIST.md - Full seam documentation
  * @updated YYYY-MM-DD
@@ -50,7 +50,7 @@ import type { ServiceResponse } from './types/common'
 
 /**
  * Input data for [operation name]
- * 
+ *
  * @example
  * ```typescript
  * const input: [Feature]Input = {
@@ -65,7 +65,7 @@ export interface [Feature]Input {
    * [Any validation rules or constraints]
    */
   requiredField: string
-  
+
   /**
    * [Description of optional field]
    * @default [default value if applicable]
@@ -79,7 +79,7 @@ export interface [Feature]Input {
 
 /**
  * Output data from [operation name]
- * 
+ *
  * Represents [what this data represents in business terms]
  */
 export interface [Feature]Output {
@@ -87,12 +87,12 @@ export interface [Feature]Output {
    * [Description of this field]
    */
   id: string
-  
+
   /**
    * [Description of this field]
    */
   result: string
-  
+
   /**
    * ISO 8601 timestamp of when operation completed
    */
@@ -105,7 +105,7 @@ export interface [Feature]Output {
 
 /**
  * Error codes for [Feature] operations
- * 
+ *
  * Used in ServiceResponse error field
  */
 export enum [Feature]ErrorCode {
@@ -114,13 +114,13 @@ export enum [Feature]ErrorCode {
    * @retryable false
    */
   VALIDATION_ERROR = 'VALIDATION_ERROR',
-  
+
   /**
    * [Description of when this error occurs]
    * @retryable true
    */
   NETWORK_ERROR = 'NETWORK_ERROR',
-  
+
   /**
    * [Description of when this error occurs]
    * @retryable false
@@ -145,11 +145,11 @@ export interface [Feature]Error {
 
 /**
  * [Feature] Service Contract
- * 
+ *
  * This interface MUST be implemented by:
  * - Mock: services/mock/[Feature]Mock.ts
  * - Real: services/real/[Feature]Service.ts
- * 
+ *
  * CONTRACT RULES:
  * 1. This interface is IMMUTABLE after implementation begins
  * 2. To make breaking changes, create [Feature]ServiceV2
@@ -160,27 +160,27 @@ export interface [Feature]Error {
 export interface I[Feature]Service {
   /**
    * [Description of what this method does]
-   * 
+   *
    * BEHAVIOR:
    * - [Specific behavior point 1]
    * - [Specific behavior point 2]
    * - [Edge cases handled]
-   * 
+   *
    * ERRORS:
    * - VALIDATION_ERROR: If input fails validation
    * - NETWORK_ERROR: If external dependency fails
    * - NOT_FOUND: If requested resource doesn't exist
-   * 
+   *
    * @param input - [Description of input parameter]
    * @returns Promise resolving to success result or error details
-   * 
+   *
    * @example
    * ```typescript
    * const result = await service.methodName({
    *   field1: 'value',
    *   field2: 123
    * })
-   * 
+   *
    * if (result.success) {
    *   console.log(result.data.result)
    * } else {
@@ -237,7 +237,7 @@ export const [FEATURE]_CONSTRAINTS = {
 
 /**
  * Type guard to check if value is valid [Feature]Input
- * 
+ *
  * @param value - Value to check
  * @returns true if value matches [Feature]Input interface
  */
@@ -253,7 +253,7 @@ export function is[Feature]Input(value: unknown): value is [Feature]Input {
 
 /**
  * Type guard to check if value is valid [Feature]Output
- * 
+ *
  * @param value - Value to check
  * @returns true if value matches [Feature]Output interface
  */
@@ -274,26 +274,26 @@ export function is[Feature]Output(value: unknown): value is [Feature]Output {
 
 /**
  * This module exports:
- * 
+ *
  * TYPES:
  * - [Feature]Input: Input data structure
  * - [Feature]Output: Output data structure
  * - [Feature]Error: Error details structure
  * - [Feature]ErrorCode: Error code enum
  * - [Feature]Config: Configuration options
- * 
+ *
  * INTERFACES:
  * - I[Feature]Service: The main contract interface
- * 
+ *
  * CONSTANTS:
  * - DEFAULT_[FEATURE]_CONFIG: Default configuration values
  * - [FEATURE]_CONSTRAINTS: Validation constraints
- * 
+ *
  * TYPE GUARDS:
  * - is[Feature]Input: Runtime input validation
  * - is[Feature]Output: Runtime output validation
  */
-```
+````
 
 ---
 
@@ -302,6 +302,7 @@ export function is[Feature]Output(value: unknown): value is [Feature]Output {
 When creating a new contract, ensure:
 
 ### Documentation
+
 - [ ] File header with @fileoverview
 - [ ] PURPOSE section explains why this exists
 - [ ] DATA FLOW section shows input → transform → output
@@ -310,6 +311,7 @@ When creating a new contract, ensure:
 - [ ] @updated timestamp is current
 
 ### Type Definitions
+
 - [ ] Input interface defined with JSDoc for each field
 - [ ] Output interface defined with JSDoc for each field
 - [ ] Error enum with all possible error codes
@@ -318,6 +320,7 @@ When creating a new contract, ensure:
 - [ ] Optional fields have @default documentation if applicable
 
 ### Service Interface
+
 - [ ] Interface name starts with `I` (e.g., IImageUploadService)
 - [ ] CONTRACT RULES comment block included
 - [ ] Each method has detailed JSDoc with:
@@ -331,6 +334,7 @@ When creating a new contract, ensure:
 - [ ] No methods throw exceptions (all errors in ServiceResponse)
 
 ### Supporting Code
+
 - [ ] Helper types defined if needed
 - [ ] Configuration interface if service is configurable
 - [ ] Constants for defaults and constraints
@@ -338,12 +342,14 @@ When creating a new contract, ensure:
 - [ ] Export summary at end of file
 
 ### Validation
+
 - [ ] File compiles with `npm run check`
 - [ ] No `any` types used
 - [ ] All imports resolve correctly
 - [ ] Exported from `/contracts/index.ts`
 
 ### Traceability
+
 - [ ] References PRD requirement
 - [ ] Listed in SEAMSLIST.md
 - [ ] Matches seam identified in DATA-BOUNDARIES.md
@@ -408,6 +414,7 @@ export interface UploadResult {
 ## Anti-Patterns to Avoid
 
 ❌ **DON'T**:
+
 - Use `any` type
 - Mix multiple concerns in one contract
 - Make fields optional when they should be required
@@ -417,6 +424,7 @@ export interface UploadResult {
 - Create circular dependencies between contracts
 
 ✅ **DO**:
+
 - Use `unknown` and validate with type guards
 - Keep contracts focused on single seam
 - Make required fields explicit
@@ -458,7 +466,7 @@ export function adaptV1ToV2(v1: UserSeamV1): UserSeamV2 {
   return {
     ...v1,
     email: 'unknown@example.com', // Provide default for new field
-    createdAt: new Date()
+    createdAt: new Date(),
   }
 }
 ```
@@ -468,6 +476,7 @@ export function adaptV1ToV2(v1: UserSeamV1): UserSeamV2 {
 ## Examples
 
 See existing contracts for reference:
+
 - `/contracts/types/common.ts` - Common types and ServiceResponse
 - `/contracts/CoordinationServer.ts` - Complex multi-service contract (AI coordination)
 
@@ -476,6 +485,7 @@ See existing contracts for reference:
 ## Questions?
 
 If you're unsure about contract design:
+
 1. Review `/seam-driven-development.md` - Contract definition section
 2. Check `/docs/planning/DATA-BOUNDARIES.md` - Your seam analysis
 3. Look at existing contracts for patterns

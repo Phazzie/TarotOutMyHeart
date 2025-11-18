@@ -16,6 +16,7 @@ The StyleInputComponent is a comprehensive form component for collecting user's 
 ## Features
 
 ### 1. **Form Fields**
+
 - **Theme** (required): Dropdown with predefined options + custom input
 - **Tone** (required): Dropdown with predefined options + custom input
 - **Description** (required): Textarea with 10-500 character limit
@@ -23,12 +24,14 @@ The StyleInputComponent is a comprehensive form component for collecting user's 
 - **Characters** (optional): Textarea with 200 character limit
 
 ### 2. **Real-Time Validation**
+
 - Validates on every input change
 - Visual error indicators (red borders)
 - Error messages below invalid fields
 - Submit button disabled until form is valid
 
 ### 3. **Character Counters**
+
 - Live character count for all text inputs
 - Color-coded based on usage:
   - **Gray**: Normal usage
@@ -36,11 +39,13 @@ The StyleInputComponent is a comprehensive form component for collecting user's 
   - **Red**: Over limit
 
 ### 4. **Auto-Save Draft**
+
 - Automatically saves to localStorage 1 second after user stops typing
 - Restores draft on page load
 - "Clear Form" button to reset and start fresh
 
 ### 5. **Accessibility**
+
 - All inputs have proper ARIA labels
 - Error messages linked via `aria-describedby`
 - Screen reader announcements for validation
@@ -48,6 +53,7 @@ The StyleInputComponent is a comprehensive form component for collecting user's 
 - Focus management
 
 ### 6. **AppStore Integration**
+
 - Saves validated inputs to global appStore
 - Updates loading state during save
 - Triggers success/error notifications
@@ -60,7 +66,7 @@ The StyleInputComponent is a comprehensive form component for collecting user's 
 
 ```svelte
 <script lang="ts">
-  import StyleInputComponent from '$lib/components/StyleInputComponent.svelte';
+  import StyleInputComponent from '$lib/components/StyleInputComponent.svelte'
 </script>
 
 <StyleInputComponent />
@@ -69,6 +75,7 @@ The StyleInputComponent is a comprehensive form component for collecting user's 
 ### With Navigation (Full Page Example)
 
 See `/src/routes/style/+page.svelte` for a complete example with:
+
 - Progress indicator
 - Navigation buttons
 - Integration with workflow
@@ -84,20 +91,20 @@ import type {
   StyleInputs,
   PredefinedTheme,
   PredefinedTone,
-  StyleInputsValidation
-} from '$contracts/index';
-import { CHAR_LIMITS } from '$contracts/index';
+  StyleInputsValidation,
+} from '$contracts/index'
+import { CHAR_LIMITS } from '$contracts/index'
 ```
 
 ### StyleInputs Interface
 
 ```typescript
 interface StyleInputs {
-  theme: string           // e.g., "Art Nouveau", "Cyberpunk"
-  tone: string            // e.g., "Dark", "Mystical"
-  description: string     // Required, 10-500 chars
-  concept?: string        // Optional, max 200 chars
-  characters?: string     // Optional, max 200 chars
+  theme: string // e.g., "Art Nouveau", "Cyberpunk"
+  tone: string // e.g., "Dark", "Mystical"
+  description: string // Required, 10-500 chars
+  concept?: string // Optional, max 200 chars
+  characters?: string // Optional, max 200 chars
 }
 ```
 
@@ -106,21 +113,27 @@ interface StyleInputs {
 ## Service Methods Used
 
 ### 1. `validateStyleInputs(input)`
+
 Validates all provided fields in real-time.
 
 ### 2. `saveStyleInputs({ styleInputs, saveAsDraft })`
+
 Saves validated inputs to localStorage and appStore.
 
 ### 3. `loadStyleInputs({ loadFromDraft })`
+
 Loads previously saved draft on mount.
 
 ### 4. `getPredefinedOptions()`
+
 Gets dropdown options for theme and tone.
 
 ### 5. `getDefaults()`
+
 Gets default values for form initialization.
 
 ### 6. `clearDraft()`
+
 Clears saved draft from localStorage.
 
 ---
@@ -174,24 +187,29 @@ const descriptionCounterClass = $derived(() => {
 ## Validation Rules
 
 ### Theme
+
 - ✅ Required
 - ✅ Max 50 characters
 
 ### Tone
+
 - ✅ Required
 - ✅ Max 50 characters
 
 ### Description
+
 - ✅ Required
 - ✅ Min 10 characters
 - ✅ Max 500 characters
 - ⚠️ Warning if < 50 characters (but valid)
 
 ### Concept
+
 - ✅ Optional
 - ✅ Max 200 characters
 
 ### Characters
+
 - ✅ Optional
 - ✅ Max 200 characters
 
@@ -200,9 +218,11 @@ const descriptionCounterClass = $derived(() => {
 ## Predefined Options
 
 ### Themes
+
 `Art Nouveau`, `Cyberpunk`, `Watercolor`, `Minimalist`, `Gothic`, `Art Deco`, `Fantasy`, `Vintage`, `Digital Art`, `Hand-Drawn`, `Custom`
 
 ### Tones
+
 `Dark`, `Light`, `Whimsical`, `Serious`, `Mystical`, `Modern`, `Traditional`, `Ethereal`, `Bold`, `Soft`, `Custom`
 
 When "Custom" is selected, a text input appears for user to enter their own value.
@@ -265,6 +285,7 @@ See `/tests/mocks/StyleInputMock.test.ts` for service behavior tests.
 ## Accessibility Features
 
 ### ARIA Attributes
+
 - `aria-required="true"` on required fields
 - `aria-invalid` on fields with errors
 - `aria-describedby` linking fields to errors and counters
@@ -273,11 +294,13 @@ See `/tests/mocks/StyleInputMock.test.ts` for service behavior tests.
 - `role="status"` on success messages
 
 ### Keyboard Support
+
 - Tab navigation through all fields
 - Enter to submit form
 - All interactive elements keyboard accessible
 
 ### Screen Reader Support
+
 - Form structure announced correctly
 - Error messages read when validation fails
 - Character counts announced on change
@@ -288,15 +311,19 @@ See `/tests/mocks/StyleInputMock.test.ts` for service behavior tests.
 ## Troubleshooting
 
 ### Issue: Validation not working
+
 **Solution**: Check that `validateForm()` is being called on input changes.
 
 ### Issue: Draft not saving
+
 **Solution**: Verify localStorage is available in browser.
 
 ### Issue: AppStore not updating
+
 **Solution**: Ensure `appStore.setStyleInputs()` is called in `handleSubmit()`.
 
 ### Issue: Character counter not updating
+
 **Solution**: Check that `$derived` is being used correctly for computed values.
 
 ---

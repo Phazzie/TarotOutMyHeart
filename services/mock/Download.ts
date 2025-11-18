@@ -65,9 +65,7 @@ export class DownloadMock implements IDownloadService {
    * - 22 card images (00-the-fool.png through 21-the-world.png)
    * - metadata.json (if includeMetadata is true)
    */
-  async downloadDeck(
-    input: DownloadDeckInput
-  ): Promise<ServiceResponse<DownloadDeckOutput>> {
+  async downloadDeck(input: DownloadDeckInput): Promise<ServiceResponse<DownloadDeckOutput>> {
     // Validate input
     const validation = this.validateDeckInput(input)
     if (!validation.isValid) {
@@ -179,9 +177,7 @@ export class DownloadMock implements IDownloadService {
    *
    * Simulates downloading one PNG file with proper filename.
    */
-  async downloadCard(
-    input: DownloadCardInput
-  ): Promise<ServiceResponse<DownloadCardOutput>> {
+  async downloadCard(input: DownloadCardInput): Promise<ServiceResponse<DownloadCardOutput>> {
     // Validate card has image
     if (!input.card.imageUrl) {
       return {
@@ -207,10 +203,8 @@ export class DownloadMock implements IDownloadService {
     }
 
     // Generate filename
-    const filename = input.filename || generateCardFilename(
-      input.card.cardNumber,
-      input.card.cardName
-    )
+    const filename =
+      input.filename || generateCardFilename(input.card.cardNumber, input.card.cardName)
 
     // Simulate download delay
     await this.simulateDelay(100)
@@ -318,15 +312,13 @@ export class DownloadMock implements IDownloadService {
     }
 
     // Check if all cards have imageUrls
-    const hasInvalidCards = input.generatedCards.some(
-      (card) => {
-        // Type guard: check if card has imageUrl property
-        if (typeof card === 'object' && card !== null && 'imageUrl' in card) {
-          return !card.imageUrl
-        }
-        return true // Invalid card structure
+    const hasInvalidCards = input.generatedCards.some(card => {
+      // Type guard: check if card has imageUrl property
+      if (typeof card === 'object' && card !== null && 'imageUrl' in card) {
+        return !card.imageUrl
       }
-    )
+      return true // Invalid card structure
+    })
     if (hasInvalidCards) {
       return {
         isValid: false,

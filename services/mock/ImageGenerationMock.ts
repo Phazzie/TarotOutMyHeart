@@ -18,8 +18,11 @@ import type {
   GenerateImagesOutput,
   RegenerateImageInput,
   RegenerateImageOutput,
+  CancelGenerationInput,
+  CancelGenerationOutput,
   GetGenerationStatusInput,
   GetGenerationStatusOutput,
+  EstimateImageCostOutput,
   GeneratedCard,
   GeneratedCardId,
   GenerationStatus,
@@ -28,13 +31,13 @@ import type {
   ImageGenerationUsage,
 } from '$contracts/ImageGeneration'
 
-import { GROK_IMAGE_MODEL, IMAGE_GENERATION_CONFIG } from '$contracts/ImageGeneration'
+import { GROK_IMAGE_MODEL } from '$contracts/ImageGeneration'
 import type { ServiceResponse } from '$contracts/types/common'
 import type { CardNumber } from '$contracts/PromptGeneration'
 
 /**
  * Mock implementation of ImageGenerationService
- * 
+ *
  * Simulates Grok image generation API with realistic delays and progress tracking.
  */
 export class ImageGenerationMockService implements IImageGenerationService {
@@ -43,9 +46,7 @@ export class ImageGenerationMockService implements IImageGenerationService {
   /**
    * Generate all 22 card images
    */
-  async generateImages(
-    input: GenerateImagesInput
-  ): Promise<ServiceResponse<GenerateImagesOutput>> {
+  async generateImages(input: GenerateImagesInput): Promise<ServiceResponse<GenerateImagesOutput>> {
     const { prompts, onProgress } = input
     const generatedCards: GeneratedCard[] = []
     const usagePerCard: ImageGenerationUsage[] = []
@@ -55,7 +56,8 @@ export class ImageGenerationMockService implements IImageGenerationService {
 
     for (let i = 0; i < prompts.length; i++) {
       const prompt = prompts[i]
-      
+      if (!prompt) continue // Skip if undefined
+
       // Report progress
       if (onProgress) {
         const progress: ImageGenerationProgress = {
@@ -82,7 +84,7 @@ export class ImageGenerationMockService implements IImageGenerationService {
           id: crypto.randomUUID() as GeneratedCardId,
           cardNumber: prompt.cardNumber,
           cardName: prompt.cardName,
-          prompt: prompt.prompt,
+          prompt: prompt.generatedPrompt,
           generationStatus: 'failed',
           retryCount: 1,
           error: 'Simulated API error',
@@ -92,14 +94,22 @@ export class ImageGenerationMockService implements IImageGenerationService {
 
         // Auto-retry
         await this.delay(1000)
-        
+
         // Retry succeeds
-        const retriedCard = await this.generateSingleCard(prompt.cardNumber, prompt.cardName, prompt.prompt)
+        const retriedCard = await this.generateSingleCard(
+          prompt.cardNumber,
+          prompt.cardName,
+          prompt.generatedPrompt
+        )
         generatedCards[generatedCards.length - 1] = retriedCard
         failed--
       } else {
         // Success
-        const card = await this.generateSingleCard(prompt.cardNumber, prompt.cardName, prompt.prompt)
+        const card = await this.generateSingleCard(
+          prompt.cardNumber,
+          prompt.cardName,
+          prompt.generatedPrompt
+        )
         generatedCards.push(card)
       }
 
@@ -107,12 +117,15 @@ export class ImageGenerationMockService implements IImageGenerationService {
       usagePerCard.push({
         cardNumber: prompt.cardNumber,
         model: GROK_IMAGE_MODEL,
-        estimatedCost: 0.10, // $0.10 per image
+        estimatedCost: 0.1, // $0.10 per image
         generationTime: 2500,
         requestId: `mock_img_${crypto.randomUUID()}`,
       })
 
-      this.generatedCards.set(generatedCards[generatedCards.length - 1].id, generatedCards[generatedCards.length - 1])
+      this.generatedCards.set(
+        generatedCards[generatedCards.length - 1].id,
+        generatedCards[generatedCards.length - 1]
+      )
     }
 
     // Final progress
@@ -134,7 +147,7 @@ export class ImageGenerationMockService implements IImageGenerationService {
       totalImages: prompts.length,
       successfulImages: prompts.length - failed,
       failedImages: failed,
-      estimatedCost: prompts.length * 0.10,
+      estimatedCost: prompts.length * 0.1,
       totalGenerationTime: totalTime,
       usagePerCard,
     }
@@ -144,8 +157,10 @@ export class ImageGenerationMockService implements IImageGenerationService {
       data: {
         generatedCards,
         totalUsage,
+        sessionId: crypto.randomUUID(),
         startedAt: new Date(startTime),
         completedAt: new Date(),
+        fullySuccessful: failed === 0,
       },
     }
   }
@@ -159,14 +174,14 @@ export class ImageGenerationMockService implements IImageGenerationService {
     await this.delay(2500)
 
     const { cardNumber, prompt } = input
-    const card = await this.generateSingleCard(cardNumber, prompt.cardName, prompt.prompt)
+    const card = await this.generateSingleCard(cardNumber, prompt.cardName, prompt.generatedPrompt)
 
     this.generatedCards.set(card.id, card)
 
     const usage: ImageGenerationUsage = {
       cardNumber,
       model: GROK_IMAGE_MODEL,
-      estimatedCost: 0.10,
+      estimatedCost: 0.1,
       generationTime: 2500,
       requestId: `mock_regen_img_${crypto.randomUUID()}`,
     }
@@ -181,6 +196,28 @@ export class ImageGenerationMockService implements IImageGenerationService {
   }
 
   /**
+   * Cancel ongoing generation
+   */
+  async cancelGeneration(
+    input: CancelGenerationInput
+  ): Promise<ServiceResponse<CancelGenerationOutput>> {
+    await this.delay(100)
+
+    const { sessionId } = input
+
+    // Mock: just return that we canceled
+    // In real implementation, this would stop the actual generation process
+    return {
+      success: true,
+      data: {
+        canceled: true,
+        completedBeforeCancel: this.generatedCards.size,
+        sessionId,
+      },
+    }
+  }
+
+  /**
    * Get generation status
    */
   async getGenerationStatus(
@@ -188,18 +225,48 @@ export class ImageGenerationMockService implements IImageGenerationService {
   ): Promise<ServiceResponse<GetGenerationStatusOutput>> {
     await this.delay(50)
 
-    const { cardIds } = input
-    const statuses: Record<GeneratedCardId, GenerationStatus> = {}
+    const { sessionId } = input
 
-    for (const cardId of cardIds) {
-      const card = this.generatedCards.get(cardId)
-      statuses[cardId] = card?.generationStatus || 'failed'
+    // Mock: return completion status
+    // In real implementation, this would track actual session progress
+    return {
+      success: true,
+      data: {
+        sessionId,
+        progress: {
+          total: 22,
+          completed: this.generatedCards.size,
+          failed: 0,
+          current: this.generatedCards.size,
+          percentComplete: Math.round((this.generatedCards.size / 22) * 100),
+          estimatedTimeRemaining: (22 - this.generatedCards.size) * 2.5,
+          status: this.generatedCards.size === 22 ? 'Complete!' : 'Generating...',
+        },
+        isComplete: this.generatedCards.size === 22,
+        isCanceled: false,
+      },
     }
+  }
+
+  /**
+   * Estimate cost for generating images
+   */
+  async estimateCost(input: {
+    imageCount: number
+  }): Promise<ServiceResponse<EstimateImageCostOutput>> {
+    await this.delay(50)
+
+    const { imageCount } = input
+    const costPerImage = 0.1 // $0.10 per image
+    const timePerImage = 2.5 // 2.5 seconds per image
 
     return {
       success: true,
       data: {
-        statuses,
+        totalImages: imageCount,
+        costPerImage,
+        totalEstimatedCost: imageCount * costPerImage,
+        estimatedTime: imageCount * timePerImage,
       },
     }
   }
@@ -264,7 +331,7 @@ export class ImageGenerationMockService implements IImageGenerationService {
    * Simulate async delay
    */
   private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms))
+    return new Promise(resolve => setTimeout(resolve, ms))
   }
 }
 
@@ -272,3 +339,9 @@ export class ImageGenerationMockService implements IImageGenerationService {
  * Singleton instance for use throughout the application
  */
 export const imageGenerationMockService = new ImageGenerationMockService()
+
+/**
+ * Export class alias for testing
+ * Tests need to instantiate their own instances to avoid state pollution
+ */
+export { ImageGenerationMockService as ImageGenerationMock }

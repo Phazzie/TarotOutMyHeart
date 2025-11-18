@@ -44,13 +44,13 @@ The component automatically initializes the `DeckDisplayMock` service and manage
 
 ## Keyboard Shortcuts
 
-| Key | Action |
-|-----|--------|
+| Key                | Action                         |
+| ------------------ | ------------------------------ |
 | `Enter` or `Space` | Open lightbox for focused card |
-| `ESC` | Close lightbox |
-| `←` Arrow Left | Previous card in lightbox |
-| `→` Arrow Right | Next card in lightbox |
-| `Tab` | Navigate between cards in grid |
+| `ESC`              | Close lightbox                 |
+| `←` Arrow Left     | Previous card in lightbox      |
+| `→` Arrow Right    | Next card in lightbox          |
+| `Tab`              | Navigate between cards in grid |
 
 ## Example with Custom Cards
 
@@ -69,7 +69,7 @@ The component automatically initializes the `DeckDisplayMock` service and manage
       imageUrl: 'https://example.com/fool.png',
       generationStatus: 'completed',
       generatedAt: new Date(),
-      retryCount: 0
+      retryCount: 0,
     },
     // ... more cards
   ]
@@ -84,13 +84,9 @@ The component uses CSS custom properties from the global theme:
 
 ```css
 /* Key variables used: */
---color-primary: #6b46c1
---color-secondary: #f6ad55
---color-bg: #0f0e17
---glass-bg: rgba(139, 92, 246, 0.1)
---glass-border: rgba(139, 92, 246, 0.2)
---spacing-*: /* responsive spacing */
---transition-*: /* animation timing */
+--color-primary: #6b46c1 --color-secondary: #f6ad55 --color-bg: #0f0e17
+  --glass-bg: rgba(139, 92, 246, 0.1) --glass-border: rgba(139, 92, 246, 0.2)
+  --spacing- *: /* responsive spacing */ --transition- *: /* animation timing */;
 ```
 
 ## State Management
@@ -135,13 +131,13 @@ When implementing the real `DeckDisplayService`:
 
 ```typescript
 // Change this line:
-import { DeckDisplayMock } from '../../../services/mock/DeckDisplayMock';
+import { DeckDisplayMock } from '../../../services/mock/DeckDisplayMock'
 
 // To this (when real service ready):
-import { DeckDisplayReal } from '../../../services/real/DeckDisplayReal';
+import { DeckDisplayReal } from '../../../services/real/DeckDisplayReal'
 
 // Update instantiation:
-const displayService = new DeckDisplayReal();
+const displayService = new DeckDisplayReal()
 ```
 
 ## Accessibility Features
@@ -193,14 +189,14 @@ import DeckGalleryComponent from './DeckGalleryComponent.svelte'
 
 test('renders card grid', () => {
   const { getByRole } = render(DeckGalleryComponent, {
-    props: { cards: mockCards }
+    props: { cards: mockCards },
   })
   expect(getByRole('grid')).toBeInTheDocument()
 })
 
 test('opens lightbox on card click', async () => {
   const { getByLabelText, getByRole } = render(DeckGalleryComponent, {
-    props: { cards: mockCards }
+    props: { cards: mockCards },
   })
 
   await fireEvent.click(getByLabelText('The Fool, card 0'))

@@ -1,6 +1,7 @@
 # DownloadComponent Usage Example
 
 ## Overview
+
 The DownloadComponent provides a complete UI for downloading generated tarot cards, both individually and as a complete ZIP archive.
 
 ## Import and Usage
@@ -16,10 +17,12 @@ The DownloadComponent provides a complete UI for downloading generated tarot car
 ## Features Implemented
 
 ### 1. Download Options Panel
+
 - **Deck Name Input**: Customize the filename for your ZIP download
 - **Include Metadata Checkbox**: Option to include a `metadata.json` file with generation details
 
 ### 2. Download All as ZIP
+
 - **Large Primary Button**: Eye-catching purple gradient button
 - **Progress Tracking**: Real-time progress bar showing:
   - Current step (preparing, fetching, packaging, downloading, complete)
@@ -28,12 +31,14 @@ The DownloadComponent provides a complete UI for downloading generated tarot car
 - **Automatic Validation**: Button disabled until all 22 cards are generated
 
 ### 3. Individual Card Downloads
+
 - **Card Grid**: Responsive grid showing all 22 Major Arcana cards
 - **Card Previews**: Shows generated card images or placeholder gradients
 - **Per-Card Download**: Individual download button for each card
 - **Loading States**: Shows "Downloading..." with spinner on active card
 
 ### 4. Success & Error Handling
+
 - **Success Messages**: Toast-style notification with file size
   - "Download complete! tarot-deck-1699382400000.zip (7.35 MB)"
 - **Error Messages**: Clear error messages with dismiss option
@@ -41,12 +46,14 @@ The DownloadComponent provides a complete UI for downloading generated tarot car
 - **Retry Capability**: Errors are dismissable, allowing retry
 
 ### 5. Accessibility Features
+
 - **ARIA Labels**: All interactive elements properly labeled
 - **Keyboard Navigation**: Full keyboard support for all controls
 - **Screen Reader Support**: Live regions for progress updates
 - **Focus Management**: Proper focus states and disabled states
 
 ### 6. Responsive Design
+
 - **Desktop**: Multi-column card grid, wide download button
 - **Tablet**: 2-3 columns, adjusted padding
 - **Mobile**: 2 columns, full-width buttons, optimized spacing
@@ -57,13 +64,12 @@ The component automatically reads from the global appStore:
 
 ```typescript
 // Reads these values:
-- appStore.generatedCards       // Array of 22 generated cards
-- appStore.styleInputs           // User's style preferences (for metadata)
-- appStore.hasAllCards           // Computed: true when 22 cards completed
-- appStore.loadingStates         // Global loading state management
-
-// Updates these values:
-- appStore.setLoading('downloadingDeck', true/false)
+;-appStore.generatedCards - // Array of 22 generated cards
+  appStore.styleInputs - // User's style preferences (for metadata)
+  appStore.hasAllCards - // Computed: true when 22 cards completed
+  appStore.loadingStates - // Global loading state management
+  // Updates these values:
+  appStore.setLoading('downloadingDeck', true / false)
 ```
 
 ## Contract Integration
@@ -72,29 +78,32 @@ Uses the Download service contract (Seam #7):
 
 ```typescript
 interface DownloadDeckInput {
-  generatedCards: GeneratedCard[]    // All 22 cards
-  styleInputs: StyleInputs            // For metadata
-  deckName?: string                   // Custom name
-  format?: 'zip' | 'individual'       // Always 'zip' in this component
-  includeMetadata?: boolean           // User checkbox
-  onProgress?: (progress) => void     // Real-time updates
+  generatedCards: GeneratedCard[] // All 22 cards
+  styleInputs: StyleInputs // For metadata
+  deckName?: string // Custom name
+  format?: 'zip' | 'individual' // Always 'zip' in this component
+  includeMetadata?: boolean // User checkbox
+  onProgress?: (progress) => void // Real-time updates
 }
 
 interface DownloadCardInput {
-  card: GeneratedCard                 // Single card to download
-  filename?: string                   // Optional custom name
+  card: GeneratedCard // Single card to download
+  filename?: string // Optional custom name
 }
 ```
 
 ## File Naming
 
 ### ZIP File
+
 Pattern: `{deckName}-{timestamp}.zip`
 Example: `tarot-deck-1699382400000.zip`
 
 ### Individual Cards
+
 Pattern: `{number:02d}-{name}.png`
 Examples:
+
 - `00-the-fool.png`
 - `01-the-magician.png`
 - `21-the-world.png`
@@ -122,12 +131,14 @@ When "Include metadata" is checked, the ZIP includes `metadata.json`:
 ## Service Layer
 
 Currently uses **DownloadMock** for development:
+
 - Simulates realistic download timing (100-500ms)
 - Generates realistic file sizes (~350KB per card)
 - Provides progress callbacks
 - Validates input before processing
 
 To switch to real service:
+
 ```typescript
 // In component:
 import { DownloadReal } from '$services/real/Download'
@@ -155,28 +166,33 @@ onProgress: (progress) => {
 ## Validation Logic
 
 Download button is disabled when:
+
 - Less than 22 cards generated
 - Any card has status !== 'completed'
 - Download already in progress
 
 Individual card download disabled when:
+
 - Card has no imageUrl
 - That specific card is currently downloading
 
 ## Styling Theme
 
 **Color Palette**:
+
 - Primary gradient: `#667eea` → `#764ba2` (purple)
 - Success: `#f0fdf4` background, `#166534` text
 - Error: `#fef2f2` background, `#991b1b` text
 - Neutral grays: `#f7fafc`, `#cbd5e0`, `#4a5568`
 
 **Typography**:
+
 - Headings: 1.25rem - 2.5rem, weight 600
 - Body: 0.875rem - 1rem
 - Hints: 0.8125rem, color `#718096`
 
 **Shadows**:
+
 - Cards: `0 2px 4px rgba(0,0,0,0.1)`
 - Hover: `0 4px 8px rgba(0,0,0,0.1)`
 - Button: `0 4px 6px rgba(102,126,234,0.3)`

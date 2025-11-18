@@ -34,16 +34,16 @@ describe('CostCalculation Contract', () => {
           completionTokens: 15000,
           totalTokens: 20000,
           estimatedCost: 0.16,
-          model: 'grok-vision-beta'
+          model: 'grok-vision-beta',
         },
         imageUsage: {
           totalImages: 22,
           successfulImages: 22,
           failedImages: 0,
-          estimatedCost: 2.20,
+          estimatedCost: 2.2,
           totalGenerationTime: 120000,
-          usagePerCard: []
-        }
+          usagePerCard: [],
+        },
       }
 
       const response = await service.calculateTotalCost(input)
@@ -62,16 +62,16 @@ describe('CostCalculation Contract', () => {
           completionTokens: 15000,
           totalTokens: 20000,
           estimatedCost: 0.16,
-          model: 'grok-vision-beta'
+          model: 'grok-vision-beta',
         },
         imageUsage: {
           totalImages: 22,
           successfulImages: 22,
           failedImages: 0,
-          estimatedCost: 2.20,
+          estimatedCost: 2.2,
           totalGenerationTime: 120000,
-          usagePerCard: []
-        }
+          usagePerCard: [],
+        },
       }
 
       const response = await service.calculateTotalCost(input)
@@ -92,16 +92,16 @@ describe('CostCalculation Contract', () => {
           completionTokens: 15000,
           totalTokens: 20000,
           estimatedCost: 0.16,
-          model: 'grok-vision-beta'
+          model: 'grok-vision-beta',
         },
         imageUsage: {
           totalImages: 22,
           successfulImages: 22,
           failedImages: 0,
-          estimatedCost: 2.20,
+          estimatedCost: 2.2,
           totalGenerationTime: 120000,
-          usagePerCard: []
-        }
+          usagePerCard: [],
+        },
       }
 
       const response = await service.calculateTotalCost(input)
@@ -122,16 +122,16 @@ describe('CostCalculation Contract', () => {
           completionTokens: 15000,
           totalTokens: 20000,
           estimatedCost: 0.16,
-          model: 'grok-vision-beta'
+          model: 'grok-vision-beta',
         },
         imageUsage: {
           totalImages: 22,
           successfulImages: 22,
           failedImages: 0,
-          estimatedCost: 2.20,
+          estimatedCost: 2.2,
           totalGenerationTime: 120000,
-          usagePerCard: []
-        }
+          usagePerCard: [],
+        },
       }
 
       const response = await service.calculateTotalCost(input)
@@ -150,16 +150,16 @@ describe('CostCalculation Contract', () => {
           completionTokens: 3000,
           totalTokens: 4000,
           estimatedCost: 0.032,
-          model: 'grok-vision-beta'
+          model: 'grok-vision-beta',
         },
         imageUsage: {
           totalImages: 22,
           successfulImages: 22,
           failedImages: 0,
-          estimatedCost: 2.20,
+          estimatedCost: 2.2,
           totalGenerationTime: 120000,
-          usagePerCard: []
-        }
+          usagePerCard: [],
+        },
       }
 
       const response = await service.calculateTotalCost(input)
@@ -178,16 +178,16 @@ describe('CostCalculation Contract', () => {
           completionTokens: 30000,
           totalTokens: 40000,
           estimatedCost: 0.32,
-          model: 'grok-vision-beta'
+          model: 'grok-vision-beta',
         },
         imageUsage: {
           totalImages: 50,
           successfulImages: 50,
           failedImages: 0,
-          estimatedCost: 5.00,
+          estimatedCost: 5.0,
           totalGenerationTime: 300000,
-          usagePerCard: []
-        }
+          usagePerCard: [],
+        },
       }
 
       const response = await service.calculateTotalCost(input)
@@ -207,16 +207,16 @@ describe('CostCalculation Contract', () => {
           completionTokens: 60000,
           totalTokens: 80000,
           estimatedCost: 0.64,
-          model: 'grok-vision-beta'
+          model: 'grok-vision-beta',
         },
         imageUsage: {
           totalImages: 100,
           successfulImages: 100,
           failedImages: 0,
-          estimatedCost: 10.00,
+          estimatedCost: 10.0,
           totalGenerationTime: 600000,
-          usagePerCard: []
-        }
+          usagePerCard: [],
+        },
       }
 
       const response = await service.calculateTotalCost(input)
@@ -235,17 +235,17 @@ describe('CostCalculation Contract', () => {
           promptTokens: 50000,
           completionTokens: 150000,
           totalTokens: 200000,
-          estimatedCost: 1.60,
-          model: 'grok-vision-beta'
+          estimatedCost: 1.6,
+          model: 'grok-vision-beta',
         },
         imageUsage: {
           totalImages: 200,
           successfulImages: 200,
           failedImages: 0,
-          estimatedCost: 20.00,
+          estimatedCost: 20.0,
           totalGenerationTime: 1200000,
-          usagePerCard: []
-        }
+          usagePerCard: [],
+        },
       }
 
       const response = await service.calculateTotalCost(input)
@@ -264,16 +264,16 @@ describe('CostCalculation Contract', () => {
           completionTokens: 15000,
           totalTokens: 20000,
           estimatedCost: 0.16,
-          model: 'grok-vision-beta'
+          model: 'grok-vision-beta',
         },
         imageUsage: {
           totalImages: 22,
           successfulImages: 22,
           failedImages: 0,
-          estimatedCost: 2.20,
+          estimatedCost: 2.2,
           totalGenerationTime: 120000,
-          usagePerCard: []
-        }
+          usagePerCard: [],
+        },
       }
 
       const response = await service.calculateTotalCost(input)
@@ -291,16 +291,16 @@ describe('CostCalculation Contract', () => {
           completionTokens: 15000,
           totalTokens: 20000,
           estimatedCost: 0.16,
-          model: 'grok-vision-beta'
+          model: 'grok-vision-beta',
         },
         imageUsage: {
           totalImages: 24,
           successfulImages: 22,
           failedImages: 2,
-          estimatedCost: 2.40,
+          estimatedCost: 2.4,
           totalGenerationTime: 150000,
-          usagePerCard: []
-        }
+          usagePerCard: [],
+        },
       }
 
       const response = await service.calculateTotalCost(input)
@@ -316,7 +316,7 @@ describe('CostCalculation Contract', () => {
       const input: EstimateCostInput = {
         imageCount: 22,
         referenceImageCount: 3,
-        estimatedPromptLength: 1000
+        estimatedPromptLength: 1000,
       }
 
       const response = await service.estimateCost(input)
@@ -331,7 +331,7 @@ describe('CostCalculation Contract', () => {
       const input: EstimateCostInput = {
         imageCount: 22,
         referenceImageCount: 3,
-        estimatedPromptLength: 1000
+        estimatedPromptLength: 1000,
       }
 
       const response = await service.estimateCost(input)
@@ -347,7 +347,7 @@ describe('CostCalculation Contract', () => {
       const input: EstimateCostInput = {
         imageCount: 22,
         referenceImageCount: 3,
-        estimatedPromptLength: 1000
+        estimatedPromptLength: 1000,
       }
 
       const response = await service.estimateCost(input)
@@ -362,7 +362,7 @@ describe('CostCalculation Contract', () => {
       const input: EstimateCostInput = {
         imageCount: 22,
         referenceImageCount: 3,
-        estimatedPromptLength: 1000
+        estimatedPromptLength: 1000,
       }
 
       const response = await service.estimateCost(input)
@@ -376,7 +376,7 @@ describe('CostCalculation Contract', () => {
       const input: EstimateCostInput = {
         imageCount: 250,
         referenceImageCount: 5,
-        estimatedPromptLength: 5000
+        estimatedPromptLength: 5000,
       }
 
       const response = await service.estimateCost(input)
@@ -391,7 +391,7 @@ describe('CostCalculation Contract', () => {
     it('should estimate with default prompt length if not provided', async () => {
       const input: EstimateCostInput = {
         imageCount: 22,
-        referenceImageCount: 3
+        referenceImageCount: 3,
       }
 
       const response = await service.estimateCost(input)
@@ -404,7 +404,7 @@ describe('CostCalculation Contract', () => {
       const input: EstimateCostInput = {
         imageCount: 22,
         referenceImageCount: 1,
-        estimatedPromptLength: 500
+        estimatedPromptLength: 500,
       }
 
       const response = await service.estimateCost(input)
@@ -417,7 +417,7 @@ describe('CostCalculation Contract', () => {
       const input: EstimateCostInput = {
         imageCount: 22,
         referenceImageCount: 5,
-        estimatedPromptLength: 2000
+        estimatedPromptLength: 2000,
       }
 
       const response = await service.estimateCost(input)
@@ -432,7 +432,7 @@ describe('CostCalculation Contract', () => {
       const input: FormatCostInput = {
         cost: 2.345,
         format: 'summary',
-        includeWarning: false
+        includeWarning: false,
       }
 
       const response = await service.formatCost(input)
@@ -447,7 +447,7 @@ describe('CostCalculation Contract', () => {
       const input: FormatCostInput = {
         cost: 2.345,
         format: 'detailed',
-        includeWarning: false
+        includeWarning: false,
       }
 
       const response = await service.formatCost(input)
@@ -463,7 +463,7 @@ describe('CostCalculation Contract', () => {
       const input: FormatCostInput = {
         cost: 2.345,
         format: 'minimal',
-        includeWarning: false
+        includeWarning: false,
       }
 
       const response = await service.formatCost(input)
@@ -477,7 +477,7 @@ describe('CostCalculation Contract', () => {
       const input: FormatCostInput = {
         cost: 2.3456789,
         format: 'summary',
-        includeWarning: false
+        includeWarning: false,
       }
 
       const response = await service.formatCost(input)
@@ -488,9 +488,9 @@ describe('CostCalculation Contract', () => {
 
     it('should include warning level in response', async () => {
       const input: FormatCostInput = {
-        cost: 7.50,
+        cost: 7.5,
         format: 'summary',
-        includeWarning: true
+        includeWarning: true,
       }
 
       const response = await service.formatCost(input)
@@ -502,9 +502,9 @@ describe('CostCalculation Contract', () => {
 
     it('should include warning message for high costs when requested', async () => {
       const input: FormatCostInput = {
-        cost: 15.00,
+        cost: 15.0,
         format: 'summary',
-        includeWarning: true
+        includeWarning: true,
       }
 
       const response = await service.formatCost(input)
@@ -516,9 +516,9 @@ describe('CostCalculation Contract', () => {
 
     it('should not include warning message when includeWarning is false', async () => {
       const input: FormatCostInput = {
-        cost: 15.00,
+        cost: 15.0,
         format: 'summary',
-        includeWarning: false
+        includeWarning: false,
       }
 
       const response = await service.formatCost(input)
@@ -531,7 +531,7 @@ describe('CostCalculation Contract', () => {
       const input: FormatCostInput = {
         cost: 0,
         format: 'summary',
-        includeWarning: false
+        includeWarning: false,
       }
 
       const response = await service.formatCost(input)
@@ -544,7 +544,7 @@ describe('CostCalculation Contract', () => {
       const input: FormatCostInput = {
         cost: 0.001,
         format: 'summary',
-        includeWarning: false
+        includeWarning: false,
       }
 
       const response = await service.formatCost(input)
@@ -555,9 +555,9 @@ describe('CostCalculation Contract', () => {
 
     it('should handle costs at threshold boundaries', async () => {
       const input1: FormatCostInput = {
-        cost: 5.00,
+        cost: 5.0,
         format: 'summary',
-        includeWarning: true
+        includeWarning: true,
       }
 
       const response1 = await service.formatCost(input1)
@@ -565,9 +565,9 @@ describe('CostCalculation Contract', () => {
       expect(response1.data?.warningLevel).toBe('warning')
 
       const input2: FormatCostInput = {
-        cost: 10.00,
+        cost: 10.0,
         format: 'summary',
-        includeWarning: true
+        includeWarning: true,
       }
 
       const response2 = await service.formatCost(input2)
@@ -575,9 +575,9 @@ describe('CostCalculation Contract', () => {
       expect(response2.data?.warningLevel).toBe('high')
 
       const input3: FormatCostInput = {
-        cost: 20.00,
+        cost: 20.0,
         format: 'summary',
-        includeWarning: true
+        includeWarning: true,
       }
 
       const response3 = await service.formatCost(input3)
@@ -614,48 +614,48 @@ describe('CostCalculation Contract', () => {
     describe('getWarningLevel()', () => {
       it('should return "none" for costs under $5', () => {
         expect(getWarningLevel(0)).toBe('none')
-        expect(getWarningLevel(2.50)).toBe('none')
+        expect(getWarningLevel(2.5)).toBe('none')
         expect(getWarningLevel(4.99)).toBe('none')
       })
 
       it('should return "warning" for costs $5-$9.99', () => {
-        expect(getWarningLevel(5.00)).toBe('warning')
-        expect(getWarningLevel(7.50)).toBe('warning')
+        expect(getWarningLevel(5.0)).toBe('warning')
+        expect(getWarningLevel(7.5)).toBe('warning')
         expect(getWarningLevel(9.99)).toBe('warning')
       })
 
       it('should return "high" for costs $10-$19.99', () => {
-        expect(getWarningLevel(10.00)).toBe('high')
-        expect(getWarningLevel(15.00)).toBe('high')
+        expect(getWarningLevel(10.0)).toBe('high')
+        expect(getWarningLevel(15.0)).toBe('high')
         expect(getWarningLevel(19.99)).toBe('high')
       })
 
       it('should return "maximum" for costs at or above $20', () => {
-        expect(getWarningLevel(20.00)).toBe('maximum')
-        expect(getWarningLevel(25.00)).toBe('maximum')
-        expect(getWarningLevel(100.00)).toBe('maximum')
+        expect(getWarningLevel(20.0)).toBe('maximum')
+        expect(getWarningLevel(25.0)).toBe('maximum')
+        expect(getWarningLevel(100.0)).toBe('maximum')
       })
     })
 
     describe('getWarningMessage()', () => {
       it('should return undefined for "none" level', () => {
-        expect(getWarningMessage('none', 2.50)).toBeUndefined()
+        expect(getWarningMessage('none', 2.5)).toBeUndefined()
       })
 
       it('should return warning message for "warning" level', () => {
-        const message = getWarningMessage('warning', 7.50)
+        const message = getWarningMessage('warning', 7.5)
         expect(message).toBeDefined()
         expect(message).toContain('$7.50')
       })
 
       it('should return warning message for "high" level', () => {
-        const message = getWarningMessage('high', 15.00)
+        const message = getWarningMessage('high', 15.0)
         expect(message).toBeDefined()
         expect(message).toContain('$15.00')
       })
 
       it('should return warning message for "maximum" level', () => {
-        const message = getWarningMessage('maximum', 25.00)
+        const message = getWarningMessage('maximum', 25.0)
         expect(message).toBeDefined()
         expect(message).toContain('$25.00')
         expect(message).toContain('maximum')
@@ -668,7 +668,7 @@ describe('CostCalculation Contract', () => {
       const estimateInput: EstimateCostInput = {
         imageCount: 22,
         referenceImageCount: 3,
-        estimatedPromptLength: 1000
+        estimatedPromptLength: 1000,
       }
 
       const estimateResponse = await service.estimateCost(estimateInput)
@@ -680,16 +680,16 @@ describe('CostCalculation Contract', () => {
           completionTokens: 15000,
           totalTokens: 20000,
           estimatedCost: 0.16,
-          model: 'grok-vision-beta'
+          model: 'grok-vision-beta',
         },
         imageUsage: {
           totalImages: 22,
           successfulImages: 22,
           failedImages: 0,
-          estimatedCost: 2.20,
+          estimatedCost: 2.2,
           totalGenerationTime: 120000,
-          usagePerCard: []
-        }
+          usagePerCard: [],
+        },
       }
 
       const calculateResponse = await service.calculateTotalCost(calculateInput)
@@ -713,16 +713,16 @@ describe('CostCalculation Contract', () => {
           completionTokens: 15000,
           totalTokens: 20000,
           estimatedCost: 0.16,
-          model: 'grok-vision-beta'
+          model: 'grok-vision-beta',
         },
         imageUsage: {
           totalImages: 22,
           successfulImages: 22,
           failedImages: 0,
-          estimatedCost: 2.20,
+          estimatedCost: 2.2,
           totalGenerationTime: 120000,
-          usagePerCard: []
-        }
+          usagePerCard: [],
+        },
       }
 
       const calculateResponse = await service.calculateTotalCost(calculateInput)
@@ -732,7 +732,7 @@ describe('CostCalculation Contract', () => {
         const formatInput: FormatCostInput = {
           cost: calculateResponse.data.summary.totalCost,
           format: 'detailed',
-          includeWarning: true
+          includeWarning: true,
         }
 
         const formatResponse = await service.formatCost(formatInput)
@@ -746,7 +746,7 @@ describe('CostCalculation Contract', () => {
       const estimateResponse = await service.estimateCost({
         imageCount: 22,
         referenceImageCount: 3,
-        estimatedPromptLength: 1000
+        estimatedPromptLength: 1000,
       })
       expect(estimateResponse.success).toBe(true)
 
@@ -757,16 +757,16 @@ describe('CostCalculation Contract', () => {
           completionTokens: 15000,
           totalTokens: 20000,
           estimatedCost: 0.16,
-          model: 'grok-vision-beta'
+          model: 'grok-vision-beta',
         },
         imageUsage: {
           totalImages: 22,
           successfulImages: 22,
           failedImages: 0,
-          estimatedCost: 2.20,
+          estimatedCost: 2.2,
           totalGenerationTime: 120000,
-          usagePerCard: []
-        }
+          usagePerCard: [],
+        },
       })
       expect(calculateResponse.success).toBe(true)
 
@@ -775,7 +775,7 @@ describe('CostCalculation Contract', () => {
         const formatResponse = await service.formatCost({
           cost: calculateResponse.data.summary.totalCost,
           format: 'summary',
-          includeWarning: true
+          includeWarning: true,
         })
         expect(formatResponse.success).toBe(true)
       }
@@ -788,16 +788,16 @@ describe('CostCalculation Contract', () => {
           completionTokens: 30000,
           totalTokens: 40000,
           estimatedCost: 0.32,
-          model: 'grok-vision-beta'
+          model: 'grok-vision-beta',
         },
         imageUsage: {
           totalImages: 50,
           successfulImages: 50,
           failedImages: 0,
-          estimatedCost: 5.00,
+          estimatedCost: 5.0,
           totalGenerationTime: 300000,
-          usagePerCard: []
-        }
+          usagePerCard: [],
+        },
       })
 
       expect(calculateResponse.success).toBe(true)
@@ -806,7 +806,7 @@ describe('CostCalculation Contract', () => {
         const formatResponse = await service.formatCost({
           cost: calculateResponse.data.summary.totalCost,
           format: 'summary',
-          includeWarning: true
+          includeWarning: true,
         })
 
         expect(formatResponse.success).toBe(true)

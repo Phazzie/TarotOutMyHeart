@@ -39,7 +39,7 @@ import type { ServiceResponse } from '$contracts/types/common'
 
 /**
  * Mock implementation of ImageUploadService
- * 
+ *
  * Simulates client-side image upload and validation without server.
  * Stores images in memory and generates mock preview URLs.
  */
@@ -77,7 +77,7 @@ export class ImageUploadMockService implements IImageUploadService {
     for (let i = 0; i < files.length && uploadedImages.length < availableSlots; i++) {
       const file = files[i]
       if (!file) continue // Skip if file is undefined
-      
+
       const validation = this.validateSingleFile(file)
 
       if (validation.errors.length > 0) {
@@ -87,7 +87,7 @@ export class ImageUploadMockService implements IImageUploadService {
 
       // Check for duplicates (same filename and size)
       const isDuplicate = Array.from(this.images.values()).some(
-        (img) => img.fileName === file.name && img.fileSize === file.size
+        img => img.fileName === file.name && img.fileSize === file.size
       )
 
       if (isDuplicate) {
@@ -102,7 +102,7 @@ export class ImageUploadMockService implements IImageUploadService {
       // Create uploaded image
       const imageId = this.generateImageId()
       const previewUrl = this.createMockPreviewUrl(file)
-      
+
       const uploadedImage: UploadedImage = {
         id: imageId,
         file,
@@ -180,13 +180,12 @@ export class ImageUploadMockService implements IImageUploadService {
   /**
    * Validate images without uploading
    */
-  async validateImages(
-    input: ValidateImagesInput
-  ): Promise<ServiceResponse<ValidateImagesOutput>> {
+  async validateImages(input: ValidateImagesInput): Promise<ServiceResponse<ValidateImagesOutput>> {
     await this.delay(50)
 
     const { files } = input
-    const validImages: { isValid: boolean; imageId?: ImageId; errors: ImageValidationError[] }[] = []
+    const validImages: { isValid: boolean; imageId?: ImageId; errors: ImageValidationError[] }[] =
+      []
     const invalidImages: ImageValidationError[] = []
 
     // Check count
@@ -219,7 +218,7 @@ export class ImageUploadMockService implements IImageUploadService {
     // Validate each file
     for (const file of files) {
       const validation = this.validateSingleFile(file)
-      
+
       if (validation.errors.length > 0) {
         invalidImages.push(...validation.errors)
         validImages.push({
@@ -297,9 +296,9 @@ export class ImageUploadMockService implements IImageUploadService {
   /**
    * Validate a single file
    */
-  private validateSingleFile(file: File): { 
-    isValid: boolean; 
-    errors: ImageValidationError[] 
+  private validateSingleFile(file: File): {
+    isValid: boolean
+    errors: ImageValidationError[]
   } {
     const errors: ImageValidationError[] = []
 
@@ -367,7 +366,7 @@ export class ImageUploadMockService implements IImageUploadService {
    * Simulate async delay
    */
   private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms))
+    return new Promise(resolve => setTimeout(resolve, ms))
   }
 }
 
@@ -375,3 +374,9 @@ export class ImageUploadMockService implements IImageUploadService {
  * Singleton instance for use throughout the application
  */
 export const imageUploadMockService = new ImageUploadMockService()
+
+/**
+ * Export class alias for testing
+ * Tests need to instantiate their own instances to avoid state pollution
+ */
+export { ImageUploadMockService as ImageUploadMock }

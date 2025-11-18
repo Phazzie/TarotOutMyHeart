@@ -53,6 +53,7 @@
 **Goal**: Define all seam contracts and build complete mock services
 
 ##### Contract Definition Phase
+
 - [ ] **Seam 1: Image Upload**
   - [ ] Define `IImageUploadService` contract
   - [ ] Define `UploadedImage` type
@@ -105,6 +106,7 @@
   - [ ] Export from `contracts/index.ts`
 
 ##### Contract Validation Phase
+
 - [ ] All contracts compile (`npm run check` passes)
 - [ ] No `any` types in contracts (`git grep "as any" contracts/` returns nothing)
 - [ ] All contracts documented in SEAMSLIST.md
@@ -112,6 +114,7 @@
 - [ ] All contracts trace to requirements (use `@requirement` tags)
 
 ##### Mock Service Implementation Phase
+
 - [ ] **Mock Image Upload Service**
   - [ ] Create `services/mock/ImageUploadMock.ts`
   - [ ] Implement contract interface
@@ -162,6 +165,7 @@
   - [ ] Add to service factory
 
 ##### Testing Phase
+
 - [ ] **Contract Tests** (`tests/contracts/`)
   - [ ] Test ImageUpload mock matches contract
   - [ ] Test StyleInput mock matches contract
@@ -183,6 +187,7 @@
   - [ ] All mock tests pass (`npm run test:mocks`)
 
 ##### Sprint 1 Completion Criteria
+
 - [ ] All 7 seams documented in SEAMSLIST.md
 - [ ] All contracts compile without errors
 - [ ] All mock services implemented
@@ -199,6 +204,7 @@
 **Goal**: Build complete UI working with mock services
 
 ##### Component Development
+
 - [ ] **Upload Component** (`src/lib/components/Upload/`)
   - [ ] Create `ImageUpload.svelte`
   - [ ] Drag-and-drop functionality
@@ -264,6 +270,7 @@
   - [ ] Test with mock service
 
 ##### Page Development
+
 - [ ] **Home/Landing Page** (`src/routes/+page.svelte`)
   - [ ] Upload section
   - [ ] Style input section
@@ -286,6 +293,7 @@
   - [ ] Server-side data loading (`+page.server.ts`)
 
 ##### Styling & Responsiveness
+
 - [ ] Global styles (`src/app.css`)
 - [ ] Mobile responsive (breakpoints: 640px, 768px, 1024px)
 - [ ] Loading states for all async operations
@@ -294,6 +302,7 @@
 - [ ] Dark mode support (optional)
 
 ##### Sprint 2 Completion Criteria
+
 - [ ] All components built and styled
 - [ ] All pages functional with mocks
 - [ ] Mobile responsive on 3 breakpoints
@@ -304,6 +313,7 @@
 - [ ] Demo: Complete user flow works with mocks
 
 **Manual Testing Checklist**:
+
 - [ ] Upload 1 image, generate deck
 - [ ] Upload 5 images, generate deck
 - [ ] Try to upload 6 images (should prevent)
@@ -325,6 +335,7 @@
 **Goal**: Replace mocks with real Grok API services
 
 ##### Pre-Integration Checks
+
 - [ ] Grok API key obtained and configured
 - [ ] All contract tests passing
 - [ ] All mock tests passing
@@ -332,6 +343,7 @@
 - [ ] SEAMSLIST.md up to date
 
 ##### Real Service Implementation
+
 - [ ] **Real Prompt Generation Service** (`services/real/PromptGenerationService.ts`)
   - [ ] Create service file
   - [ ] Implement `IPromptGenerationService` contract
@@ -356,6 +368,7 @@
   - [ ] Test manually with real API
 
 ##### API Integration Details
+
 - [ ] **Error Handling**
   - [ ] API rate limit errors (429) → retry with backoff
   - [ ] API timeout errors → retry
@@ -375,6 +388,7 @@
   - [ ] Log costs for monitoring
 
 ##### Integration Testing
+
 - [ ] **Integration Tests** (`tests/integration/`)
   - [ ] Test PromptGeneration with real API
   - [ ] Test ImageGeneration with real API
@@ -384,6 +398,7 @@
   - [ ] All integration tests pass (`npm run test:integration`)
 
 ##### Switch from Mocks to Real Services
+
 - [ ] Set `USE_MOCKS=false` in `.env` or service factory
 - [ ] Run integration readiness checks
 - [ ] Test complete flow manually
@@ -391,6 +406,7 @@
 - [ ] Verify error handling works
 
 ##### Sprint 3 Completion Criteria
+
 - [ ] Real services implemented and tested
 - [ ] Integration tests passing
 - [ ] Error handling robust
@@ -401,6 +417,7 @@
 - [ ] Demo: Generate real deck from Grok API
 
 **Real API Testing Checklist**:
+
 - [ ] Generate 1 deck successfully
 - [ ] Generate 3 decks in a row (test rate limiting)
 - [ ] Simulate API failure (test retries)
@@ -415,6 +432,7 @@
 **Goal**: Production-ready MVP deployed to Vercel
 
 ##### Error Handling & UX
+
 - [ ] Error boundaries for all major sections
 - [ ] User-friendly error messages (no technical jargon)
 - [ ] Toast notifications for success/error
@@ -422,6 +440,7 @@
 - [ ] Clear error recovery paths
 
 ##### Loading States & Animations
+
 - [ ] Skeleton loaders for all async content
 - [ ] Smooth transitions between states
 - [ ] Progress animations for generation
@@ -429,6 +448,7 @@
 - [ ] Loading spinners with meaningful text
 
 ##### Mobile Responsive Tweaks
+
 - [ ] Test on real mobile devices (iOS, Android)
 - [ ] Fix any mobile-specific bugs
 - [ ] Optimize touch targets (min 44x44px)
@@ -436,18 +456,21 @@
 - [ ] Optimize image loading for mobile
 
 ##### Cost Display & Warnings
+
 - [ ] Show cost estimate before generation
 - [ ] Warning if cost exceeds $0.01
 - [ ] Confirmation dialog before expensive operations
 - [ ] Display running total (if multiple generations)
 
 ##### Download ZIP Functionality
+
 - [ ] Implement ZIP creation (all 22 cards)
 - [ ] Include metadata file in ZIP (prompt details, style inputs)
 - [ ] Test ZIP generation on different browsers
 - [ ] Handle large file sizes
 
 ##### Security Audit
+
 - [ ] Validate all user inputs (XSS prevention)
 - [ ] Sanitize file uploads
 - [ ] Rate limit API endpoints (prevent abuse)
@@ -456,6 +479,7 @@
 - [ ] CSP headers configured
 
 ##### Performance Optimization
+
 - [ ] Optimize image loading (lazy loading)
 - [ ] Minimize bundle size
 - [ ] Code splitting for routes
@@ -467,6 +491,7 @@
 **Important**: Vercel deployment is automatic via GitHub integration. Your GitHub Actions workflows handle the testing, but Vercel handles the actual deployment.
 
 ###### Initial Vercel Setup (Do Once)
+
 - [ ] Go to [vercel.com/new](https://vercel.com/new)
 - [ ] Import `Phazzie/TarotOutMyHeart` repository
 - [ ] Configure project settings:
@@ -488,6 +513,7 @@
 ###### Deployment Workflows Explained
 
 **1. Preview Deployments (PRs)** 🔍
+
 - **Trigger**: When you open/update a Pull Request
 - **Workflow**: `.github/workflows/deploy-preview.yml`
 - **What happens**:
@@ -501,6 +527,7 @@
 - **When to use**: Every feature branch before merging
 
 **2. Production Deployments (main branch)** 🚀
+
 - **Trigger**: When you push/merge to `main` branch
 - **Workflow**: `.github/workflows/deploy-production.yml`
 - **What happens**:
@@ -514,6 +541,7 @@
 - **When to use**: After Sprint 3+ when real API is integrated
 
 **3. Continuous Integration (CI)** ⚙️
+
 - **Trigger**: Every push to `main`/`develop` or PR
 - **Workflow**: `.github/workflows/ci.yml`
 - **What happens**:
@@ -528,12 +556,14 @@
 ###### Deployment Checklist (Sprint 4)
 
 **Step 1: Vercel Project Setup**
+
 - [ ] Create Vercel account (if not exists)
 - [ ] Import GitHub repository to Vercel
 - [ ] Vercel project created successfully
 - [ ] Note production URL: `https://tarot-up-my-heart.vercel.app` (or similar)
 
 **Step 2: Configure Environment Variables in Vercel**
+
 - [ ] Navigate to Vercel dashboard → Project Settings → Environment Variables
 - [ ] Add Production environment variables:
   - [ ] `XAI_API_KEY` → Your API key → Production environment
@@ -547,11 +577,13 @@
   - [ ] `NODE_ENV` → `development` → Preview environment
 
 **Step 3: Configure GitHub Secrets (for CI)**
+
 - [ ] Go to GitHub repository → Settings → Secrets and variables → Actions
 - [ ] Add repository secrets:
   - [ ] `XAI_API_KEY` → Your API key (for integration tests)
 
 **Step 4: Deploy to Preview Environment**
+
 - [ ] Create feature branch: `git checkout -b test-deployment`
 - [ ] Make small change (e.g., update README)
 - [ ] Commit and push: `git push origin test-deployment`
@@ -562,6 +594,7 @@
 - [ ] Verify preview uses mock services (check network tab)
 
 **Step 5: Deploy to Production**
+
 - [ ] Merge PR to main branch (or push directly to main)
 - [ ] GitHub Actions runs full test suite
 - [ ] Wait for all checks to pass (✅ green checkmarks)
@@ -571,6 +604,7 @@
 - [ ] Verify production deployment successful
 
 **Step 6: Verify Production Deployment**
+
 - [ ] Visit production URL
 - [ ] Test complete user flow:
   - [ ] Upload images
@@ -585,6 +619,7 @@
 - [ ] Test on different browsers
 
 **Step 7: Monitor Post-Deployment**
+
 - [ ] Check Vercel analytics (if enabled)
 - [ ] Monitor Vercel logs for errors
 - [ ] Set up error tracking (Sentry recommended, optional)
@@ -594,12 +629,14 @@
 ###### Deployment Timeline
 
 **When to Deploy Preview** (Throughout Development):
+
 - Sprint 1: After mocks implemented → Preview with mocks
 - Sprint 2: After each UI component → Preview with mocks
 - Sprint 3: After Grok integration → Preview with real API (careful!)
 - Sprint 4: Final polish → Preview before production
 
 **When to Deploy Production**:
+
 - ✅ **Sprint 4 End**: After all Sprint 4 checklist items complete
 - ✅ **After**: All tests passing (contract, mock, integration)
 - ✅ **After**: Security audit passed
@@ -611,6 +648,7 @@
 ###### Deployment Best Practices
 
 **DO** ✅:
+
 - Deploy preview for every feature branch
 - Test preview thoroughly before merging to main
 - Deploy to production during low-traffic times (if expecting users)
@@ -620,6 +658,7 @@
 - Create GitHub release tags for production deployments (v1.0.0, etc.)
 
 **DON'T** ❌:
+
 - Don't deploy to production without passing all tests
 - Don't commit API keys to repository (use environment variables)
 - Don't deploy to production before Sprint 3 (no real API integration yet)
@@ -630,23 +669,27 @@
 ###### Troubleshooting Deployments
 
 **Issue: Vercel deployment fails with build error**
+
 - Check Vercel logs for specific error
 - Run `npm run build` locally to reproduce
 - Fix errors and push again
 - Ensure all environment variables are set in Vercel
 
 **Issue: GitHub Actions fail but Vercel succeeds**
+
 - GitHub Actions test your code, Vercel just deploys
 - Fix the failing tests (contract, mock, integration)
 - Don't merge to main until GitHub Actions pass
 
 **Issue: Production deployment works but app doesn't function**
+
 - Check browser console for errors
 - Verify environment variables in Vercel (especially `USE_MOCKS=false`)
 - Check Vercel function logs (serverless functions)
 - Verify API key is valid and has credits
 
 **Issue: Preview deployment shows real API calls (costing money)**
+
 - Verify `USE_MOCKS=true` in Vercel preview environment variables
 - Check service factory is reading `USE_MOCKS` correctly
 - Add cost warnings to prevent accidental expensive operations
@@ -673,6 +716,7 @@ If production deployment breaks:
    - Deploy immediately
 
 ###### Post-Deployment Checklist
+
 - [ ] Production URL accessible
 - [ ] All features working
 - [ ] No console errors
@@ -683,6 +727,7 @@ If production deployment breaks:
 - [ ] Announce launch! 🎉
 
 ##### Documentation
+
 - [ ] Update README.md with:
   - [ ] Live demo link
   - [ ] How to use the app
@@ -692,6 +737,7 @@ If production deployment breaks:
 - [ ] Update CHANGELOG.md for v1.0.0
 
 ##### Sprint 4 Completion Criteria
+
 - [ ] All polish items complete
 - [ ] Security audit passed
 - [ ] Performance metrics met (Lighthouse >80)
@@ -701,6 +747,7 @@ If production deployment breaks:
 - [ ] Demo: Public URL works for end-users
 
 **Pre-Launch Checklist**:
+
 - [ ] Test complete flow on production
 - [ ] Test on 3+ browsers (Chrome, Firefox, Safari)
 - [ ] Test on 3+ devices (mobile, tablet, desktop)
@@ -715,6 +762,7 @@ If production deployment breaks:
 ### 📊 Post-MVP Tracking
 
 #### Success Metrics (Track After Launch)
+
 - [ ] **MVP Launch Goals (End of Sprint 4)**
   - [ ] Generate complete 22-card deck in <5 minutes ✅ Target met
   - [ ] <2% generation failure rate ✅ Target met
@@ -733,6 +781,7 @@ If production deployment breaks:
 ### 🚀 Future Sprints (Phase 2 & 3)
 
 #### Sprint 5: User Authentication
+
 - [ ] Email/password authentication
 - [ ] User registration flow
 - [ ] Login/logout functionality
@@ -740,6 +789,7 @@ If production deployment breaks:
 - [ ] Protected routes
 
 #### Sprint 6: Database Integration
+
 - [ ] Database setup (PostgreSQL/MySQL)
 - [ ] Save generated decks
 - [ ] User dashboard (view saved decks)
@@ -747,18 +797,21 @@ If production deployment breaks:
 - [ ] Generation history
 
 #### Sprint 7: Regeneration & Refinement
+
 - [ ] Edit individual card prompts
 - [ ] Regenerate specific cards
 - [ ] "Use as reference" feedback loop
 - [ ] Side-by-side comparison view
 
 #### Sprint 8: Social Features
+
 - [ ] Share decks via public URL
 - [ ] Public deck gallery
 - [ ] Favorites/starring
 - [ ] Social login (Google, GitHub)
 
 #### Sprint 9+: Advanced Features
+
 - [ ] Custom card backs
 - [ ] Minor Arcana generation (56 cards)
 - [ ] Print-ready export (300 DPI)
@@ -769,6 +822,7 @@ If production deployment breaks:
 ---
 
 ## Product Vision
+
 An AI-powered Major Arcana tarot card generator that transforms user-provided style references into 22 unique, cohesive tarot card designs. Built with Seam-Driven Development for reliability and Grok AI for generation.
 
 Core User Flow
@@ -873,13 +927,16 @@ Could Have:
 Your repository has 3 automated workflows that run via GitHub Actions:
 
 #### 1. **CI Workflow** (`.github/workflows/ci.yml`)
+
 **Purpose**: Continuous Integration - ensures code quality on every commit
 
 **Triggers**:
+
 - Every push to `main` or `develop` branches
 - Every Pull Request to `main` or `develop`
 
 **What it does**:
+
 - **Lint Job**: Runs ESLint, type checking, and format checking
 - **Contract Tests Job**: Validates mocks match contracts
 - **Mock Tests Job**: Validates mock service behavior
@@ -888,25 +945,30 @@ Your repository has 3 automated workflows that run via GitHub Actions:
 - **All Checks Job**: Confirms all above jobs passed
 
 **When it matters**:
+
 - ✅ Must pass before merging any PR
 - ✅ Blocks deployment if tests fail
 - ✅ Runs automatically - no manual action needed
 
 **Configuration needed**:
+
 - Add `XAI_API_KEY` to GitHub Secrets (for integration tests)
 - Located at: Repository → Settings → Secrets and variables → Actions
 
 ---
 
 #### 2. **Deploy Preview Workflow** (`.github/workflows/deploy-preview.yml`)
+
 **Purpose**: Automatic preview deployments for Pull Requests
 
 **Triggers**:
+
 - When a Pull Request is opened
 - When commits are pushed to a PR branch
 - When a PR is reopened
 
 **What it does**:
+
 1. Runs contract tests
 2. Runs mock tests
 3. Builds project with `USE_MOCKS=true`
@@ -914,24 +976,29 @@ Your repository has 3 automated workflows that run via GitHub Actions:
 5. Vercel automatically creates preview URL
 
 **When it matters**:
+
 - ✅ Every feature branch gets a live preview
 - ✅ Test changes before merging
 - ✅ Safe - uses mocks (no API costs)
 
 **Configuration needed**:
+
 - Vercel GitHub integration must be enabled
 - No secrets required (uses mocks)
 
 ---
 
 #### 3. **Deploy Production Workflow** (`.github/workflows/deploy-production.yml`)
+
 **Purpose**: Production deployment validation
 
 **Triggers**:
+
 - Every push to `main` branch
 - Manual trigger via GitHub Actions UI
 
 **What it does**:
+
 1. Runs ALL tests (contract, mock, integration)
 2. Runs type checking and linting
 3. Builds for production with `USE_MOCKS=false`
@@ -939,11 +1006,13 @@ Your repository has 3 automated workflows that run via GitHub Actions:
 5. Vercel automatically deploys to production
 
 **When it matters**:
+
 - ✅ Validates production readiness before Vercel deploys
 - ✅ Blocks bad code from reaching users
 - ✅ Creates audit trail of deployments
 
 **Configuration needed**:
+
 - Vercel environment variables must be set
 - `XAI_API_KEY` in GitHub Secrets
 
@@ -952,9 +1021,11 @@ Your repository has 3 automated workflows that run via GitHub Actions:
 ### Additional Workflows (Included but not critical for MVP)
 
 #### 4. **SDD Compliance Workflow** (`.github/workflows/sdd-compliance.yml`)
+
 **Purpose**: Enforces Seam-Driven Development rules
 
 **What it checks**:
+
 - No `any` types in code
 - All contracts documented in SEAMSLIST.md
 - No direct contract modifications (must create v2)
@@ -964,9 +1035,11 @@ Your repository has 3 automated workflows that run via GitHub Actions:
 ---
 
 #### 5. **Security Workflow** (`.github/workflows/security.yml`)
+
 **Purpose**: CodeQL security scanning
 
 **What it checks**:
+
 - Security vulnerabilities in code
 - Dependency vulnerabilities
 - Code quality issues
@@ -976,6 +1049,7 @@ Your repository has 3 automated workflows that run via GitHub Actions:
 ---
 
 #### 6. **Release Workflow** (`.github/workflows/release.yml`)
+
 **Purpose**: Automates version releases
 
 **When to use**: After major milestones (v1.0.0, v1.1.0, etc.)
@@ -987,27 +1061,34 @@ Your repository has 3 automated workflows that run via GitHub Actions:
 **Required Setup (Do in Sprint 4 before first deployment)**:
 
 1. **GitHub Secrets** (for CI/CD):
+
    ```
    Repository → Settings → Secrets and variables → Actions → New repository secret
    ```
+
    - Add: `XAI_API_KEY` = Your Grok API key
 
 2. **Vercel Integration**:
+
    ```
    Vercel Dashboard → Project → Settings → Git Integration
    ```
+
    - Ensure GitHub integration is connected
    - Ensure automatic deployments are enabled
 
 3. **Branch Protection** (Recommended):
+
    ```
    Repository → Settings → Branches → Add rule for 'main'
    ```
+
    - ☑ Require status checks to pass before merging
    - ☑ Require branches to be up to date before merging
    - Select checks: `CI / All CI Checks Passed`
 
 **Optional Setup**:
+
 - Enable GitHub Discussions (for user feedback)
 - Enable GitHub Issues (for bug tracking)
 - Set up GitHub Projects (for project management)
@@ -1036,6 +1117,7 @@ Your repository has 3 automated workflows that run via GitHub Actions:
 ```
 
 **Cost implications**:
+
 - **CI**: Free (GitHub Actions free tier: 2000 min/month)
 - **Preview**: Free Vercel hosting, mock services (no API costs)
 - **Production**: Free Vercel hosting, real API costs (Grok charges)
@@ -1045,6 +1127,7 @@ Your repository has 3 automated workflows that run via GitHub Actions:
 ### Seam Definitions
 
 #### Seam 1: Image Upload Service
+
 Contract: IImageUploadService
 
 Input: File[] (1-5 images)
@@ -1197,4 +1280,3 @@ Out of Scope (Not Building)
 ❌ Blockchain/NFT features
 ❌ Mobile native apps
 This PRD should be saved to /home/user/TarotUpMyHeart/PRD.md - want me to create it?
-

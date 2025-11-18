@@ -50,7 +50,7 @@
     onRetryFailed?: (cardNumber: number) => void
   }
 
-  let { onCancel, onRetryFailed }: Props = $props()
+  const { onCancel, onRetryFailed }: Props = $props()
 
   // ========================================================================
   // DERIVED STATE (from appStore)
@@ -59,73 +59,57 @@
   /**
    * Current generation progress (null when not generating)
    */
-  let progress = $derived(appStore.generationProgress)
+  const progress = $derived(appStore.generationProgress)
 
   /**
    * Whether generation is currently running
    */
-  let isGenerating = $derived(appStore.isGenerating)
+  const isGenerating = $derived(appStore.isGenerating)
 
   /**
    * Percent complete (0-100)
    */
-  let percentComplete = $derived(
-    progress?.percentComplete ?? 0
-  )
+  const percentComplete = $derived(progress?.percentComplete ?? 0)
 
   /**
    * Cards completed successfully
    */
-  let completedCount = $derived(
-    progress?.completed ?? 0
-  )
+  const completedCount = $derived(progress?.completed ?? 0)
 
   /**
    * Total cards to generate (always 22)
    */
-  let totalCards = $derived(
-    progress?.total ?? 22
-  )
+  const totalCards = $derived(progress?.total ?? 22)
 
   /**
    * Failed card count
    */
-  let failedCount = $derived(
-    progress?.failed ?? 0
-  )
+  const failedCount = $derived(progress?.failed ?? 0)
 
   /**
    * Current card being generated
    */
-  let currentCardNumber = $derived(
-    progress?.current
-  )
+  const currentCardNumber = $derived(progress?.current)
 
   /**
    * Current status message
    */
-  let statusMessage = $derived(
-    progress?.status ?? 'Waiting to start...'
-  )
+  const statusMessage = $derived(progress?.status ?? 'Waiting to start...')
 
   /**
    * Estimated time remaining (seconds)
    */
-  let timeRemaining = $derived(
-    progress?.estimatedTimeRemaining ?? 0
-  )
+  const timeRemaining = $derived(progress?.estimatedTimeRemaining ?? 0)
 
   /**
    * Whether all cards are complete
    */
-  let isComplete = $derived(
-    completedCount === 22
-  )
+  const isComplete = $derived(completedCount === 22)
 
   /**
    * Failed cards from generated cards
    */
-  let failedCards = $derived(
+  const failedCards = $derived(
     appStore.generatedCards.filter(card => card.generationStatus === 'failed')
   )
 
@@ -136,7 +120,7 @@
   /**
    * Format time remaining as human-readable string
    */
-  let formattedTimeRemaining = $derived(() => {
+  const formattedTimeRemaining = $derived(() => {
     if (!timeRemaining || timeRemaining <= 0) return null
 
     const minutes = Math.floor(timeRemaining / 60)
@@ -151,7 +135,7 @@
   /**
    * Status icon for current card
    */
-  let statusIcon = $derived(() => {
+  const statusIcon = $derived(() => {
     if (isComplete) return '✓'
     if (isGenerating) return '⟳'
     return '○'
@@ -245,7 +229,8 @@
     <div class="failed-cards-section" role="alert">
       <h3 class="failed-cards-title">
         <span class="warning-icon" aria-hidden="true">⚠️</span>
-        {failedCount} {failedCount === 1 ? 'card' : 'cards'} failed
+        {failedCount}
+        {failedCount === 1 ? 'card' : 'cards'} failed
       </h3>
       <div class="failed-cards-list">
         {#each failedCards as card}
@@ -289,11 +274,7 @@
   <!-- Cancel Button -->
   {#if isGenerating && !isComplete && onCancel}
     <div class="actions-section">
-      <button
-        class="cancel-button"
-        onclick={handleCancel}
-        aria-label="Cancel generation"
-      >
+      <button class="cancel-button" onclick={handleCancel} aria-label="Cancel generation">
         Cancel Generation
       </button>
     </div>
@@ -383,7 +364,8 @@
   }
 
   @keyframes pulse {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
     }
     50% {
@@ -555,7 +537,9 @@
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s, transform 0.1s;
+    transition:
+      background 0.2s,
+      transform 0.1s;
   }
 
   .retry-button:hover {
@@ -591,7 +575,8 @@
   }
 
   @keyframes celebrate {
-    0%, 100% {
+    0%,
+    100% {
       transform: scale(1) rotate(0deg);
     }
     25% {

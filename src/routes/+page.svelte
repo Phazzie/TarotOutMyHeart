@@ -20,13 +20,11 @@
     <h1 class="title">TarotOutMyHeart</h1>
     <p class="subtitle">AI-Powered Major Arcana Deck Generator</p>
     <p class="description">
-      Create your own unique 22-card Major Arcana tarot deck using AI image generation.
-      Upload reference images, define your style, and let AI bring your vision to life.
+      Create your own unique 22-card Major Arcana tarot deck using AI image generation. Upload
+      reference images, define your style, and let AI bring your vision to life.
     </p>
     <div class="cta">
-      <a href="/upload" class="primary-button">
-        Start Creating Your Deck
-      </a>
+      <a href="/upload" class="primary-button"> Start Creating Your Deck </a>
     </div>
   </header>
 
@@ -37,24 +35,24 @@
         <div class="step-number">1</div>
         <h3>Upload & Style</h3>
         <p>
-          Upload 1-5 reference images and define your deck's visual style
-          (theme, tone, concept, and description).
+          Upload 1-5 reference images and define your deck's visual style (theme, tone, concept, and
+          description).
         </p>
       </div>
       <div class="step">
         <div class="step-number">2</div>
         <h3>Generate</h3>
         <p>
-          AI generates unique prompts for all 22 Major Arcana cards, then creates
-          high-quality images based on your style.
+          AI generates unique prompts for all 22 Major Arcana cards, then creates high-quality
+          images based on your style.
         </p>
       </div>
       <div class="step">
         <div class="step-number">3</div>
         <h3>Download</h3>
         <p>
-          View your complete deck in a gallery and download individual cards or
-          the entire deck as a ZIP file.
+          View your complete deck in a gallery and download individual cards or the entire deck as a
+          ZIP file.
         </p>
       </div>
     </div>
@@ -99,17 +97,15 @@
   <section class="info">
     <h2>Development Status</h2>
     <p class="status-text">
-      This application is built using Seam-Driven Development (SDD) methodology.
-      Sprint 2 is in progress: UI components are being developed.
+      This application is built using Seam-Driven Development (SDD) methodology. Sprint 2 is in
+      progress: UI components are being developed.
     </p>
     <div class="links">
       <a href="https://github.com/Phazzie/TarotUpMyHeart" target="_blank" rel="noopener noreferrer">
         GitHub Repository
       </a>
       <span class="separator">•</span>
-      <a href="/upload">
-        Get Started
-      </a>
+      <a href="/upload"> Get Started </a>
     </div>
   </section>
 </div>
@@ -163,7 +159,9 @@
     text-decoration: none;
     border-radius: 8px;
     font-weight: 600;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
 

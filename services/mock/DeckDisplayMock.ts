@@ -34,7 +34,7 @@ import type { ServiceResponse } from '$contracts/types/common'
 
 /**
  * Mock implementation of DeckDisplayService
- * 
+ *
  * Manages display state for the tarot card gallery.
  */
 export class DeckDisplayMockService implements IDeckDisplayService {
@@ -108,9 +108,7 @@ export class DeckDisplayMockService implements IDeckDisplayService {
   /**
    * Open lightbox for a card
    */
-  async openLightbox(
-    input: OpenLightboxInput
-  ): Promise<ServiceResponse<OpenLightboxOutput>> {
+  async openLightbox(input: OpenLightboxInput): Promise<ServiceResponse<OpenLightboxOutput>> {
     await this.delay(50)
 
     const { cardNumber } = input
@@ -147,9 +145,7 @@ export class DeckDisplayMockService implements IDeckDisplayService {
   /**
    * Filter cards by search term
    */
-  async filterCards(
-    input: FilterCardsInput
-  ): Promise<ServiceResponse<FilterCardsOutput>> {
+  async filterCards(input: FilterCardsInput): Promise<ServiceResponse<FilterCardsOutput>> {
     await this.delay(100)
 
     const { cards, filterTerm } = input
@@ -167,7 +163,7 @@ export class DeckDisplayMockService implements IDeckDisplayService {
 
     const lowercaseFilter = filterTerm.toLowerCase()
     const filteredCards = cards.filter(
-      (card) =>
+      card =>
         card.cardName.toLowerCase().includes(lowercaseFilter) ||
         card.cardNumber.toString().includes(lowercaseFilter)
     )
@@ -204,7 +200,7 @@ export class DeckDisplayMockService implements IDeckDisplayService {
    * Simulate async delay
    */
   private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms))
+    return new Promise(resolve => setTimeout(resolve, ms))
   }
 }
 
@@ -212,3 +208,9 @@ export class DeckDisplayMockService implements IDeckDisplayService {
  * Singleton instance for use throughout the application
  */
 export const deckDisplayMockService = new DeckDisplayMockService()
+
+/**
+ * Export class alias for testing
+ * Tests need to instantiate their own instances to avoid state pollution
+ */
+export { DeckDisplayMockService as DeckDisplayMock }

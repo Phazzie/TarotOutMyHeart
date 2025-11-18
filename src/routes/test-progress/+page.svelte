@@ -7,24 +7,41 @@
 <script lang="ts">
   import GenerationProgressComponent from '$lib/components/GenerationProgressComponent.svelte'
   import { appStore } from '$lib/stores/appStore.svelte'
-  import { ImageGenerationMock } from '../../../services/mock/ImageGenerationMock'
-  import type { CardPrompt } from '../../../contracts/PromptGeneration'
+  import { imageGenerationService } from '$services/factory'
+  import type { CardPrompt } from '$contracts/PromptGeneration'
 
   // Mock service
-  const generationService = new ImageGenerationMock()
+  const generationService = imageGenerationService
 
   // Mock prompts for testing
   const mockPrompts: CardPrompt[] = Array.from({ length: 22 }, (_, i) => ({
     id: `prompt-${i}` as import('../../../contracts/PromptGeneration').PromptId,
     cardNumber: i as import('../../../contracts/PromptGeneration').CardNumber,
-    cardName: [
-      'The Fool', 'The Magician', 'The High Priestess', 'The Empress',
-      'The Emperor', 'The Hierophant', 'The Lovers', 'The Chariot',
-      'Strength', 'The Hermit', 'Wheel of Fortune', 'Justice',
-      'The Hanged Man', 'Death', 'Temperance', 'The Devil',
-      'The Tower', 'The Star', 'The Moon', 'The Sun',
-      'Judgement', 'The World'
-    ][i] || `Card ${i}`,
+    cardName:
+      [
+        'The Fool',
+        'The Magician',
+        'The High Priestess',
+        'The Empress',
+        'The Emperor',
+        'The Hierophant',
+        'The Lovers',
+        'The Chariot',
+        'Strength',
+        'The Hermit',
+        'Wheel of Fortune',
+        'Justice',
+        'The Hanged Man',
+        'Death',
+        'Temperance',
+        'The Devil',
+        'The Tower',
+        'The Star',
+        'The Moon',
+        'The Sun',
+        'Judgement',
+        'The World',
+      ][i] || `Card ${i}`,
     traditionalMeaning: 'Sample meaning',
     generatedPrompt: `A tarot card illustration for card ${i}...`,
     confidence: 0.95,
@@ -40,9 +57,11 @@
       const result = await generationService.generateImages({
         prompts: mockPrompts,
         saveToStorage: true,
-        onProgress: (progress: import('../../../contracts/ImageGeneration').ImageGenerationProgress) => {
+        onProgress: (
+          progress: import('../../../contracts/ImageGeneration').ImageGenerationProgress
+        ) => {
           appStore.updateGenerationProgress(progress)
-        }
+        },
       })
 
       if (result.success && result.data) {
@@ -80,16 +99,11 @@
     <button class="start-button" onclick={startGeneration} disabled={appStore.isGenerating}>
       Start Generation
     </button>
-    <button class="reset-button" onclick={resetState}>
-      Reset
-    </button>
+    <button class="reset-button" onclick={resetState}> Reset </button>
   </div>
 
   <div class="component-demo">
-    <GenerationProgressComponent
-      onCancel={cancelGeneration}
-      onRetryFailed={retryFailed}
-    />
+    <GenerationProgressComponent onCancel={cancelGeneration} onRetryFailed={retryFailed} />
   </div>
 
   <div class="info">

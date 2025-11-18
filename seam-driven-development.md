@@ -18,6 +18,7 @@ Seam-Driven Development is a methodology where you identify and define all data 
 8. **INTEGRATE** - Switch from mocks to real services (works immediately)
 
 **📖 Blueprint Templates**:
+
 - `/docs/blueprints/CONTRACT-BLUEPRINT.md` - Contract definition template
 - `/docs/blueprints/STUB-BLUEPRINT.md` - Mock and real service templates
 - `/docs/planning/DATA-BOUNDARIES.md` - Example boundary analysis

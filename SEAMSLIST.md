@@ -17,15 +17,19 @@ A **seam** is any boundary where data crosses between systems, components, or la
 ## Seam Categories
 
 ### 1. External API Seams
+
 Boundaries between our application and external services (Grok AI, image generation APIs, etc.)
 
 ### 2. Data Input Seams
+
 Boundaries where user input enters the application (forms, file uploads, etc.)
 
 ### 3. State Management Seams
+
 Boundaries between UI state and component logic
 
 ### 4. Internal Service Seams
+
 Boundaries between application services
 
 ---
@@ -34,19 +38,19 @@ Boundaries between application services
 
 ### AI Collaboration System Seams
 
-| # | Seam Name | Type | Priority | Contract Location | Mock Status | Real Status |
-|---|-----------|------|----------|-------------------|-------------|-------------|
-| 1 | Coordination Server ↔ Claude Code | Internal Service | Critical | `/contracts/CoordinationServer.ts` | ⏸️ Pending | ⏸️ Pending |
-| 2 | Coordination Server ↔ GitHub Copilot | Internal Service | Critical | `/contracts/CoordinationServer.ts` | ⏸️ Pending | ⏸️ Pending |
-| 3 | State Store ↔ Coordination Server | Internal Service | Critical | `/contracts/CoordinationServer.ts` | ⏸️ Pending | ⏸️ Pending |
-| 4 | User Interface ↔ Coordination Server | Internal Service | High | `/contracts/CoordinationServer.ts` | ⏸️ Pending | ⏸️ Pending |
-| 5 | File System ↔ Both AIs | Internal Service | Critical | `/contracts/CoordinationServer.ts` | ⏸️ Pending | ⏸️ Pending |
+| #   | Seam Name                             | Type             | Priority | Contract Location                  | Mock Status | Real Status |
+| --- | ------------------------------------- | ---------------- | -------- | ---------------------------------- | ----------- | ----------- |
+| 1   | Coordination Server ↔ Claude Code    | Internal Service | Critical | `/contracts/CoordinationServer.ts` | ⏸️ Pending  | ⏸️ Pending  |
+| 2   | Coordination Server ↔ GitHub Copilot | Internal Service | Critical | `/contracts/CoordinationServer.ts` | ⏸️ Pending  | ⏸️ Pending  |
+| 3   | State Store ↔ Coordination Server    | Internal Service | Critical | `/contracts/CoordinationServer.ts` | ⏸️ Pending  | ⏸️ Pending  |
+| 4   | User Interface ↔ Coordination Server | Internal Service | High     | `/contracts/CoordinationServer.ts` | ⏸️ Pending  | ⏸️ Pending  |
+| 5   | File System ↔ Both AIs               | Internal Service | Critical | `/contracts/CoordinationServer.ts` | ⏸️ Pending  | ⏸️ Pending  |
 
 ### TarotOutMyHeart Application Seams (Future)
 
-| # | Seam Name | Type | Priority | Contract Location | Mock Status | Real Status |
-|---|-----------|------|----------|-------------------|-------------|-------------|
-| - | *To be defined in Sprint 1* | - | - | - | ⏸️ Pending | ⏸️ Pending |
+| #   | Seam Name                   | Type | Priority | Contract Location | Mock Status | Real Status |
+| --- | --------------------------- | ---- | -------- | ----------------- | ----------- | ----------- |
+| -   | _To be defined in Sprint 1_ | -    | -        | -                 | ⏸️ Pending  | ⏸️ Pending  |
 
 ---
 
@@ -128,7 +132,7 @@ interface ClaudeCoordinationContract {
 const registration = await claudeService.registerAgent({
   agentId: 'claude-code',
   capabilities: ['typescript-development', 'contract-definition', 'testing'],
-  version: '1.0.0'
+  version: '1.0.0',
 })
 
 const tasks = await claudeService.getAvailableTasks(['typescript-development'])
@@ -137,14 +141,14 @@ const task = await claudeService.claimTask(tasks.data[0].id)
 await claudeService.reportProgress(task.data.id, {
   percentComplete: 50,
   currentStep: 'Implementing mock service',
-  filesModified: ['/services/mock/Example.ts']
+  filesModified: ['/services/mock/Example.ts'],
 })
 
 await claudeService.completeTask(task.data.id, {
   success: true,
   output: 'Mock service implemented successfully',
   filesModified: ['/services/mock/Example.ts'],
-  testsRun: { total: 5, passed: 5, failed: 0, skipped: 0, duration: 1200 }
+  testsRun: { total: 5, passed: 5, failed: 0, skipped: 0, duration: 1200 },
 })
 ```
 
@@ -232,18 +236,18 @@ interface CopilotCoordinationContract {
 // Copilot autonomously calls MCP tools
 const tasks = await checkForTasks({
   agentId: 'github-copilot',
-  capabilities: ['svelte-development', 'testing']
+  capabilities: ['svelte-development', 'testing'],
 })
 
 const task = await claimTaskTool({
   taskId: tasks.data[0].id,
-  agentId: 'github-copilot'
+  agentId: 'github-copilot',
 })
 
 const fileAccess = await requestFileAccess({
   path: '/src/components/Example.svelte',
   operation: 'write',
-  agentId: 'github-copilot'
+  agentId: 'github-copilot',
 })
 
 // Copilot implements feature...
@@ -253,12 +257,12 @@ await submitTaskResult({
   agentId: 'github-copilot',
   success: true,
   output: 'Svelte component implemented',
-  filesModified: ['/src/components/Example.svelte']
+  filesModified: ['/src/components/Example.svelte'],
 })
 
 await releaseFileAccess({
   lockToken: fileAccess.data.lockToken,
-  agentId: 'github-copilot'
+  agentId: 'github-copilot',
 })
 ```
 
@@ -282,7 +286,7 @@ await releaseFileAccess({
 ```typescript
 // Task operations
 interface EnqueueTaskInput {
-  task: Omit<Task, 'id'>  // ID generated by store
+  task: Omit<Task, 'id'> // ID generated by store
 }
 
 interface UpdateTaskStatusInput {
@@ -417,12 +421,17 @@ interface ResolveConflictInput {
 
 ```typescript
 interface UserCoordinationContract {
-  startCollaboration(params: StartCollaborationInput): Promise<ServiceResponse<CollaborationSession>>
+  startCollaboration(
+    params: StartCollaborationInput
+  ): Promise<ServiceResponse<CollaborationSession>>
   pauseCollaboration(sessionId: SessionId): Promise<ServiceResponse<void>>
   resumeCollaboration(sessionId: SessionId): Promise<ServiceResponse<void>>
   cancelCollaboration(sessionId: SessionId): Promise<ServiceResponse<void>>
   getCollaborationStatus(sessionId: SessionId): Promise<ServiceResponse<CollaborationStatus>>
-  resolveConflict(conflictId: ConflictId, resolution: ConflictResolution): Promise<ServiceResponse<void>>
+  resolveConflict(
+    conflictId: ConflictId,
+    resolution: ConflictResolution
+  ): Promise<ServiceResponse<void>>
   subscribeToUpdates(sessionId: SessionId): AsyncIterable<CollaborationEvent>
 }
 ```
@@ -461,7 +470,7 @@ interface UserCoordinationContract {
 const session = await userService.startCollaboration({
   task: 'Implement user authentication with email/password',
   preferredLead: 'claude-code',
-  mode: 'orchestrator-worker'
+  mode: 'orchestrator-worker',
 })
 
 // Monitor progress
@@ -476,7 +485,7 @@ console.log(`Progress: ${status.data.progress.percentComplete}%`)
 // Resolve conflict if needed
 await userService.resolveConflict(conflictId, {
   strategy: 'claude-wins',
-  mergeInstructions: 'Use Claude\'s implementation for auth logic'
+  mergeInstructions: "Use Claude's implementation for auth logic",
 })
 ```
 
@@ -587,7 +596,7 @@ const grants = await fileCoordination.requestBatchFileAccess([
 
 ### Template for Each Seam:
 
-```markdown
+````markdown
 ### [Number]. [Seam Name]
 
 **Boundary**: [Source] → [Destination]
@@ -603,6 +612,7 @@ interface [SeamName]Input {
   // Fields that cross this boundary
 }
 ```
+````
 
 #### Output Contract
 
@@ -649,6 +659,7 @@ Document expected error scenarios:
 
 - [Any special considerations, gotchas, or implementation details]
 - [Links to relevant requirements or design docs]
+
 ```
 
 ---
@@ -658,20 +669,24 @@ Document expected error scenarios:
 > **Status**: To be created once seams are defined
 
 ```
+
 [Placeholder for dependency graph]
 [Use Mermaid, ASCII art, or link to diagram]
+
 ```
 
 **Example Format**:
 
 ```
+
 User Input Seam ────┐
-                    ├──→ Grok Prompt Generation Seam ──→ Deck State Seam
-Image Upload Seam ──┘                                           │
-                                                                 │
-                                                                 ↓
+├──→ Grok Prompt Generation Seam ──→ Deck State Seam
+Image Upload Seam ──┘ │
+│
+↓
 Reference Selection Seam ──→ Grok Image Generation Seam ──→ Deck State Seam
-```
+
+````
 
 ---
 
@@ -757,11 +772,12 @@ echo "export * from './[FeatureName]'" >> contracts/index.ts
 
 # Validate contract compiles
 npm run check
-```
+````
 
 ### Step 3: Document in This File
 
 Add a new section using the template above with:
+
 - Seam number (increment from last)
 - Clear boundary description
 - Input/output contracts
@@ -841,6 +857,7 @@ Per Seam-Driven Development methodology:
 Once a contract is defined and implementation begins, it is **frozen**.
 
 **Rules**:
+
 - ❌ NEVER modify existing contract interfaces
 - ✅ Create new versions (V2, V3) if breaking changes needed
 - ✅ Add optional fields for non-breaking enhancements
@@ -853,7 +870,7 @@ Once a contract is defined and implementation begins, it is **frozen**.
 interface UserSeam {
   id: string
   name: string
-  email: string  // Added later - BREAKS EVERYTHING
+  email: string // Added later - BREAKS EVERYTHING
 }
 
 // ✅ CORRECT: Create new version
@@ -870,7 +887,7 @@ interface UserSeamV2 extends UserSeamV1 {
 interface UserSeam {
   id: string
   name: string
-  email?: string  // Optional addition is safe
+  email?: string // Optional addition is safe
 }
 ```
 
@@ -892,6 +909,7 @@ interface UserSeam {
 ### Regeneration Over Debugging
 
 If integration fails:
+
 1. Fix the contract (it was wrong)
 2. Regenerate both mock and real services
 3. Integration should now work
@@ -913,6 +931,7 @@ interface LoginSeam {
 ```
 
 This allows:
+
 - Finding orphan fields (no requirement)
 - Finding missing features (requirement without seam)
 - Impact analysis when requirements change
@@ -1005,8 +1024,8 @@ interface FormSubmissionSeam<TInput, TOutput> {
 
 ## Change Log
 
-| Date | Author | Change |
-|------|--------|--------|
+| Date       | Author        | Change                        |
+| ---------- | ------------- | ----------------------------- |
 | 2025-11-07 | Initial Setup | Created SEAMSLIST.md template |
 
 ---

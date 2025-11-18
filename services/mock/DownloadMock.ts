@@ -27,16 +27,14 @@ import type { ServiceResponse } from '$contracts/types/common'
 
 /**
  * Mock implementation of DownloadService
- * 
+ *
  * Simulates deck download as ZIP file with progress tracking.
  */
 export class DownloadMockService implements IDownloadService {
   /**
    * Download complete deck as ZIP
    */
-  async downloadDeck(
-    input: DownloadDeckInput
-  ): Promise<ServiceResponse<DownloadDeckOutput>> {
+  async downloadDeck(input: DownloadDeckInput): Promise<ServiceResponse<DownloadDeckOutput>> {
     const { generatedCards, deckName, onProgress } = input
 
     // Simulate progress
@@ -136,9 +134,8 @@ export class DownloadMockService implements IDownloadService {
     const metadataSize = 1024 * 10 // 10KB for metadata
     const zipOverhead = totalImageSize * 0.05 // 5% overhead for ZIP
 
-    const estimatedSize = format === 'zip' 
-      ? totalImageSize + metadataSize + zipOverhead
-      : totalImageSize + metadataSize
+    const estimatedSize =
+      format === 'zip' ? totalImageSize + metadataSize + zipOverhead : totalImageSize + metadataSize
 
     return {
       success: true,
@@ -190,7 +187,7 @@ export class DownloadMockService implements IDownloadService {
    * Simulate async delay
    */
   private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms))
+    return new Promise(resolve => setTimeout(resolve, ms))
   }
 }
 

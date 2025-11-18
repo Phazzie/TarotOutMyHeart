@@ -67,12 +67,10 @@ temp/
 *.tmp
 
 # Package Manager
-package-lock.json
+# NOTE: package-lock.json is REQUIRED for CI (npm ci requires it)
+# DO NOT add package-lock.json to .gitignore
 yarn.lock
 pnpm-lock.yaml
-
-# Optional: Keep package-lock.json if using npm
-# Comment out the package-lock.json line above if you want to commit it
 
 # AI/MCP Server
 .claude/

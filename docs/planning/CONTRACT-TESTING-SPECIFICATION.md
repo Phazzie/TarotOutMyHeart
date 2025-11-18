@@ -51,9 +51,9 @@ describe('[ContractName] Contract', () => {
 
 ```typescript
 it('should [operation] and return expected data', async () => {
-  const response = await service.methodName({ 
+  const response = await service.methodName({
     requiredField: value,
-    optionalField: value 
+    optionalField: value,
   })
 
   expect(response.success).toBe(true)
@@ -116,9 +116,9 @@ it('should accept all valid input variations', async () => {
   expect(res1.success).toBe(true)
 
   // Test with optional parameters
-  const res2 = await service.method({ 
+  const res2 = await service.method({
     required: 'value',
-    optional: 'value' 
+    optional: 'value',
   })
   expect(res2.success).toBe(true)
 })
@@ -155,6 +155,7 @@ interface IImageUploadService {
 #### Test Suite 1: uploadImages() Method
 
 **Success Cases**:
+
 - Upload single valid JPEG image → returns UploadedImage with previewUrl
 - Upload single valid PNG image → returns UploadedImage with previewUrl
 - Upload 5 images (maximum) → all uploaded successfully
@@ -162,6 +163,7 @@ interface IImageUploadService {
 - Uploaded image has correct properties: id (UUID format), file (File object), previewUrl (URL string), fileName, fileSize, mimeType, uploadedAt (Date)
 
 **Validation Error Cases**:
+
 - Upload 0 files → error code: TOO_FEW_FILES
 - Upload 6 files (exceeds max) → error code: TOO_MANY_FILES
 - Upload invalid file type (GIF) → error code: INVALID_FILE_TYPE
@@ -171,13 +173,15 @@ interface IImageUploadService {
 - Corrupted file → error code: FILE_CORRUPTED
 
 **Response Structure Validation**:
+
 - Response has: uploadedImages (array), failedImages (array), totalUploaded (number), totalFailed (number)
-- uploadedImages[].id matches ImageId type (branded string with __brand property)
+- uploadedImages[].id matches ImageId type (branded string with \_\_brand property)
 - uploadedImages[].previewUrl is valid URL string
 - uploadedImages[].uploadedAt is instance of Date
 - failedImages has correct structure: code, message, fileName
 
 **Edge Cases**:
+
 - Upload files with special characters in filename → accepted
 - Upload simultaneously → correct behavior
 - Each uploaded image gets unique ID
@@ -185,16 +189,19 @@ interface IImageUploadService {
 #### Test Suite 2: removeImage() Method
 
 **Success Cases**:
+
 - Remove image that exists → returns RemoveImageOutput
 - remainingImages array is updated (one fewer)
 - previewUrlRevoked is true
 - Can immediately re-upload to fill slot
 
 **Error Cases**:
+
 - Remove non-existent image ID → error code: IMAGE_NOT_FOUND
 - Remove with invalid image ID → error code: IMAGE_NOT_FOUND
 
 **Response Structure Validation**:
+
 - Response has: removedImageId, remainingImages (array), previewUrlRevoked (boolean)
 - remainingImages only contains images that weren't removed
 - No orphaned references remain
@@ -202,46 +209,54 @@ interface IImageUploadService {
 #### Test Suite 3: validateImages() Method
 
 **Success Cases**:
+
 - Validate 1-5 valid images → canProceed: true
 - Validate mix of valid and invalid images → returns both validImages and invalidImages
 - validImages array structure: isValid (boolean), imageId (UUID), errors (empty array)
 - invalidImages array structure: code, message, fileName
 
 **Validation Cases**:
+
 - Validate invalid file types → detected
 - Validate oversized files → detected
 - Validate too many files → detected
 - canProceed is false only when ALL images invalid
 
 **Response Structure**:
+
 - Response has: validImages (array), invalidImages (array), canProceed (boolean)
 
 #### Test Suite 4: getUploadedImages() Method
 
 **Success Cases**:
+
 - Get images when none uploaded → count: 0, canAddMore: true, remainingSlots: 5
 - Get images when 3 uploaded → count: 3, canAddMore: true, remainingSlots: 2
 - Get images when 5 uploaded → count: 5, canAddMore: false, remainingSlots: 0
 - Returns all UploadedImage objects with full properties
 
 **Response Structure**:
+
 - Response has: images (array), count (number), canAddMore (boolean), remainingSlots (number)
 - All images in array have complete UploadedImage properties
 
 #### Test Suite 5: clearAllImages() Method
 
 **Success Cases**:
+
 - Clear when images exist → success: true
 - After clear, getUploadedImages returns empty array
 - All preview URLs revoked (internal cleanup)
 
 **Edge Cases**:
+
 - Clear when no images exist → still succeeds
 - Can immediately upload after clear
 
 #### Integration Test Suite
 
 **Combined Workflows**:
+
 - Upload 3 images → Remove 1 → getUploadedImages returns 2 remaining
 - Upload → Validate → getUploadedImages → Remove all → getUploadedImages empty
 - Upload to max (5) → Remove 1 → Upload 1 more → total still 5
@@ -249,6 +264,7 @@ interface IImageUploadService {
 ### Error Code Coverage
 
 All defined error codes must be tested at least once:
+
 - INVALID_FILE_TYPE
 - FILE_TOO_LARGE
 - FILE_CORRUPTED
@@ -265,25 +281,13 @@ All defined error codes must be tested at least once:
 
 ```typescript
 // Valid test file
-const validJpeg = new File(
-  [new ArrayBuffer(1000)],
-  'test.jpg',
-  { type: 'image/jpeg' }
-)
+const validJpeg = new File([new ArrayBuffer(1000)], 'test.jpg', { type: 'image/jpeg' })
 
 // Oversized file
-const largePng = new File(
-  [new ArrayBuffer(11 * 1024 * 1024)],
-  'large.png',
-  { type: 'image/png' }
-)
+const largePng = new File([new ArrayBuffer(11 * 1024 * 1024)], 'large.png', { type: 'image/png' })
 
 // Invalid type
-const gifFile = new File(
-  [new ArrayBuffer(1000)],
-  'test.gif',
-  { type: 'image/gif' }
-)
+const gifFile = new File([new ArrayBuffer(1000)], 'test.gif', { type: 'image/gif' })
 ```
 
 ---
@@ -300,7 +304,9 @@ const gifFile = new File(
 
 ```typescript
 interface IStyleInputService {
-  validateStyleInputs(input: ValidateStyleInputsInput): Promise<ServiceResponse<ValidateStyleInputsOutput>>
+  validateStyleInputs(
+    input: ValidateStyleInputsInput
+  ): Promise<ServiceResponse<ValidateStyleInputsOutput>>
   saveStyleInputs(input: SaveStyleInputsInput): Promise<ServiceResponse<SaveStyleInputsOutput>>
   loadStyleInputs(input: LoadStyleInputsInput): Promise<ServiceResponse<LoadStyleInputsOutput>>
   getDefaults(): Promise<ServiceResponse<GetDefaultsOutput>>
@@ -314,6 +320,7 @@ interface IStyleInputService {
 #### Test Suite 1: validateStyleInputs() Method
 
 **Field Validation - Theme**:
+
 - Valid theme from predefined list → validation passes
 - Valid custom theme (non-empty, ≤50 chars) → validation passes
 - Missing theme → error: THEME_REQUIRED
@@ -321,6 +328,7 @@ interface IStyleInputService {
 - Theme > 50 chars → error: THEME_TOO_LONG
 
 **Field Validation - Tone**:
+
 - Valid tone from predefined list → validation passes
 - Valid custom tone (non-empty, ≤50 chars) → validation passes
 - Missing tone → error: TONE_REQUIRED
@@ -328,6 +336,7 @@ interface IStyleInputService {
 - Tone > 50 chars → error: TONE_TOO_LONG
 
 **Field Validation - Description**:
+
 - Valid description (10-500 chars) → validation passes
 - Description exactly 10 chars → passes
 - Description exactly 500 chars → passes
@@ -337,18 +346,21 @@ interface IStyleInputService {
 - Description with special characters → passes if valid length
 
 **Optional Fields**:
+
 - Concept ≤ 200 chars → passes (optional, no error if omitted)
 - Concept > 200 chars → error: CONCEPT_TOO_LONG
 - Characters ≤ 200 chars → passes (optional)
 - Characters > 200 chars → error: CHARACTERS_TOO_LONG
 
 **Partial Validation**:
+
 - Can validate only theme field
 - Can validate only description field
 - Can validate complete form with all fields
 - Validation response only includes errors for provided fields
 
 **Response Structure**:
+
 - Response has: validation (object), errors (array), warnings (array)
 - validation.isValid (boolean), validation.canProceed (boolean)
 - validation.fields: Record<keyof StyleInputs, FieldValidation>
@@ -357,16 +369,19 @@ interface IStyleInputService {
 #### Test Suite 2: saveStyleInputs() Method
 
 **Success Cases**:
+
 - Save valid complete StyleInputs → success: true
 - saveAsDraft: true → also saves to localStorage (can load later)
 - saveAsDraft: false → does not save to localStorage
 - Response has: saved (true), styleInputs (validated copy), savedAt (Date), savedToDraft (boolean)
 
 **Validation Before Save**:
+
 - Invalid inputs rejected before save → success: false
 - Save fails validation → error returned
 
 **Edge Cases**:
+
 - Save with minimal required fields only
 - Save with all optional fields populated
 - Save after previous save overwrites old data
@@ -374,20 +389,24 @@ interface IStyleInputService {
 #### Test Suite 3: loadStyleInputs() Method
 
 **Success Cases**:
+
 - Load when draft exists → found: true, loadedFrom: 'draft'
 - Load when draft doesn't exist → found: false, loadedFrom: 'default', returns default StyleInputs
 - Draft must match previous save exactly
 
 **Error Cases**:
+
 - loadFromDraft: false and no draft → uses default inputs
 - Corrupted draft data → falls back to default
 
 **Response Structure**:
+
 - Response has: found (boolean), styleInputs (StyleInputs or null), loadedFrom ('draft'|'default'|'none')
 
 #### Test Suite 4: getDefaults() Method
 
 **Success Cases**:
+
 - Returns GetDefaultsOutput with defaults object
 - defaults.theme = 'Art Nouveau' (tarot-appropriate)
 - defaults.tone = 'Mystical' (tarot-appropriate)
@@ -397,11 +416,13 @@ interface IStyleInputService {
 - Defaults are always the same (consistent)
 
 **Response Structure**:
+
 - Response has: defaults (StyleInputsDefaults)
 
 #### Test Suite 5: getPredefinedOptions() Method
 
 **Success Cases**:
+
 - Returns all predefined themes
 - Returns all predefined tones
 - Themes array includes: 'Art Nouveau', 'Cyberpunk', 'Gothic', 'Custom', etc.
@@ -409,21 +430,25 @@ interface IStyleInputService {
 - Both arrays are readonly (immutable)
 
 **Response Structure**:
+
 - Response has: themes (readonly string[]), tones (readonly string[])
 
 #### Test Suite 6: clearDraft() Method
 
 **Success Cases**:
+
 - Clear when draft exists → success: true
 - After clear, loadStyleInputs returns default values
 - Can save new draft after clearing
 
 **Edge Cases**:
+
 - Clear when no draft exists → still succeeds
 
 #### Integration Test Suite
 
 **Combined Workflows**:
+
 - Validate → Save → Load → verify matches
 - Save with draft → Clear → Load gets defaults
 - Validate partial → validate complete → save
@@ -432,6 +457,7 @@ interface IStyleInputService {
 ### Error Code Coverage
 
 All defined error codes must be tested:
+
 - THEME_REQUIRED, THEME_TOO_LONG, THEME_INVALID
 - TONE_REQUIRED, TONE_TOO_LONG, TONE_INVALID
 - DESCRIPTION_REQUIRED, DESCRIPTION_TOO_SHORT, DESCRIPTION_TOO_LONG, DESCRIPTION_INVALID
@@ -451,19 +477,19 @@ const validStyle: StyleInputs = {
   tone: 'Dark',
   description: 'Neon-lit dystopian future with advanced technology and megacorporation control',
   concept: 'Technology vs humanity',
-  characters: 'Augmented humans, AIs, corporate agents'
+  characters: 'Augmented humans, AIs, corporate agents',
 }
 
 // Invalid: description too short
 const invalidShort: ValidateStyleInputsInput = {
   theme: 'Gothic',
   tone: 'Dark',
-  description: 'short' // Only 5 chars, needs 10+
+  description: 'short', // Only 5 chars, needs 10+
 }
 
 // Invalid: description too long
 const invalidLong: ValidateStyleInputsInput = {
-  description: 'a'.repeat(501) // 501 chars, max 500
+  description: 'a'.repeat(501), // 501 chars, max 500
 }
 ```
 
@@ -494,6 +520,7 @@ interface IPromptGenerationService {
 #### Test Suite 1: generatePrompts() Method
 
 **Success Cases**:
+
 - Generate with valid reference image URLs and style inputs → returns 22 prompts
 - Each prompt is a CardPrompt with required properties: id, cardNumber, cardName, traditionalMeaning, generatedPrompt, confidence, generatedAt
 - cardPrompts array has exactly 22 items
@@ -502,6 +529,7 @@ interface IPromptGenerationService {
 - All generatedPrompt strings are non-empty and reasonable length
 
 **Input Validation**:
+
 - Must provide at least 1 reference image URL → error: NO_REFERENCE_IMAGES if none
 - Reference URLs must be valid URLs → error: INVALID_REFERENCE_URL if invalid
 - StyleInputs must be valid → error: INVALID_STYLE_INPUTS if invalid
@@ -510,17 +538,20 @@ interface IPromptGenerationService {
 - Accepts optional onProgress callback
 
 **Response Structure**:
+
 - Response has: cardPrompts (CardPrompt[]), usage (ApiUsage), requestId (string), generatedAt (Date), model (GrokModel)
 - ApiUsage has: promptTokens (number), completionTokens (number), totalTokens (number), estimatedCost (number), model (string)
 - Confidence is between 0 and 1
 
 **Progress Callback** (if provided):
+
 - Called multiple times during generation
 - Provides: status (string), progress (0-100), currentStep ('uploading'|'analyzing'|'generating'|'validating'|'complete')
 - Progress increases monotonically
 - Final call has progress: 100, currentStep: 'complete'
 
 **Error Cases**:
+
 - No reference images → error: NO_REFERENCE_IMAGES
 - Unreachable reference URL → error: IMAGE_URL_UNREACHABLE
 - Invalid StyleInputs → error: INVALID_STYLE_INPUTS
@@ -538,10 +569,12 @@ interface IPromptGenerationService {
 #### Test Suite 2: validatePrompts() Method
 
 **Success Cases**:
+
 - Validate 22 valid CardPrompt objects → isValid: true, errors: []
 - Validate mixed valid/invalid → captures which ones failed
 
 **Validation Rules**:
+
 - Must have exactly 22 prompts → error: INCOMPLETE_RESPONSE if not
 - Card numbers must be 0-21 with no gaps → error: MISSING_CARD_NUMBER if gap
 - No duplicate card numbers → error: DUPLICATE_CARD_NUMBER if duplicate
@@ -550,18 +583,21 @@ interface IPromptGenerationService {
 - Prompt length reasonable → error: PROMPT_TOO_SHORT or PROMPT_TOO_LONG
 
 **Response Structure**:
+
 - Response has: isValid (boolean), invalidPrompts (CardPrompt[]), errors (PromptValidationError[])
 - Each error has: code, message, cardNumber (optional), promptId (optional)
 
 #### Test Suite 3: regeneratePrompt() Method
 
 **Success Cases**:
+
 - Regenerate single card with feedback → returns new CardPrompt for that card
 - New prompt different from previous (mock should vary)
 - Card number preserved
 - New timestamp
 
 **Input Variations**:
+
 - cardNumber (required): 0-21
 - referenceImageUrls (required): non-empty array
 - styleInputs (required): valid StyleInputs
@@ -569,37 +605,44 @@ interface IPromptGenerationService {
 - feedback (optional): user feedback string
 
 **Error Cases**:
+
 - Invalid card number → error: INVALID_CARD_NUMBER (not 0-21)
 - No reference images → error: NO_REFERENCE_IMAGES
 - Invalid style inputs → error: INVALID_STYLE_INPUTS
 
 **Response Structure**:
+
 - Response has: cardPrompt (CardPrompt), usage (ApiUsage), requestId (string)
 
 #### Test Suite 4: editPrompt() Method
 
 **Success Cases**:
+
 - Edit existing prompt with new text → returns updated CardPrompt
 - edited field is true
 - editedPrompt text matches input
 
 **Validation**:
+
 - promptId must exist → error if not
 - editedPrompt length must be reasonable → error if too short/long
 - Preserves card metadata (number, name, meaning)
 
 **Response Structure**:
+
 - Response has: cardPrompt (CardPrompt), edited (boolean)
 
 #### Test Suite 5: estimateCost() Method
 
 **Success Cases**:
+
 - Estimate cost for generation → returns ApiUsage with estimatedCost
 - Cost is positive number
 - Can estimate without actually generating
 - Estimate reasonable (should be < actual generation cost, or within margin)
 
 **Input Parameters**:
+
 - referenceImageUrls (required): 1-5 URLs
 - styleInputs (required): valid inputs
 - model (optional): defaults to grok-vision-beta
@@ -607,11 +650,13 @@ interface IPromptGenerationService {
 - Note: onProgress is explicitly excluded from this input
 
 **Response Structure**:
+
 - Response has: promptTokens, completionTokens, totalTokens, estimatedCost, model
 
 #### Integration Test Suite
 
 **Combined Workflows**:
+
 - Generate → Validate → all 22 valid
 - Generate → Edit card 0 → Regenerate card 13 → still 22 valid
 - EstimateCost → Generate → verify actual cost near estimate
@@ -621,6 +666,7 @@ interface IPromptGenerationService {
 ### Error Code Coverage
 
 All error codes must be tested:
+
 - API_KEY_MISSING, API_KEY_INVALID
 - API_TIMEOUT, API_RATE_LIMIT, API_ERROR
 - NO_REFERENCE_IMAGES, INVALID_REFERENCE_URL
@@ -639,13 +685,10 @@ const mockStyleInputs: StyleInputs = {
   tone: 'Dark',
   description: 'Neon-lit dystopian future',
   concept: 'Technology control',
-  characters: 'Augmented humans'
+  characters: 'Augmented humans',
 }
 
-const mockImageUrls = [
-  'https://example.com/image1.jpg',
-  'https://example.com/image2.png'
-]
+const mockImageUrls = ['https://example.com/image1.jpg', 'https://example.com/image2.png']
 
 const mockCardPrompt: CardPrompt = {
   id: 'prompt-123' as PromptId,
@@ -654,7 +697,7 @@ const mockCardPrompt: CardPrompt = {
   traditionalMeaning: 'New beginnings, spontaneity, free spirit',
   generatedPrompt: 'A figure at the edge of a cliff, looking outward with confidence...',
   confidence: 0.92,
-  generatedAt: new Date()
+  generatedAt: new Date(),
 }
 ```
 
@@ -675,7 +718,9 @@ interface IImageGenerationService {
   generateImages(input: GenerateImagesInput): Promise<ServiceResponse<GenerateImagesOutput>>
   regenerateImage(input: RegenerateImageInput): Promise<ServiceResponse<RegenerateImageOutput>>
   cancelGeneration(input: CancelGenerationInput): Promise<ServiceResponse<CancelGenerationOutput>>
-  getGenerationStatus(input: GetGenerationStatusInput): Promise<ServiceResponse<GetGenerationStatusOutput>>
+  getGenerationStatus(
+    input: GetGenerationStatusInput
+  ): Promise<ServiceResponse<GetGenerationStatusOutput>>
   estimateCost(input: { imageCount: number }): Promise<ServiceResponse<EstimateImageCostOutput>>
 }
 ```
@@ -685,6 +730,7 @@ interface IImageGenerationService {
 #### Test Suite 1: generateImages() Method
 
 **Success Cases**:
+
 - Generate images from 22 valid CardPrompts → returns GenerateImagesOutput
 - generatedCards array has 22 items (one per card)
 - Each GeneratedCard has: id, cardNumber, cardName, prompt, imageUrl or imageDataUrl, generationStatus, generatedAt, retryCount, optional error
@@ -693,6 +739,7 @@ interface IImageGenerationService {
 - totalUsage has: totalImages, successfulImages, failedImages, estimatedCost, totalGenerationTime, usagePerCard[]
 
 **Input Variations**:
+
 - prompts (required): array of 22 CardPrompt objects
 - model (optional): defaults to 'grok-2-image-alpha'
 - saveToStorage (optional): defaults to false
@@ -700,11 +747,13 @@ interface IImageGenerationService {
 - allowPartialSuccess (optional): defaults to true (can succeed with some failures)
 
 **Progress Callback**:
+
 - Called during generation
 - Provides: total (22), completed (0-22), failed (number), current (card number), percentComplete (0-100), estimatedTimeRemaining (seconds), status (string)
 - Progress updates as cards complete
 
 **Error Cases**:
+
 - Invalid prompts (not CardPrompt type) → error: INVALID_PROMPTS
 - Wrong prompt count (not 22) → error: WRONG_PROMPT_COUNT
 - Prompt too long → error: PROMPT_TOO_LONG
@@ -718,6 +767,7 @@ interface IImageGenerationService {
 - Insufficient credits → error: INSUFFICIENT_CREDITS
 
 **Response Structure**:
+
 - GenerateImagesOutput has: generatedCards (GeneratedCard[]), totalUsage (TotalImageGenerationUsage), sessionId (string), startedAt (Date), completedAt (Date), fullySuccessful (boolean)
 - GeneratedCard.generationStatus: 'queued'|'generating'|'completed'|'failed'|'retrying'
 - GeneratedCard.imageUrl: URL string or undefined
@@ -727,42 +777,50 @@ interface IImageGenerationService {
 #### Test Suite 2: regenerateImage() Method
 
 **Success Cases**:
+
 - Regenerate single failed image → returns new GeneratedCard
 - New image has imageUrl or imageDataUrl
 - generationStatus: 'completed'
 - retryCount incremented
 
 **Input Parameters**:
+
 - cardNumber (required): 0-21
 - prompt (required): CardPrompt text
 - previousAttempts (optional): number of previous attempts
 
 **Error Cases**:
+
 - Invalid card number → error: INVALID_PROMPTS (card not in 0-21)
 - Prompt too long → error: PROMPT_TOO_LONG
 - Max retries exceeded → error returned (retryable: false)
 
 **Response Structure**:
+
 - Response has: generatedCard (GeneratedCard), usage (ImageGenerationUsage)
 
 #### Test Suite 3: cancelGeneration() Method
 
 **Success Cases**:
+
 - Cancel ongoing generation → canceled: true
 - completedBeforeCancel: number of cards generated before cancellation
 - Returns sessionId
 
 **Error Cases**:
+
 - Cancel non-existent session → error: SESSION_NOT_FOUND
 - Cancel already-completed session → error: SESSION_ALREADY_COMPLETE
 - Cancel already-canceled session → error: SESSION_CANCELED
 
 **Response Structure**:
+
 - Response has: canceled (boolean), completedBeforeCancel (number), sessionId (string)
 
 #### Test Suite 4: getGenerationStatus() Method
 
 **Success Cases**:
+
 - Get status of ongoing generation → returns progress
 - Returns GetGenerationStatusOutput with:
   - sessionId
@@ -771,35 +829,42 @@ interface IImageGenerationService {
   - isCanceled (boolean)
 
 **Progress Tracking**:
+
 - Progress updates correctly as generation proceeds
 - percentComplete: 0 initially, increases, reaches 100
 - estimatedTimeRemaining decreases over time
 
 **Error Cases**:
+
 - Get status of non-existent session → error: SESSION_NOT_FOUND
 - Get status after cancellation → isCanceled: true
 
 #### Test Suite 5: estimateCost() Method
 
 **Success Cases**:
+
 - Estimate cost for 22 images → returns EstimateImageCostOutput
 - totalImages: 22
 - costPerImage: reasonable (e.g., $0.10)
-- totalEstimatedCost: costPerImage * totalImages
+- totalEstimatedCost: costPerImage \* totalImages
 - estimatedTime: seconds (e.g., 60-120s for 22 images)
 
 **Input Variations**:
+
 - imageCount: number to estimate (typically 22)
 
 **Error Cases**:
+
 - Invalid image count (0, >100, negative) → error: INVALID_IMAGE_COUNT
 
 **Response Structure**:
+
 - Response has: totalImages, costPerImage, totalEstimatedCost, estimatedTime
 
 #### Integration Test Suite
 
 **Combined Workflows**:
+
 - Generate all 22 → some fail → Regenerate failed ones → all complete
 - EstimateCost → Generate → verify cost near estimate
 - Generate → Cancel after 10 complete → verify 10 saved
@@ -810,6 +875,7 @@ interface IImageGenerationService {
 ### Error Code Coverage
 
 All error codes must be tested:
+
 - API_KEY_MISSING, API_KEY_INVALID
 - API_TIMEOUT, API_RATE_LIMIT, API_ERROR
 - INVALID_PROMPTS, WRONG_PROMPT_COUNT
@@ -834,7 +900,7 @@ const mockPrompts: CardPrompt[] = Array.from({ length: 22 }, (_, i) => ({
   traditionalMeaning: MAJOR_ARCANA_MEANINGS[i],
   generatedPrompt: `A tarot card image for ${MAJOR_ARCANA_NAMES[i]}...`,
   confidence: 0.85 + Math.random() * 0.15,
-  generatedAt: new Date()
+  generatedAt: new Date(),
 }))
 
 // Mock generated card
@@ -846,7 +912,7 @@ const mockGeneratedCard: GeneratedCard = {
   imageUrl: 'https://blob.vercel-storage.com/...',
   generationStatus: 'completed',
   generatedAt: new Date(),
-  retryCount: 0
+  retryCount: 0,
 }
 ```
 
@@ -864,7 +930,9 @@ const mockGeneratedCard: GeneratedCard = {
 
 ```typescript
 interface IDeckDisplayService {
-  initializeDisplay(input: InitializeDisplayInput): Promise<ServiceResponse<InitializeDisplayOutput>>
+  initializeDisplay(
+    input: InitializeDisplayInput
+  ): Promise<ServiceResponse<InitializeDisplayOutput>>
   changeLayout(input: ChangeLayoutInput): Promise<ServiceResponse<ChangeLayoutOutput>>
   changeCardSize(input: ChangeCardSizeInput): Promise<ServiceResponse<ChangeCardSizeOutput>>
   sortCards(input: SortCardsInput): Promise<ServiceResponse<SortCardsOutput>>
@@ -881,6 +949,7 @@ interface IDeckDisplayService {
 #### Test Suite 1: initializeDisplay() Method
 
 **Success Cases**:
+
 - Initialize with 22 GeneratedCard objects → returns InitializeDisplayOutput
 - state has: layout ('grid'), cardSize ('medium'), sortBy ('number'), selectedCard (null), lightboxOpen (false), showMetadata (false)
 - displayCards array has 22 items
@@ -888,76 +957,92 @@ interface IDeckDisplayService {
 - visibleCount: 22
 
 **Input Variations**:
+
 - generatedCards (required): array of GeneratedCard (must be 22)
 - initialLayout (optional): defaults to 'grid'
 - initialSize (optional): defaults to 'medium'
 - autoOpenFirst (optional): defaults to false
 
 **Error Cases**:
+
 - No cards provided → error: NO_CARDS_PROVIDED
 - Fewer than 22 cards → error: INCOMPLETE_CARDS (or still processes, depends on mock)
 - Invalid initial layout → error: INVALID_LAYOUT
 - Invalid initial size → error: INVALID_SIZE
 
 **Response Structure**:
+
 - Response has: state (DeckDisplayState), displayCards (DisplayCard[]), visibleCount (number)
 
 #### Test Suite 2: changeLayout() Method
 
 **Success Cases**:
+
 - Change from 'grid' to 'list' → state.layout: 'list'
 - Change from 'list' to 'carousel' → state.layout: 'carousel'
 - Change from 'carousel' to 'grid' → state.layout: 'grid'
 - displayCards remain same, only layout preference changes
 
 **Supported Layouts**:
+
 - 'grid', 'list', 'carousel' must be supported
 
 **Error Cases**:
+
 - Invalid layout string → error: INVALID_LAYOUT
 
 **Response Structure**:
+
 - Response has: state (DeckDisplayState), layout (DisplayLayout)
 
 #### Test Suite 3: changeCardSize() Method
 
 **Success Cases**:
+
 - Change from 'medium' to 'small' → state.cardSize: 'small'
 - Change to 'large' → state.cardSize: 'large'
 - Change back to 'medium' → state.cardSize: 'medium'
 
 **Supported Sizes**:
+
 - 'small', 'medium', 'large' must be supported
 
 **Error Cases**:
+
 - Invalid size → error: INVALID_SIZE
 
 **Response Structure**:
+
 - Response has: state (DeckDisplayState), size (CardSize)
 
 #### Test Suite 4: sortCards() Method
 
 **Success Cases**:
+
 - Sort by 'number' ascending → cards 0-21 in order
 - Sort by 'name' ascending → cards alphabetically by name
 - Sort by 'generated-date' ascending → oldest first
 - Sort descending: set ascending: false
 
 **Sorting Options**:
+
 - 'number': card number 0-21
 - 'name': alphabetical by card name
 - 'generated-date': by generatedAt timestamp
 
 **Default Behavior**:
+
 - ascending defaults to true
 
 **Response Structure**:
+
 - Response has: state (DeckDisplayState), displayCards (DisplayCard[])
 - displayCards in new sort order
 
 #### Test Suite 5: filterCards() Method
 
 **Success Cases**:
+
 - Filter by card name (e.g., 'Fool') → finds "The Fool" card
 - Filter by number (e.g., '0') → finds card 0
 - Filter by prompt text (e.g., 'neon') → finds cards with that in prompt
@@ -966,20 +1051,24 @@ interface IDeckDisplayService {
 - Non-matching filter → visibleCount: 0, displayCards filtered
 
 **Filter Behavior**:
+
 - Searches: card name, card number, generation prompt
 - Marks matching cards: visible: true
 - Marks non-matching: visible: false
 - visibleCount reflects visible cards
 
 **Error Cases**:
+
 - Invalid filter (not string) → error or no filter applied
 
 **Response Structure**:
+
 - Response has: state (DeckDisplayState), displayCards (DisplayCard[]), visibleCount (number)
 
 #### Test Suite 6: selectCard() Method
 
 **Success Cases**:
+
 - Select card 0 → state.selectedCard: 0
 - Select card 13 → state.selectedCard: 13
 - Select card 21 → state.selectedCard: 21
@@ -987,14 +1076,17 @@ interface IDeckDisplayService {
 - Can select with openLightbox: true → selectedCard updated AND lightbox opened
 
 **Constraints**:
+
 - Card number must be 0-21 → error: INVALID_CARD_NUMBER if outside range
 
 **Response Structure**:
+
 - Response has: state (DeckDisplayState), selectedCard (DisplayCard), lightboxState (optional LightboxState if opened)
 
 #### Test Suite 7: openLightbox() Method
 
 **Success Cases**:
+
 - Open lightbox for card 0 → lightboxState.currentCard: 0, open: true
 - Open with showPrompt: true → showPrompt: true in lightbox
 - Open with showMetadata: true → showMetadata: true
@@ -1004,25 +1096,30 @@ interface IDeckDisplayService {
 - Open card 21 → canNavigateLeft: true, canNavigateRight: false
 
 **Error Cases**:
+
 - Invalid card number → error: INVALID_CARD_NUMBER
 
 **Response Structure**:
+
 - Response has: state (DeckDisplayState with lightboxOpen: true), lightboxState (LightboxState), card (DisplayCard)
 - LightboxState has: open, currentCard, showPrompt, showMetadata, canNavigateLeft, canNavigateRight
 
 #### Test Suite 8: closeLightbox() Method
 
 **Success Cases**:
+
 - Close lightbox → state.lightboxOpen: false
 - selectedCard still preserved
 - Lightbox no longer visible
 
 **Response Structure**:
+
 - Response has: state (DeckDisplayState with lightboxOpen: false)
 
 #### Test Suite 9: navigateLightbox() Method
 
 **Success Cases**:
+
 - Navigate 'next' from card 0 → card 1 displayed
 - Navigate 'next' from card 20 → card 21 displayed
 - Navigate 'next' from card 21 → error: CANNOT_NAVIGATE (can't go beyond 21)
@@ -1031,15 +1128,18 @@ interface IDeckDisplayService {
 - Navigate 'previous' from card 0 → error: CANNOT_NAVIGATE
 
 **Error Cases**:
+
 - Navigate when lightbox not open → error: LIGHTBOX_NOT_OPEN
 - Invalid direction → error or ignored
 
 **Response Structure**:
+
 - Response has: lightboxState (LightboxState with updated currentCard), card (DisplayCard)
 
 #### Integration Test Suite
 
 **Combined Workflows**:
+
 - Initialize → Change layout → Change size → Sort → all work correctly
 - Initialize → Select card → Open lightbox → Navigate 5 times → Close lightbox
 - Filter → Sort by name → Select from filtered list → Open lightbox
@@ -1048,6 +1148,7 @@ interface IDeckDisplayService {
 ### Error Code Coverage
 
 All error codes must be tested:
+
 - NO_CARDS_PROVIDED
 - INVALID_CARD_NUMBER
 - INVALID_LAYOUT
@@ -1071,7 +1172,7 @@ const mockGeneratedCards: GeneratedCard[] = Array.from({ length: 22 }, (_, i) =>
   imageUrl: `https://example.com/card-${String(i).padStart(2, '0')}.png`,
   generationStatus: 'completed' as GenerationStatus,
   generatedAt: new Date(),
-  retryCount: 0
+  retryCount: 0,
 }))
 ```
 
@@ -1089,7 +1190,9 @@ const mockGeneratedCards: GeneratedCard[] = Array.from({ length: 22 }, (_, i) =>
 
 ```typescript
 interface ICostCalculationService {
-  calculateTotalCost(input: CalculateTotalCostInput): Promise<ServiceResponse<CalculateTotalCostOutput>>
+  calculateTotalCost(
+    input: CalculateTotalCostInput
+  ): Promise<ServiceResponse<CalculateTotalCostOutput>>
   estimateCost(input: EstimateCostInput): Promise<ServiceResponse<EstimateCostOutput>>
   formatCost(input: FormatCostInput): Promise<ServiceResponse<FormatCostOutput>>
 }
@@ -1100,36 +1203,43 @@ interface ICostCalculationService {
 #### Test Suite 1: calculateTotalCost() Method
 
 **Success Cases**:
+
 - Calculate cost from prompt and image usage → returns CalculateTotalCostOutput
 - Response has: summary (CostSummary), exceeded (boolean), canProceed (boolean)
 - CostSummary has: textCost, imageCost, visionCost, totalCost (number), warningLevel, formattedCost (string)
 
 **Cost Breakdown - Text Generation**:
+
 - textCost has: inputTokens, outputTokens, inputCost, outputCost, totalCost
-- Calculation: inputCost = inputTokens * 0.000002, outputCost = outputTokens * 0.000010
+- Calculation: inputCost = inputTokens _ 0.000002, outputCost = outputTokens _ 0.000010
 - totalCost = inputCost + outputCost
 
 **Cost Breakdown - Image Generation**:
+
 - imageCost has: imagesGenerated (22), imagesFailed, imagesRetried, generationCost (per image), totalCost
-- Calculation: totalCost = imagesGenerated * generationCost
+- Calculation: totalCost = imagesGenerated \* generationCost
 
 **Cost Breakdown - Vision API**:
+
 - visionCost has: requestCount, requestCost, totalCost
-- Calculation: totalCost = requestCount * costPerRequest
+- Calculation: totalCost = requestCount \* costPerRequest
 
 **Warning Levels**:
+
 - totalCost < $5.00 → warningLevel: 'none'
 - totalCost $5.00-$9.99 → warningLevel: 'warning'
 - totalCost $10.00-$19.99 → warningLevel: 'high'
 - totalCost >= $20.00 → warningLevel: 'maximum'
 
 **Thresholds**:
+
 - exceeded: false if totalCost < $20.00
 - exceeded: true if totalCost >= $20.00
 - canProceed: true if totalCost < $20.00
 - canProceed: false if totalCost >= $20.00
 
 **Error Cases**:
+
 - Invalid usage data → error: INVALID_USAGE_DATA
 - Missing promptUsage → error: MISSING_PROMPT_USAGE
 - Missing imageUsage → error: MISSING_IMAGE_USAGE
@@ -1138,76 +1248,91 @@ interface ICostCalculationService {
 - Cost exceeds maximum → error: COST_EXCEEDS_MAXIMUM
 
 **Response Structure**:
+
 - Verified above in "CostSummary" definition
 
 #### Test Suite 2: estimateCost() Method
 
 **Success Cases**:
+
 - Estimate cost for 22 images, 3 reference images → returns EstimateCostOutput
 - Response has: estimate (CostEstimate), canAfford (boolean), warningMessage (optional)
 - CostEstimate has: estimatedCost (number), breakdown (promptGeneration, imageGeneration), assumptions (string[])
 
 **Estimation Logic**:
+
 - imageCount (required): 22
 - referenceImageCount (required): 1-5
 - estimatedPromptLength (optional): token estimate
 - Calculation: estimate includes prompt generation + image generation costs
 
 **Cost Ranges** (realistic estimates):
+
 - Prompt generation: 1 request with images, ~1000-5000 tokens output
-- Image generation: 22 images * $0.10/image = $2.20
+- Image generation: 22 images \* $0.10/image = $2.20
 - Total estimate: likely $0.50-$3.00
 
 **Threshold Checks**:
+
 - canAfford: true if estimate < $20.00
 - canAfford: false if estimate >= $20.00
 - warningMessage: set if high cost
 
 **Input Variations**:
+
 - imageCount (required): number
 - referenceImageCount (required): 1-5
 - estimatedPromptLength (optional): if not provided, estimate assumes default
 
 **Error Cases**:
+
 - Invalid image count (0, negative, > 100) → error: INVALID_IMAGE_COUNT
 - Invalid reference count (0, > 5, negative) → error
 
 **Response Structure**:
+
 - estimate.assumptions: array of strings explaining estimate basis
 
 #### Test Suite 3: formatCost() Method
 
 **Success Cases**:
+
 - Format $2.345 with format: 'summary' → "$2.35" (2 decimals)
 - Format $2.345 with format: 'detailed' → "$2.35 (prompts: $0.xx, images: $x.xx, vision: $0.xx)"
 - Format $2.345 with format: 'minimal' → "~$2.35"
 - Format default (no format specified) → defaults to 'summary'
 
 **Format Options**:
+
 - 'detailed': full breakdown with component costs
 - 'summary': just total cost
 - 'minimal': approximate symbol + total
 
 **Warning Message** (if includeWarning: true):
+
 - No warning if totalCost < $5.00
 - Warning if $5.00-$9.99: "Cost is above normal range"
 - Warning if $10.00-$19.99: "High cost alert"
 - Warning if >= $20.00: "Cost exceeds maximum"
 
 **Response Structure**:
+
 - Response has: formatted (string), warningLevel ('none'|'warning'|'high'|'maximum'), warningMessage (optional)
 
 **Decimal Precision**:
+
 - Always exactly 2 decimal places in formatted cost
 - Rounding: standard (0.5 rounds up)
 
 **Error Cases**:
+
 - Invalid format string → error: or defaults to 'summary'
 - Invalid cost (negative) → error or returns with warning
 
 #### Integration Test Suite
 
 **Combined Workflows**:
+
 - EstimateCost → CalculateTotalCost → Verify estimate ±10% of actual
 - CalculateTotalCost → FormatCost with 'detailed' → all components visible
 - Multiple cost calculations → verify cumulative logic correct
@@ -1216,6 +1341,7 @@ interface ICostCalculationService {
 ### Error Code Coverage
 
 All error codes must be tested:
+
 - INVALID_USAGE_DATA
 - MISSING_PROMPT_USAGE
 - MISSING_IMAGE_USAGE
@@ -1237,11 +1363,11 @@ describe('Helper Functions', () => {
   })
 
   it('getWarningLevel($15.00) returns "high"', () => {
-    expect(getWarningLevel(15.00)).toBe('high')
+    expect(getWarningLevel(15.0)).toBe('high')
   })
 
   it('getWarningMessage("maximum", $25.00) returns appropriate message', () => {
-    const msg = getWarningMessage('maximum', 25.00)
+    const msg = getWarningMessage('maximum', 25.0)
     expect(msg).toContain('exceeds maximum')
   })
 })
@@ -1255,8 +1381,8 @@ const mockPromptUsage: ApiUsage = {
   promptTokens: 5000,
   completionTokens: 15000,
   totalTokens: 20000,
-  estimatedCost: 0.20,
-  model: 'grok-vision-beta'
+  estimatedCost: 0.2,
+  model: 'grok-vision-beta',
 }
 
 // Typical image generation usage (all 22 successful)
@@ -1264,9 +1390,9 @@ const mockImageUsage: TotalImageGenerationUsage = {
   totalImages: 22,
   successfulImages: 22,
   failedImages: 0,
-  estimatedCost: 2.20,
+  estimatedCost: 2.2,
   totalGenerationTime: 120000,
-  usagePerCard: []
+  usagePerCard: [],
 }
 
 // Combined total: ~$2.40
@@ -1297,6 +1423,7 @@ interface IDownloadService {
 #### Test Suite 1: downloadDeck() Method
 
 **Success Cases**:
+
 - Download 22 cards as ZIP → returns DownloadDeckOutput
 - downloaded: true
 - filename follows pattern: '[deckname]-[timestamp].zip'
@@ -1305,6 +1432,7 @@ interface IDownloadService {
 - includedMetadata: true/false based on input
 
 **Input Variations**:
+
 - generatedCards (required): 22 GeneratedCard objects
 - styleInputs (required): StyleInputs
 - deckName (optional): defaults to 'tarot-deck'
@@ -1317,10 +1445,12 @@ interface IDownloadService {
 - onProgress (optional): callback for download progress
 
 **Progress Callback**:
+
 - Called during download preparation
 - Provides: status (string), progress (0-100), currentStep ('preparing'|'fetching'|'packaging'|'downloading'|'complete')
 
 **ZIP Structure** (when format: 'zip'):
+
 ```
 deck-name-12345.zip
 ├── 00-the-fool.png
@@ -1331,6 +1461,7 @@ deck-name-12345.zip
 ```
 
 **Metadata JSON** (if included):
+
 - generatedAt: ISO timestamp
 - deckName: string
 - styleInputs: StyleInputs object
@@ -1338,10 +1469,12 @@ deck-name-12345.zip
 - version: app version string
 
 **Filename Generation**:
+
 - Card: `00-the-fool.png` (number padded to 2 digits, name lowercased with hyphens)
 - Deck: `cyberpunk-tarot-1699382400000.zip` (name lowercased with hyphens, timestamp)
 
 **Error Cases**:
+
 - No cards provided → error: NO_CARDS_PROVIDED
 - Fewer than 22 cards → error: INCOMPLETE_CARDS
 - Cards missing images → error: MISSING_IMAGES
@@ -1356,23 +1489,27 @@ deck-name-12345.zip
 - Download failed → error: DOWNLOAD_FAILED
 
 **Response Structure**:
+
 - Response has: downloaded (boolean), filename (string), fileSize (number), cardCount (number), includedMetadata (boolean)
 
 #### Test Suite 2: downloadCard() Method
 
 **Success Cases**:
+
 - Download single card image → returns DownloadCardOutput
 - downloaded: true
 - filename: generated or custom
 - fileSize > 0
 
 **Input Variations**:
+
 - card (required): single GeneratedCard
 - filename (optional): custom filename
   - If provided: use as-is (or sanitize)
   - If not provided: generate using pattern '00-the-fool.png'
 
 **Error Cases**:
+
 - Card missing image → error: MISSING_IMAGES
 - Cannot fetch image → error: FETCH_IMAGE_FAILED
 - Blob creation fails → error: BLOB_CREATION_FAILED
@@ -1380,29 +1517,34 @@ deck-name-12345.zip
 - Insufficient storage → error: INSUFFICIENT_STORAGE
 
 **Response Structure**:
+
 - Response has: downloaded (boolean), filename (string), fileSize (number)
 
 #### Test Suite 3: prepareDownload() Method
 
 **Success Cases**:
+
 - Prepare download without triggering → returns PrepareDownloadOutput
 - Response has: blob (Blob object), filename (string), fileSize (number), url (object URL string)
 - URL can be used in <a href> or for custom handling
 - blob.type: 'application/zip' for deck, 'image/png' for card
 
 **Input Variations**:
+
 - generatedCards (required): 22 cards
 - styleInputs (required)
 - deckName (optional)
 - includeMetadata (optional): defaults to true
 
 **Workflow**:
+
 - Creates ZIP or blob
 - Generates object URL (URL.createObjectURL)
 - Returns blob + URL for custom download handling
 - Note: Caller must clean up URL with URL.revokeObjectURL() when done
 
 **Error Cases**:
+
 - No cards provided → error: NO_CARDS_PROVIDED
 - Incomplete cards → error: INCOMPLETE_CARDS
 - Missing images → error: MISSING_IMAGES
@@ -1411,11 +1553,13 @@ deck-name-12345.zip
 - ZIP creation fails → error: ZIP_CREATION_FAILED
 
 **Response Structure**:
+
 - Response has: blob (Blob), filename (string), fileSize (number), url (string)
 
 #### Integration Test Suite
 
 **Combined Workflows**:
+
 - PrepareDownload → check blob size → DownloadDeck (actual download)
 - DownloadCard → verify filename follows pattern
 - Download with includeMetadata: true → metadata.json in ZIP
@@ -1425,6 +1569,7 @@ deck-name-12345.zip
 ### Error Code Coverage
 
 All error codes must be tested:
+
 - NO_CARDS_PROVIDED
 - INCOMPLETE_CARDS
 - MISSING_IMAGES
@@ -1471,12 +1616,14 @@ const mockCards: GeneratedCard[] = Array.from({ length: 22 }, (_, i) => ({
   imageUrl: `https://blob.vercel-storage.com/card-${String(i).padStart(2, '0')}.png`,
   generationStatus: 'completed',
   generatedAt: new Date(),
-  retryCount: 0
+  retryCount: 0,
 }))
 
 // Mock blob (simulating ZIP file)
 const mockZipBlob = new Blob(
-  [/* simulated ZIP content */],
+  [
+    /* simulated ZIP content */
+  ],
   { type: 'application/zip' }
 )
 ```
@@ -1555,7 +1702,9 @@ A contract test suite is complete when:
 ## Part 6: Execution Plan
 
 ### Phase 1: Test File Creation (Parallel)
+
 All 7 agents create test files simultaneously:
+
 - Agent 1: ImageUpload.test.ts
 - Agent 2: StyleInput.test.ts
 - Agent 3: PromptGeneration.test.ts
@@ -1565,12 +1714,14 @@ All 7 agents create test files simultaneously:
 - Agent 7: Download.test.ts
 
 ### Phase 2: Validation (Sequential)
+
 1. Run `npm run test:contracts` to verify all tests pass
 2. Run `npm run check` to verify no TypeScript errors
 3. Verify test coverage meets success criteria above
 4. Count passing tests (target: 150+ passing tests across all 7 files)
 
 ### Phase 3: Integration (Sequential)
+
 1. All tests pass
 2. 0 errors, 0 failures
 3. Update SEAMSLIST.md to mark seams as "Tested"
@@ -1581,12 +1732,14 @@ All 7 agents create test files simultaneously:
 ## Additional Resources
 
 ### Files to Reference
+
 - Golden Standard: `/tests/contracts/ClaudeCoordination.test.ts` (59 tests, structured pattern)
 - Golden Standard: `/tests/contracts/StateStore.test.ts` (35 tests, comprehensive)
 - Contract definitions: `/contracts/*.ts`
 - Mock implementations: `/services/mock/*.ts` (once created)
 
 ### Patterns to Copy
+
 - Use `beforeEach()` for fresh service instances
 - Organize with nested `describe()` blocks by feature
 - Test success paths before error paths

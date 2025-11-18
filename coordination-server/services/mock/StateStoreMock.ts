@@ -25,7 +25,7 @@ import type {
   Message,
   SessionId,
   ServiceResponse,
-  ServiceError
+  ServiceError,
 } from '@contracts'
 
 /**
@@ -76,14 +76,14 @@ export class StateStoreMock implements StateStoreContract {
         id: taskId,
         status: task.status || 'queued',
         createdAt: task.createdAt || new Date(),
-        updatedAt: task.updatedAt || new Date()
+        updatedAt: task.updatedAt || new Date(),
       }
 
       this.tasks.set(taskId, fullTask)
 
       return {
         success: true,
-        data: taskId
+        data: taskId,
       }
     } catch (error) {
       return {
@@ -91,8 +91,8 @@ export class StateStoreMock implements StateStoreContract {
         error: {
           code: 'ENQUEUE_ERROR',
           message: `Failed to enqueue task: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -125,7 +125,7 @@ export class StateStoreMock implements StateStoreContract {
 
       return {
         success: true,
-        data: bestTask
+        data: bestTask,
       }
     } catch (error) {
       return {
@@ -133,8 +133,8 @@ export class StateStoreMock implements StateStoreContract {
         error: {
           code: 'DEQUEUE_ERROR',
           message: `Failed to dequeue task: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -145,7 +145,7 @@ export class StateStoreMock implements StateStoreContract {
     const task = this.tasks.get(taskId)
     return {
       success: true,
-      data: task || null
+      data: task || null,
     }
   }
 
@@ -159,8 +159,8 @@ export class StateStoreMock implements StateStoreContract {
         error: {
           code: 'TASK_NOT_FOUND',
           message: `Task ${taskId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -181,8 +181,8 @@ export class StateStoreMock implements StateStoreContract {
         error: {
           code: 'TASK_NOT_FOUND',
           message: `Task ${taskId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -209,7 +209,7 @@ export class StateStoreMock implements StateStoreContract {
 
     return {
       success: true,
-      data: sessionTasks
+      data: sessionTasks,
     }
   }
 
@@ -229,9 +229,9 @@ export class StateStoreMock implements StateStoreContract {
           retryable: true,
           details: {
             lockedBy: existingLock.owner,
-            expiresAt: existingLock.expiresAt.toISOString()
-          }
-        }
+            expiresAt: existingLock.expiresAt.toISOString(),
+          },
+        },
       }
     }
 
@@ -249,7 +249,7 @@ export class StateStoreMock implements StateStoreContract {
       lockToken,
       acquiredAt: new Date(),
       expiresAt: new Date(Date.now() + this.LOCK_EXPIRY_MS),
-      operation: 'write' // Default to write for simplicity
+      operation: 'write', // Default to write for simplicity
     }
 
     this.fileLocks.set(path, lock)
@@ -257,7 +257,7 @@ export class StateStoreMock implements StateStoreContract {
 
     return {
       success: true,
-      data: lockToken
+      data: lockToken,
     }
   }
 
@@ -271,8 +271,8 @@ export class StateStoreMock implements StateStoreContract {
         error: {
           code: 'LOCK_NOT_FOUND',
           message: `Lock token ${lockToken} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -294,13 +294,13 @@ export class StateStoreMock implements StateStoreContract {
       this.lockTokens.delete(lock.lockToken)
       return {
         success: true,
-        data: null
+        data: null,
       }
     }
 
     return {
       success: true,
-      data: lock || null
+      data: lock || null,
     }
   }
 
@@ -330,7 +330,7 @@ export class StateStoreMock implements StateStoreContract {
 
     return {
       success: true,
-      data: validLocks
+      data: validLocks,
     }
   }
 
@@ -354,19 +354,22 @@ export class StateStoreMock implements StateStoreContract {
 
     return {
       success: true,
-      data: releasedCount
+      data: releasedCount,
     }
   }
 
   // ========== Context Operations ==========
 
-  async saveContext(contextId: ContextId, context: ConversationContext): Promise<ServiceResponse<void>> {
+  async saveContext(
+    contextId: ContextId,
+    context: ConversationContext
+  ): Promise<ServiceResponse<void>> {
     await this.simulateDelay()
 
     try {
       this.contexts.set(contextId, {
         ...context,
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       })
 
       return { success: true }
@@ -376,8 +379,8 @@ export class StateStoreMock implements StateStoreContract {
         error: {
           code: 'CONTEXT_SAVE_ERROR',
           message: `Failed to save context: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -388,7 +391,7 @@ export class StateStoreMock implements StateStoreContract {
     const context = this.contexts.get(contextId)
     return {
       success: true,
-      data: context || null
+      data: context || null,
     }
   }
 
@@ -402,8 +405,8 @@ export class StateStoreMock implements StateStoreContract {
         error: {
           code: 'CONTEXT_NOT_FOUND',
           message: `Context ${contextId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -435,7 +438,7 @@ export class StateStoreMock implements StateStoreContract {
       'review-code': ['code-review'],
       'update-docs': ['documentation'],
       'define-contract': ['contract-definition'],
-      'implement-mock': ['mock-implementation', 'typescript-development']
+      'implement-mock': ['mock-implementation', 'typescript-development'],
     }
 
     return capabilityMap[taskType] || ['typescript-development']
@@ -457,7 +460,7 @@ export class StateStoreMock implements StateStoreContract {
    * Seeds with test data (for testing)
    */
   async seed(data: {
-    tasks?: Task[],
+    tasks?: Task[]
     contexts?: Array<[ContextId, ConversationContext]>
   }): Promise<void> {
     if (data.tasks) {

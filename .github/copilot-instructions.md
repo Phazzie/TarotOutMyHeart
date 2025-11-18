@@ -60,6 +60,7 @@ npm run test:contracts                 # If tests exist, must pass
 #### Mock Completion Checklist:
 
 A mock is complete when ALL of these are true:
+
 - [ ] Implements the contract interface EXACTLY
 - [ ] `npm run check` passes with 0 TypeScript errors
 - [ ] No `as any` type escapes
@@ -75,27 +76,29 @@ A mock is complete when ALL of these are true:
 ```typescript
 // ❌ WRONG: Enum imported as type but used as value
 import type { ErrorCode } from '$contracts/Feature'
-return { code: ErrorCode.INVALID }  // ERROR!
+return { code: ErrorCode.INVALID } // ERROR!
 
 // ✅ CORRECT: Import enums without 'type'
 import { ErrorCode } from '$contracts/Feature'
-return { code: ErrorCode.INVALID }  // Works!
+return { code: ErrorCode.INVALID } // Works!
 
 // ❌ WRONG: Missing required interface methods
 class FeatureMock implements IFeatureService {
-  method1() { }  // Missing method2, method3
+  method1() {} // Missing method2, method3
 }
 
 // ✅ CORRECT: All methods implemented
 class FeatureMock implements IFeatureService {
-  method1() { }
-  method2() { }
-  method3() { }
+  method1() {}
+  method2() {}
+  method3() {}
 }
 
 // ❌ WRONG: Fields don't match contract
-interface Output { userId: string }
-return { user_id: '123' }  // Wrong field name!
+interface Output {
+  userId: string
+}
+return { user_id: '123' } // Wrong field name!
 
 // ✅ CORRECT: Exact field match
 return { userId: '123' }
@@ -516,6 +519,7 @@ npm run format
 ## Documentation Structure
 
 ### Root Files (Original Scaffolding)
+
 - `/AGENTS.md` - Complete AI agent instructions
 - `/seam-driven-development.md` - SDD methodology
 - `/SEAMSLIST.md` - Project seams catalog
@@ -523,7 +527,9 @@ npm run format
 - `/lessonslearned.md` - Project insights
 
 ### Development Documents
+
 All new planning documents go in `/docs/planning/`:
+
 - `docs/planning/DATA-BOUNDARIES.md` - Data boundary analysis
 - `docs/planning/RECOMMENDATIONS.md` - Technical decisions
 - Future: Contract drafts, diagrams, retrospectives

@@ -5,7 +5,7 @@
  * @boundary Seam #5: DeckDisplaySeam - Display 22 cards in interactive gallery
  * @requirement PRD Section: "User Flow Step 7 - View Generated Deck"
  * @updated 2025-11-07
- * 
+ *
  * @example
  * ```typescript
  * const state = displayService.initializeDisplay({ generatedCards: cards });
@@ -52,17 +52,17 @@ export const SORT_OPTIONS = ['number', 'name', 'generated-date'] as const
 /**
  * Display layout type
  */
-export type DisplayLayout = typeof DISPLAY_LAYOUTS[number]
+export type DisplayLayout = (typeof DISPLAY_LAYOUTS)[number]
 
 /**
  * Card size type
  */
-export type CardSize = typeof CARD_SIZES[number]
+export type CardSize = (typeof CARD_SIZES)[number]
 
 /**
  * Sort option type
  */
-export type SortOption = typeof SORT_OPTIONS[number]
+export type SortOption = (typeof SORT_OPTIONS)[number]
 
 // ============================================================================
 // CORE DATA STRUCTURES
@@ -70,7 +70,7 @@ export type SortOption = typeof SORT_OPTIONS[number]
 
 /**
  * Display state for the deck gallery
- * 
+ *
  * @property layout - Current layout mode
  * @property cardSize - Current card size
  * @property sortBy - Current sort order
@@ -92,7 +92,7 @@ export interface DeckDisplayState {
 /**
  * Card display information
  * Combines generated card with display metadata
- * 
+ *
  * @property card - Generated card data
  * @property position - Position in display (0-21)
  * @property visible - Whether card is currently visible (for filtering)
@@ -110,7 +110,7 @@ export interface DisplayCard {
 /**
  * Lightbox view state
  * Full-screen card viewer with navigation
- * 
+ *
  * @property open - Whether lightbox is open
  * @property currentCard - Current card number (0-21)
  * @property showPrompt - Whether to show generation prompt
@@ -133,7 +133,7 @@ export interface LightboxState {
 
 /**
  * Input for initializing deck display
- * 
+ *
  * @property generatedCards - All generated cards to display
  * @property initialLayout - Initial layout mode
  * @property initialSize - Initial card size
@@ -148,7 +148,7 @@ export interface InitializeDisplayInput {
 
 /**
  * Input for changing display layout
- * 
+ *
  * @property layout - New layout to switch to
  */
 export interface ChangeLayoutInput {
@@ -157,7 +157,7 @@ export interface ChangeLayoutInput {
 
 /**
  * Input for changing card size
- * 
+ *
  * @property size - New card size
  */
 export interface ChangeCardSizeInput {
@@ -166,7 +166,7 @@ export interface ChangeCardSizeInput {
 
 /**
  * Input for sorting cards
- * 
+ *
  * @property sortBy - Sort option
  * @property ascending - Sort ascending (default true)
  */
@@ -177,7 +177,7 @@ export interface SortCardsInput {
 
 /**
  * Input for filtering cards
- * 
+ *
  * @property filter - Filter string (searches name, number, prompt)
  */
 export interface FilterCardsInput {
@@ -186,7 +186,7 @@ export interface FilterCardsInput {
 
 /**
  * Input for selecting a card
- * 
+ *
  * @property cardNumber - Card number to select (0-21)
  * @property openLightbox - Whether to open lightbox (default false)
  */
@@ -197,7 +197,7 @@ export interface SelectCardInput {
 
 /**
  * Input for opening lightbox
- * 
+ *
  * @property cardNumber - Card number to display (0-21)
  * @property showPrompt - Show generation prompt (default false)
  * @property showMetadata - Show metadata (default false)
@@ -210,7 +210,7 @@ export interface OpenLightboxInput {
 
 /**
  * Input for navigating in lightbox
- * 
+ *
  * @property direction - Navigation direction
  */
 export interface NavigateLightboxInput {
@@ -223,7 +223,7 @@ export interface NavigateLightboxInput {
 
 /**
  * Result of initializing display
- * 
+ *
  * @property state - Initial display state
  * @property displayCards - All cards with display metadata
  * @property visibleCount - Number of visible cards
@@ -236,7 +236,7 @@ export interface InitializeDisplayOutput {
 
 /**
  * Result of changing layout
- * 
+ *
  * @property state - Updated display state
  * @property layout - New layout
  */
@@ -247,7 +247,7 @@ export interface ChangeLayoutOutput {
 
 /**
  * Result of changing card size
- * 
+ *
  * @property state - Updated display state
  * @property size - New size
  */
@@ -258,7 +258,7 @@ export interface ChangeCardSizeOutput {
 
 /**
  * Result of sorting cards
- * 
+ *
  * @property state - Updated display state
  * @property displayCards - Sorted cards
  */
@@ -269,7 +269,7 @@ export interface SortCardsOutput {
 
 /**
  * Result of filtering cards
- * 
+ *
  * @property state - Updated display state
  * @property displayCards - Filtered cards
  * @property visibleCount - Number of visible cards after filter
@@ -282,7 +282,7 @@ export interface FilterCardsOutput {
 
 /**
  * Result of selecting card
- * 
+ *
  * @property state - Updated display state
  * @property selectedCard - Selected card data
  * @property lightboxState - Lightbox state (if opened)
@@ -295,7 +295,7 @@ export interface SelectCardOutput {
 
 /**
  * Result of opening lightbox
- * 
+ *
  * @property state - Updated display state
  * @property lightboxState - Lightbox state
  * @property card - Card being displayed
@@ -308,7 +308,7 @@ export interface OpenLightboxOutput {
 
 /**
  * Result of closing lightbox
- * 
+ *
  * @property state - Updated display state
  */
 export interface CloseLightboxOutput {
@@ -317,7 +317,7 @@ export interface CloseLightboxOutput {
 
 /**
  * Result of navigating in lightbox
- * 
+ *
  * @property lightboxState - Updated lightbox state
  * @property card - New card being displayed
  */
@@ -340,12 +340,12 @@ export enum DeckDisplayErrorCode {
   INVALID_LAYOUT = 'INVALID_LAYOUT',
   INVALID_SIZE = 'INVALID_SIZE',
   INVALID_SORT_OPTION = 'INVALID_SORT_OPTION',
-  
+
   // State errors
   NO_DISPLAY_STATE = 'NO_DISPLAY_STATE',
   LIGHTBOX_NOT_OPEN = 'LIGHTBOX_NOT_OPEN',
   CANNOT_NAVIGATE = 'CANNOT_NAVIGATE',
-  
+
   // Display errors
   CARD_IMAGE_FAILED = 'CARD_IMAGE_FAILED',
   RENDER_FAILED = 'RENDER_FAILED',
@@ -357,7 +357,7 @@ export enum DeckDisplayErrorCode {
 
 /**
  * Deck Display Service Contract
- * 
+ *
  * Defines all operations for displaying generated tarot cards.
  * Implementation handles:
  * - Layout management (grid, list, carousel)
@@ -365,20 +365,20 @@ export enum DeckDisplayErrorCode {
  * - Lightbox modal navigation
  * - Metadata display
  * - Responsive sizing
- * 
+ *
  * @interface IDeckDisplayService
  */
 export interface IDeckDisplayService {
   /**
    * Initialize deck display
-   * 
+   *
    * Creates initial display state for gallery view.
-   * 
+   *
    * @param input - Cards and display options
    * @returns Promise<ServiceResponse<InitializeDisplayOutput>> - Display state
-   * 
+   *
    * @throws Never throws - all errors returned in ServiceResponse
-   * 
+   *
    * @example
    * ```typescript
    * const result = await service.initializeDisplay({
@@ -386,7 +386,7 @@ export interface IDeckDisplayService {
    *   initialLayout: 'grid',
    *   initialSize: 'medium'
    * });
-   * 
+   *
    * if (result.success) {
    *   renderGallery(result.data.displayCards);
    * }
@@ -398,80 +398,66 @@ export interface IDeckDisplayService {
 
   /**
    * Change display layout
-   * 
+   *
    * @param input - New layout
    * @returns Promise<ServiceResponse<ChangeLayoutOutput>> - Updated state
    */
-  changeLayout(
-    input: ChangeLayoutInput
-  ): Promise<ServiceResponse<ChangeLayoutOutput>>
+  changeLayout(input: ChangeLayoutInput): Promise<ServiceResponse<ChangeLayoutOutput>>
 
   /**
    * Change card size
-   * 
+   *
    * @param input - New size
    * @returns Promise<ServiceResponse<ChangeCardSizeOutput>> - Updated state
    */
-  changeCardSize(
-    input: ChangeCardSizeInput
-  ): Promise<ServiceResponse<ChangeCardSizeOutput>>
+  changeCardSize(input: ChangeCardSizeInput): Promise<ServiceResponse<ChangeCardSizeOutput>>
 
   /**
    * Sort cards
-   * 
+   *
    * @param input - Sort options
    * @returns Promise<ServiceResponse<SortCardsOutput>> - Sorted cards
    */
-  sortCards(
-    input: SortCardsInput
-  ): Promise<ServiceResponse<SortCardsOutput>>
+  sortCards(input: SortCardsInput): Promise<ServiceResponse<SortCardsOutput>>
 
   /**
    * Filter cards by search term
-   * 
+   *
    * @param input - Filter string
    * @returns Promise<ServiceResponse<FilterCardsOutput>> - Filtered cards
    */
-  filterCards(
-    input: FilterCardsInput
-  ): Promise<ServiceResponse<FilterCardsOutput>>
+  filterCards(input: FilterCardsInput): Promise<ServiceResponse<FilterCardsOutput>>
 
   /**
    * Select a card
-   * 
+   *
    * @param input - Card to select
    * @returns Promise<ServiceResponse<SelectCardOutput>> - Selection result
    */
-  selectCard(
-    input: SelectCardInput
-  ): Promise<ServiceResponse<SelectCardOutput>>
+  selectCard(input: SelectCardInput): Promise<ServiceResponse<SelectCardOutput>>
 
   /**
    * Open lightbox for card
-   * 
+   *
    * @param input - Card to display in lightbox
    * @returns Promise<ServiceResponse<OpenLightboxOutput>> - Lightbox state
    */
-  openLightbox(
-    input: OpenLightboxInput
-  ): Promise<ServiceResponse<OpenLightboxOutput>>
+  openLightbox(input: OpenLightboxInput): Promise<ServiceResponse<OpenLightboxOutput>>
 
   /**
    * Close lightbox
-   * 
+   *
    * @returns Promise<ServiceResponse<CloseLightboxOutput>> - Updated state
    */
   closeLightbox(): Promise<ServiceResponse<CloseLightboxOutput>>
 
   /**
    * Navigate in lightbox (previous/next card)
-   * 
+   *
    * @param input - Navigation direction
    * @returns Promise<ServiceResponse<NavigateLightboxOutput>> - New card
    */
-  navigateLightbox(
-    input: NavigateLightboxInput
-  ): Promise<ServiceResponse<NavigateLightboxOutput>>
+  navigateLightbox(input: NavigateLightboxInput): Promise<ServiceResponse<NavigateLightboxOutput>>
 }
 
 // ============================================================================
@@ -482,28 +468,18 @@ export interface IDeckDisplayService {
  * Maps error codes to user-friendly messages
  */
 export const DECK_DISPLAY_ERROR_MESSAGES: Record<DeckDisplayErrorCode, string> = {
-  [DeckDisplayErrorCode.NO_CARDS_PROVIDED]: 
-    'No cards provided for display',
-  [DeckDisplayErrorCode.INVALID_CARD_NUMBER]: 
-    'Invalid card number - must be between 0 and 21',
-  [DeckDisplayErrorCode.INVALID_LAYOUT]: 
-    'Invalid layout option',
-  [DeckDisplayErrorCode.INVALID_SIZE]: 
-    'Invalid card size option',
-  [DeckDisplayErrorCode.INVALID_SORT_OPTION]: 
-    'Invalid sort option',
-  
-  [DeckDisplayErrorCode.NO_DISPLAY_STATE]: 
-    'Display not initialized - please refresh the page',
-  [DeckDisplayErrorCode.LIGHTBOX_NOT_OPEN]: 
-    'Lightbox is not open',
-  [DeckDisplayErrorCode.CANNOT_NAVIGATE]: 
-    'Cannot navigate in that direction',
-  
-  [DeckDisplayErrorCode.CARD_IMAGE_FAILED]: 
-    'Failed to load card image',
-  [DeckDisplayErrorCode.RENDER_FAILED]: 
-    'Failed to render display',
+  [DeckDisplayErrorCode.NO_CARDS_PROVIDED]: 'No cards provided for display',
+  [DeckDisplayErrorCode.INVALID_CARD_NUMBER]: 'Invalid card number - must be between 0 and 21',
+  [DeckDisplayErrorCode.INVALID_LAYOUT]: 'Invalid layout option',
+  [DeckDisplayErrorCode.INVALID_SIZE]: 'Invalid card size option',
+  [DeckDisplayErrorCode.INVALID_SORT_OPTION]: 'Invalid sort option',
+
+  [DeckDisplayErrorCode.NO_DISPLAY_STATE]: 'Display not initialized - please refresh the page',
+  [DeckDisplayErrorCode.LIGHTBOX_NOT_OPEN]: 'Lightbox is not open',
+  [DeckDisplayErrorCode.CANNOT_NAVIGATE]: 'Cannot navigate in that direction',
+
+  [DeckDisplayErrorCode.CARD_IMAGE_FAILED]: 'Failed to load card image',
+  [DeckDisplayErrorCode.RENDER_FAILED]: 'Failed to render display',
 }
 
 // ============================================================================

@@ -34,7 +34,7 @@ import type { ServiceResponse } from '$contracts/types/common'
 
 /**
  * Mock implementation of CostCalculationService
- * 
+ *
  * Calculates and formats API costs based on Grok pricing.
  */
 export class CostCalculationMockService implements ICostCalculationService {
@@ -151,9 +151,7 @@ export class CostCalculationMockService implements ICostCalculationService {
   /**
    * Format cost for display
    */
-  async formatCost(
-    input: FormatCostInput
-  ): Promise<ServiceResponse<FormatCostOutput>> {
+  async formatCost(input: FormatCostInput): Promise<ServiceResponse<FormatCostOutput>> {
     await this.delay(50)
 
     const { cost, format } = input
@@ -190,7 +188,10 @@ export class CostCalculationMockService implements ICostCalculationService {
   async getCostSummary(): Promise<ServiceResponse<GetCostSummaryOutput>> {
     await this.delay(50)
 
-    const totalSessionCost = this.sessionCosts.reduce((sum, breakdown) => sum + breakdown.totalCost, 0)
+    const totalSessionCost = this.sessionCosts.reduce(
+      (sum, breakdown) => sum + breakdown.totalCost,
+      0
+    )
     const totalOperations = this.sessionCosts.length
 
     const summary: CostSummary = {
@@ -230,7 +231,7 @@ export class CostCalculationMockService implements ICostCalculationService {
    * Simulate async delay
    */
   private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms))
+    return new Promise(resolve => setTimeout(resolve, ms))
   }
 }
 

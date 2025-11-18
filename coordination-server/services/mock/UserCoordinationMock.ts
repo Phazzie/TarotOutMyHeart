@@ -28,7 +28,7 @@ import type {
   ContextId,
   ConflictId,
   ServiceResponse,
-  ServiceError
+  ServiceError,
 } from '@contracts'
 
 /**
@@ -109,7 +109,8 @@ export class UserCoordinationMock implements UserCoordinationContract {
     const tasks: Task[] = []
 
     // Parse task description to determine what needs to be done
-    const isComplexTask = taskDescription.length > 50 ||
+    const isComplexTask =
+      taskDescription.length > 50 ||
       taskDescription.toLowerCase().includes('and') ||
       taskDescription.toLowerCase().includes('with')
 
@@ -125,11 +126,15 @@ export class UserCoordinationMock implements UserCoordinationContract {
           files: [],
           conversationHistory: [],
           requirements: taskDescription,
-          constraints: ['Act as orchestrator', 'Break down into subtasks', 'Assign to Copilot as needed']
+          constraints: [
+            'Act as orchestrator',
+            'Break down into subtasks',
+            'Assign to Copilot as needed',
+          ],
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-        sessionId
+        sessionId,
       }
 
       const result = await this.stateStore.enqueueTask(orchestrationTask)
@@ -149,11 +154,11 @@ export class UserCoordinationMock implements UserCoordinationContract {
         context: {
           files: [],
           conversationHistory: [],
-          requirements: taskDescription
+          requirements: taskDescription,
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-        sessionId
+        sessionId,
       }
 
       const copilotTask: Omit<Task, 'id'> = {
@@ -164,11 +169,11 @@ export class UserCoordinationMock implements UserCoordinationContract {
         context: {
           files: [],
           conversationHistory: [],
-          requirements: taskDescription
+          requirements: taskDescription,
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-        sessionId
+        sessionId,
       }
 
       // Enqueue both tasks
@@ -192,11 +197,11 @@ export class UserCoordinationMock implements UserCoordinationContract {
           files: [],
           conversationHistory: [],
           requirements: taskDescription,
-          constraints: ['Both agents work simultaneously', 'Coordinate file access']
+          constraints: ['Both agents work simultaneously', 'Coordinate file access'],
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-        sessionId
+        sessionId,
       }
 
       const result = await this.stateStore.enqueueTask(parallelTask)
@@ -231,14 +236,14 @@ export class UserCoordinationMock implements UserCoordinationContract {
             role: 'system',
             content: `Starting collaboration session for task: ${params.task}`,
             timestamp: new Date(),
-            metadata: { mode: params.mode }
-          }
+            metadata: { mode: params.mode },
+          },
         ],
         sharedState: {
           task: params.task,
-          mode: params.mode
+          mode: params.mode,
         },
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       }
 
       await this.stateStore.saveContext(contextId, context)
@@ -250,7 +255,10 @@ export class UserCoordinationMock implements UserCoordinationContract {
       // Auto-select based on mode and task
       if (params.mode === 'orchestrator-worker') {
         leadAgent = 'claude-code' // Claude is better at orchestration
-      } else if (params.task.toLowerCase().includes('ui') || params.task.toLowerCase().includes('component')) {
+      } else if (
+        params.task.toLowerCase().includes('ui') ||
+        params.task.toLowerCase().includes('component')
+      ) {
         leadAgent = 'github-copilot' // Copilot for UI work
       } else {
         leadAgent = 'claude-code' // Default to Claude
@@ -272,7 +280,7 @@ export class UserCoordinationMock implements UserCoordinationContract {
       status: 'active',
       createdAt: new Date(),
       updatedAt: new Date(),
-      contextId
+      contextId,
     }
 
     this.sessions.set(sessionId, session)
@@ -290,12 +298,12 @@ export class UserCoordinationMock implements UserCoordinationContract {
     this.emitEvent(sessionId, {
       type: 'session-resumed',
       timestamp: new Date(),
-      data: session
+      data: session,
     })
 
     return {
       success: true,
-      data: session
+      data: session,
     }
   }
 
@@ -309,8 +317,8 @@ export class UserCoordinationMock implements UserCoordinationContract {
         error: {
           code: 'SESSION_NOT_FOUND',
           message: `Session ${sessionId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -320,8 +328,8 @@ export class UserCoordinationMock implements UserCoordinationContract {
         error: {
           code: 'SESSION_NOT_ACTIVE',
           message: `Session ${sessionId} is ${session.status}`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -334,7 +342,7 @@ export class UserCoordinationMock implements UserCoordinationContract {
     this.emitEvent(sessionId, {
       type: 'session-paused',
       timestamp: new Date(),
-      data: { sessionId }
+      data: { sessionId },
     })
 
     return { success: true }
@@ -350,8 +358,8 @@ export class UserCoordinationMock implements UserCoordinationContract {
         error: {
           code: 'SESSION_NOT_FOUND',
           message: `Session ${sessionId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -361,8 +369,8 @@ export class UserCoordinationMock implements UserCoordinationContract {
         error: {
           code: 'SESSION_NOT_PAUSED',
           message: `Session ${sessionId} is ${session.status}`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -375,7 +383,7 @@ export class UserCoordinationMock implements UserCoordinationContract {
     this.emitEvent(sessionId, {
       type: 'session-resumed',
       timestamp: new Date(),
-      data: { sessionId }
+      data: { sessionId },
     })
 
     return { success: true }
@@ -391,8 +399,8 @@ export class UserCoordinationMock implements UserCoordinationContract {
         error: {
           code: 'SESSION_NOT_FOUND',
           message: `Session ${sessionId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -407,7 +415,9 @@ export class UserCoordinationMock implements UserCoordinationContract {
     return { success: true }
   }
 
-  async getCollaborationStatus(sessionId: SessionId): Promise<ServiceResponse<CollaborationStatus>> {
+  async getCollaborationStatus(
+    sessionId: SessionId
+  ): Promise<ServiceResponse<CollaborationStatus>> {
     await this.simulateDelay()
 
     const session = this.sessions.get(sessionId)
@@ -417,14 +427,14 @@ export class UserCoordinationMock implements UserCoordinationContract {
         error: {
           code: 'SESSION_NOT_FOUND',
           message: `Session ${sessionId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
     // Get all tasks for session
     const tasksResult = await this.stateStore.getSessionTasks(sessionId)
-    const allTasks = tasksResult.success ? (tasksResult.data || []) : []
+    const allTasks = tasksResult.success ? tasksResult.data || [] : []
 
     // Categorize tasks
     const activeTasks = allTasks.filter(t =>
@@ -434,7 +444,7 @@ export class UserCoordinationMock implements UserCoordinationContract {
 
     // Get current locks
     const locksResult = await this.stateStore.getAllLocks()
-    const currentLocks = locksResult.success ? (locksResult.data || []) : []
+    const currentLocks = locksResult.success ? locksResult.data || [] : []
 
     // Get conflicts for this session
     const sessionConflicts: FileConflict[] = []
@@ -447,9 +457,7 @@ export class UserCoordinationMock implements UserCoordinationContract {
     // Calculate progress
     const tasksTotal = allTasks.length
     const tasksCompleted = completedTasks.length
-    const percentComplete = tasksTotal > 0
-      ? Math.round((tasksCompleted / tasksTotal) * 100)
-      : 0
+    const percentComplete = tasksTotal > 0 ? Math.round((tasksCompleted / tasksTotal) * 100) : 0
 
     const status: CollaborationStatus = {
       session,
@@ -460,13 +468,13 @@ export class UserCoordinationMock implements UserCoordinationContract {
       progress: {
         tasksTotal,
         tasksCompleted,
-        percentComplete
-      }
+        percentComplete,
+      },
     }
 
     return {
       success: true,
-      data: status
+      data: status,
     }
   }
 
@@ -483,8 +491,8 @@ export class UserCoordinationMock implements UserCoordinationContract {
         error: {
           code: 'CONFLICT_NOT_FOUND',
           message: `Conflict ${conflictId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -501,8 +509,8 @@ export class UserCoordinationMock implements UserCoordinationContract {
       data: {
         conflictId,
         resolution,
-        conflict: tracked.conflict
-      }
+        conflict: tracked.conflict,
+      },
     })
 
     return { success: true }
@@ -559,14 +567,14 @@ export class UserCoordinationMock implements UserCoordinationContract {
       id: conflictId,
       conflict,
       session: sessionId,
-      status: 'pending'
+      status: 'pending',
     })
 
     // Emit conflict event
     this.emitEvent(sessionId, {
       type: 'conflict-detected',
       timestamp: new Date(),
-      data: { conflictId, conflict }
+      data: { conflictId, conflict },
     })
 
     return conflictId
@@ -586,7 +594,7 @@ export class UserCoordinationMock implements UserCoordinationContract {
         this.emitEvent(sessionId, {
           type: 'task-claimed',
           timestamp: new Date(),
-          data: { taskId: task.id, agentId: task.assignedTo }
+          data: { taskId: task.id, agentId: task.assignedTo },
         })
 
         // Simulate completion after delay
@@ -594,13 +602,13 @@ export class UserCoordinationMock implements UserCoordinationContract {
           await this.stateStore.updateTaskResult(task.id, {
             success: true,
             output: 'Task completed successfully (simulated)',
-            filesModified: []
+            filesModified: [],
           })
 
           this.emitEvent(sessionId, {
             type: 'task-completed',
             timestamp: new Date(),
-            data: { taskId: task.id }
+            data: { taskId: task.id },
           })
         }, 2000)
       }

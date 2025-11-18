@@ -40,7 +40,7 @@ import type { ServiceResponse } from '$contracts/types/common'
 
 /**
  * Mock implementation of PromptGenerationService
- * 
+ *
  * Simulates Grok vision API calls with realistic delays and generated content.
  */
 export class PromptGenerationMockService implements IPromptGenerationService {
@@ -69,13 +69,25 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       onProgress({ progress: 0, status: 'Analyzing reference images...', currentStep: 'analyzing' })
       await this.delay(800)
 
-      onProgress({ progress: 25, status: 'Generating prompts for Fool through Lovers...', currentStep: 'generating' })
+      onProgress({
+        progress: 25,
+        status: 'Generating prompts for Fool through Lovers...',
+        currentStep: 'generating',
+      })
       await this.delay(1000)
 
-      onProgress({ progress: 50, status: 'Generating prompts for Chariot through Hanged Man...', currentStep: 'generating' })
+      onProgress({
+        progress: 50,
+        status: 'Generating prompts for Chariot through Hanged Man...',
+        currentStep: 'generating',
+      })
       await this.delay(1000)
 
-      onProgress({ progress: 75, status: 'Generating prompts for Death through World...', currentStep: 'generating' })
+      onProgress({
+        progress: 75,
+        status: 'Generating prompts for Death through World...',
+        currentStep: 'generating',
+      })
       await this.delay(1000)
 
       onProgress({ progress: 100, status: 'Finalizing prompts...', currentStep: 'complete' })
@@ -341,7 +353,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
    * Simulate async delay
    */
   private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms))
+    return new Promise(resolve => setTimeout(resolve, ms))
   }
 }
 
@@ -349,3 +361,9 @@ export class PromptGenerationMockService implements IPromptGenerationService {
  * Singleton instance for use throughout the application
  */
 export const promptGenerationMockService = new PromptGenerationMockService()
+
+/**
+ * Export class alias for testing
+ * Tests need to instantiate their own instances to avoid state pollution
+ */
+export { PromptGenerationMockService as PromptGenerationMock }

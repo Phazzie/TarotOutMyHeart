@@ -102,7 +102,7 @@ describe('PromptGeneration Contract', () => {
         })
 
         expect(response.success).toBe(true)
-        response.data?.cardPrompts.forEach((prompt) => {
+        response.data?.cardPrompts.forEach(prompt => {
           expect(prompt.generatedPrompt.length).toBeGreaterThan(0)
         })
       })
@@ -114,7 +114,7 @@ describe('PromptGeneration Contract', () => {
         })
 
         expect(response.success).toBe(true)
-        response.data?.cardPrompts.forEach((prompt) => {
+        response.data?.cardPrompts.forEach(prompt => {
           expect(prompt.confidence).toBeGreaterThanOrEqual(0)
           expect(prompt.confidence).toBeLessThanOrEqual(1)
         })
@@ -213,7 +213,7 @@ describe('PromptGeneration Contract', () => {
         await service.generatePrompts({
           referenceImageUrls: validReferenceUrls,
           styleInputs: validStyleInputs,
-          onProgress: (progress) => {
+          onProgress: progress => {
             progressUpdates.push(progress)
           },
         })
@@ -227,12 +227,12 @@ describe('PromptGeneration Contract', () => {
         await service.generatePrompts({
           referenceImageUrls: validReferenceUrls,
           styleInputs: validStyleInputs,
-          onProgress: (progress) => {
+          onProgress: progress => {
             progressUpdates.push(progress)
           },
         })
 
-        progressUpdates.forEach((update) => {
+        progressUpdates.forEach(update => {
           expect(update.progress).toBeGreaterThanOrEqual(0)
           expect(update.progress).toBeLessThanOrEqual(100)
         })
@@ -244,7 +244,7 @@ describe('PromptGeneration Contract', () => {
         await service.generatePrompts({
           referenceImageUrls: validReferenceUrls,
           styleInputs: validStyleInputs,
-          onProgress: (progress) => {
+          onProgress: progress => {
             progressUpdates.push(progress)
           },
         })
@@ -262,12 +262,12 @@ describe('PromptGeneration Contract', () => {
         await service.generatePrompts({
           referenceImageUrls: validReferenceUrls,
           styleInputs: validStyleInputs,
-          onProgress: (progress) => {
+          onProgress: progress => {
             progressUpdates.push(progress)
           },
         })
 
-        progressUpdates.forEach((update) => {
+        progressUpdates.forEach(update => {
           expect(update.status).toBeDefined()
           expect(update.currentStep).toBeDefined()
           expect(['uploading', 'analyzing', 'generating', 'validating', 'complete']).toContain(
@@ -282,7 +282,7 @@ describe('PromptGeneration Contract', () => {
         await service.generatePrompts({
           referenceImageUrls: validReferenceUrls,
           styleInputs: validStyleInputs,
-          onProgress: (progress) => {
+          onProgress: progress => {
             progressUpdates.push(progress)
           },
         })
@@ -457,7 +457,7 @@ describe('PromptGeneration Contract', () => {
       })
 
       it('should detect missing card numbers', async () => {
-        const promptsWithGap = validPrompts.filter((p) => p.cardNumber !== 5)
+        const promptsWithGap = validPrompts.filter(p => p.cardNumber !== 5)
 
         const response = await service.validatePrompts({
           prompts: promptsWithGap,
@@ -483,9 +483,7 @@ describe('PromptGeneration Contract', () => {
       })
 
       it('should detect prompts with confidence outside 0-1 range', async () => {
-        const invalidPrompts = validPrompts.map((p, i) =>
-          i === 0 ? { ...p, confidence: 1.5 } : p
-        )
+        const invalidPrompts = validPrompts.map((p, i) => (i === 0 ? { ...p, confidence: 1.5 } : p))
 
         const response = await service.validatePrompts({
           prompts: invalidPrompts,
@@ -1014,10 +1012,8 @@ describe('PromptGeneration Contract', () => {
         'QUOTA_EXCEEDED',
       ]
 
-      errorCodes.forEach((code) => {
-        expect(PromptGenerationErrorCode[code as keyof typeof PromptGenerationErrorCode]).toBe(
-          code
-        )
+      errorCodes.forEach(code => {
+        expect(PromptGenerationErrorCode[code as keyof typeof PromptGenerationErrorCode]).toBe(code)
       })
     })
   })

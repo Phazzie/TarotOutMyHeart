@@ -69,9 +69,7 @@
         <p>Step 3 of 3: View & Download Your Cards</p>
       </div>
       <div class="header-actions">
-        <button class="btn-secondary" onclick={startOver}>
-          Start Over
-        </button>
+        <button class="btn-secondary" onclick={startOver}> Start Over </button>
       </div>
     </div>
   </header>
@@ -110,9 +108,7 @@
       <div class="empty-icon">🎴</div>
       <h2>No Cards Generated Yet</h2>
       <p>Generate your tarot deck to see it here.</p>
-      <button class="btn-primary" onclick={goToGenerate}>
-        Go to Generate →
-      </button>
+      <button class="btn-primary" onclick={goToGenerate}> Go to Generate → </button>
     </div>
   {/if}
 </div>
@@ -229,7 +225,9 @@
     border-radius: 8px;
     font-size: 1rem;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
   }
 
   .btn-primary {

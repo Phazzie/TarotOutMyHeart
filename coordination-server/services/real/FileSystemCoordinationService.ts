@@ -17,7 +17,7 @@ import type {
   FileConflict,
   AgentId,
   LockToken,
-  ServiceResponse
+  ServiceResponse,
 } from '@contracts'
 
 /**
@@ -50,7 +50,7 @@ export class FileSystemCoordinationService implements FileSystemCoordinationCont
       if (!lockCheckResult.success) {
         return {
           success: false,
-          error: lockCheckResult.error!
+          error: lockCheckResult.error!,
         }
       }
 
@@ -65,7 +65,7 @@ export class FileSystemCoordinationService implements FileSystemCoordinationCont
             path,
             operation,
             reason: `File is being ${existingLock.operation} by ${existingLock.owner}`,
-            lockToken: undefined
+            lockToken: undefined,
           }
           return { success: true, data: grant }
         }
@@ -75,7 +75,7 @@ export class FileSystemCoordinationService implements FileSystemCoordinationCont
           granted: true,
           path,
           operation,
-          lockToken: undefined // Reads don't need locks
+          lockToken: undefined, // Reads don't need locks
         }
         return { success: true, data: grant }
       }
@@ -89,7 +89,7 @@ export class FileSystemCoordinationService implements FileSystemCoordinationCont
             path,
             operation,
             reason: `File is locked for ${existingLock.operation} by ${existingLock.owner}`,
-            lockToken: undefined
+            lockToken: undefined,
           }
           return { success: true, data: grant }
         }
@@ -103,7 +103,7 @@ export class FileSystemCoordinationService implements FileSystemCoordinationCont
             path,
             operation,
             reason: lockResult.error?.message || 'Failed to acquire lock',
-            lockToken: undefined
+            lockToken: undefined,
           }
           return { success: true, data: grant }
         }
@@ -113,7 +113,7 @@ export class FileSystemCoordinationService implements FileSystemCoordinationCont
           granted: true,
           path,
           operation,
-          lockToken: lockResult.data
+          lockToken: lockResult.data,
         }
         return { success: true, data: grant }
       }
@@ -124,8 +124,8 @@ export class FileSystemCoordinationService implements FileSystemCoordinationCont
         error: {
           code: 'INVALID_OPERATION',
           message: `Invalid operation: ${operation}`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     } catch (error) {
       return {
@@ -133,8 +133,8 @@ export class FileSystemCoordinationService implements FileSystemCoordinationCont
         error: {
           code: 'FILE_ACCESS_ERROR',
           message: `Failed to request file access: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -158,8 +158,8 @@ export class FileSystemCoordinationService implements FileSystemCoordinationCont
         error: {
           code: 'RELEASE_ACCESS_ERROR',
           message: `Failed to release file access: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -174,7 +174,7 @@ export class FileSystemCoordinationService implements FileSystemCoordinationCont
       if (!lockCheckResult.success) {
         return {
           success: false,
-          error: lockCheckResult.error!
+          error: lockCheckResult.error!,
         }
       }
 
@@ -189,7 +189,7 @@ export class FileSystemCoordinationService implements FileSystemCoordinationCont
         path,
         agents: [lock.owner],
         conflictType: 'simultaneous-write',
-        detectedAt: new Date()
+        detectedAt: new Date(),
       }
 
       return { success: true, data: [conflict] }
@@ -199,8 +199,8 @@ export class FileSystemCoordinationService implements FileSystemCoordinationCont
         error: {
           code: 'DETECT_CONFLICTS_ERROR',
           message: `Failed to detect conflicts: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }
@@ -221,7 +221,7 @@ export class FileSystemCoordinationService implements FileSystemCoordinationCont
         const grantResult = await this.requestFileAccess({
           path: request.path,
           operation: request.operation,
-          agentId: request.agentId
+          agentId: request.agentId,
         })
 
         if (!grantResult.success) {
@@ -232,7 +232,7 @@ export class FileSystemCoordinationService implements FileSystemCoordinationCont
 
           return {
             success: false,
-            error: grantResult.error!
+            error: grantResult.error!,
           }
         }
 
@@ -258,9 +258,9 @@ export class FileSystemCoordinationService implements FileSystemCoordinationCont
               message: `Batch file access denied: ${grant.reason}`,
               retryable: true,
               details: {
-                failedPath: grant.path
-              }
-            }
+                failedPath: grant.path,
+              },
+            },
           }
         }
       }
@@ -273,8 +273,8 @@ export class FileSystemCoordinationService implements FileSystemCoordinationCont
         error: {
           code: 'BATCH_ACCESS_ERROR',
           message: `Failed to request batch file access: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          retryable: true
-        }
+          retryable: true,
+        },
       }
     }
   }

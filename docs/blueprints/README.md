@@ -7,9 +7,11 @@ This directory contains templates for creating consistent, well-documented code 
 ## 📋 Available Templates
 
 ### 1. CONTRACT-BLUEPRINT.md
+
 **Use when**: Defining a new seam/contract
 
 **What it provides**:
+
 - Complete contract file template with documentation standards
 - Input/Output interface patterns
 - Error handling patterns
@@ -18,6 +20,7 @@ This directory contains templates for creating consistent, well-documented code 
 - Examples and anti-patterns
 
 **Key sections**:
+
 - File header documentation (PURPOSE, DATA FLOW, DEPENDENCIES)
 - Input types
 - Output types
@@ -30,9 +33,11 @@ This directory contains templates for creating consistent, well-documented code 
 ---
 
 ### 2. STUB-BLUEPRINT.md
+
 **Use when**: Implementing mock or real services
 
 **What it provides**:
+
 - Mock service template with realistic fake data
 - Real service template with API integration
 - Service factory pattern
@@ -41,6 +46,7 @@ This directory contains templates for creating consistent, well-documented code 
 **Key sections**:
 
 **Mock Template**:
+
 - File header documentation (PURPOSE, DATA FLOW, MOCK BEHAVIOR)
 - Mock data constants
 - Mock configuration (delays, error rates)
@@ -49,6 +55,7 @@ This directory contains templates for creating consistent, well-documented code 
 - Mock scenarios (success, errors, edge cases)
 
 **Real Template**:
+
 - File header documentation (PURPOSE, DATA FLOW, ERROR HANDLING)
 - Configuration and environment variables
 - Helper functions (backoff, error mapping)
@@ -57,6 +64,7 @@ This directory contains templates for creating consistent, well-documented code 
 - Response validation
 
 **Factory Template**:
+
 - USE_MOCKS flag configuration
 - Service exports with lazy loading
 
@@ -67,6 +75,7 @@ This directory contains templates for creating consistent, well-documented code 
 ### Creating a New Feature
 
 **Step 1: Define Contract**
+
 ```bash
 # Open contract blueprint
 cat docs/blueprints/CONTRACT-BLUEPRINT.md
@@ -83,6 +92,7 @@ touch contracts/YourFeature.ts
 ```
 
 **Step 2: Create Mock Service**
+
 ```bash
 # Open stub blueprint
 cat docs/blueprints/STUB-BLUEPRINT.md
@@ -97,6 +107,7 @@ touch services/mock/YourFeatureMock.ts
 ```
 
 **Step 3: Test Mock**
+
 ```bash
 # Create test file
 touch tests/contracts/YourFeature.test.ts
@@ -106,6 +117,7 @@ npm run test:contracts
 ```
 
 **Step 4: Build UI**
+
 ```bash
 # Import contract types and service
 # Use service from factory (respects USE_MOCKS)
@@ -113,6 +125,7 @@ npm run test:contracts
 ```
 
 **Step 5: Create Real Service**
+
 ```bash
 # Create real service file
 touch services/real/YourFeatureService.ts
@@ -125,6 +138,7 @@ touch services/real/YourFeatureService.ts
 ```
 
 **Step 6: Test Real Service**
+
 ```bash
 # Create integration test
 touch tests/integration/YourFeature.test.ts
@@ -134,6 +148,7 @@ npm run test:integration
 ```
 
 **Step 7: Switch to Real**
+
 ```bash
 # Set USE_MOCKS=false
 # Integration should work first try!
@@ -149,21 +164,21 @@ npm run test:integration
 /**
  * @fileoverview [One-line description]
  * @module [module-path]
- * 
+ *
  * PURPOSE:
  * [2-3 sentences explaining why this file exists]
  * [What problem does it solve?]
  * [What business requirement does it fulfill?]
- * 
+ *
  * DATA FLOW:
  * Input: [What comes in and from where]
  * Transform: [What this file does to the data]
  * Output: [What goes out and to where]
- * 
+ *
  * DEPENDENCIES:
  * - Depends on: [List files/modules this imports]
  * - Used by: [List files/modules that import this]
- * 
+ *
  * @see [Related docs]
  * @updated YYYY-MM-DD
  */
@@ -172,6 +187,7 @@ npm run test:integration
 ### Why This Matters
 
 ✅ **Benefits**:
+
 - New developers understand code faster
 - AI agents have context for better code generation
 - Debugging is easier with clear data flow
@@ -179,6 +195,7 @@ npm run test:integration
 - Onboarding time reduced dramatically
 
 ❌ **Without documentation**:
+
 - "What does this file do?" (need to read entire file)
 - "What depends on this?" (need to search entire codebase)
 - "Can I modify this?" (unclear who uses it)
@@ -209,15 +226,18 @@ npm run test:integration
 ## 📚 Related Documentation
 
 ### Planning Phase
+
 - `/docs/planning/DATA-BOUNDARIES.md` - Identifies all seams
 - `/docs/planning/RECOMMENDATIONS.md` - Technical decisions
 
 ### Methodology
+
 - `/seam-driven-development.md` - Complete SDD guide
 - `/AGENTS.md` - Project overview and standards
 - `/AI-CHECKLIST.md` - Step-by-step workflow
 
 ### Catalog
+
 - `/SEAMSLIST.md` - All defined seams
 - `/CHANGELOG.md` - Version history
 - `/lessonslearned.md` - Project insights
@@ -227,14 +247,18 @@ npm run test:integration
 ## 💡 Examples
 
 ### Contract Example
+
 See: `/contracts/CoordinationServer.ts`
+
 - Comprehensive file header
 - Multiple service interfaces
 - Complete type definitions
 - Error handling patterns
 
 ### Common Types Example
+
 See: `/contracts/types/common.ts`
+
 - ServiceResponse wrapper pattern
 - Shared type definitions
 - Utility types
@@ -244,6 +268,7 @@ See: `/contracts/types/common.ts`
 ## 🚫 Anti-Patterns
 
 ### DON'T Create Files Without Headers
+
 ```typescript
 // ❌ BAD: No context
 export interface UserInput {
@@ -256,25 +281,26 @@ export class UserService {
 ```
 
 ### DO Include Complete Documentation
+
 ```typescript
 // ✅ GOOD: Clear context
 /**
  * @fileoverview User Management Service Contract
  * @module contracts/User
- * 
+ *
  * PURPOSE:
  * Defines the boundary between user management UI and user API.
  * Ensures type safety for all user CRUD operations.
- * 
+ *
  * DATA FLOW:
  * Input: User data from forms (UserInput)
  * Transform: Validates and structures for API
  * Output: User records with timestamps (UserOutput)
- * 
+ *
  * DEPENDENCIES:
  * - Depends on: contracts/types/common.ts
  * - Used by: services/mock/UserMock.ts, services/real/UserService.ts
- * 
+ *
  * @see /docs/planning/DATA-BOUNDARIES.md - Seam #3
  * @updated 2025-11-07
  */

@@ -18,7 +18,7 @@ import type {
   AgentId,
   LockToken,
   ServiceResponse,
-  ServiceError
+  ServiceError,
 } from '@contracts'
 
 /**
@@ -55,7 +55,7 @@ export class FileSystemCoordinationMock implements FileSystemCoordinationContrac
   private readonly rules: AccessRules = {
     allowMultipleReaders: true,
     exclusiveWrite: true,
-    lockTimeout: 5 * 60 * 1000 // 5 minutes
+    lockTimeout: 5 * 60 * 1000, // 5 minutes
   }
   private readonly SIMULATED_DELAY_MS = 25 // Fast file system checks
 
@@ -97,7 +97,7 @@ export class FileSystemCoordinationMock implements FileSystemCoordinationContrac
         return {
           hasConflict: true,
           reason: `File is being ${writer?.operation || 'modified'} by another agent`,
-          conflictingAgent: writer?.agentId
+          conflictingAgent: writer?.agentId,
         }
       }
       return { hasConflict: false }
@@ -108,7 +108,7 @@ export class FileSystemCoordinationMock implements FileSystemCoordinationContrac
         return {
           hasConflict: true,
           reason: `File is locked for ${blocker.operation} by ${blocker.agentId}`,
-          conflictingAgent: blocker.agentId
+          conflictingAgent: blocker.agentId,
         }
       }
       return { hasConflict: false }
@@ -133,17 +133,20 @@ export class FileSystemCoordinationMock implements FileSystemCoordinationContrac
       const conflict: FileConflict = {
         path: normalizedPath,
         agents: [params.agentId, conflictCheck.conflictingAgent!],
-        conflictType: params.operation === 'delete' && conflictCheck.conflictingAgent
-          ? 'edit-deleted'
-          : 'simultaneous-write',
-        detectedAt: new Date()
+        conflictType:
+          params.operation === 'delete' && conflictCheck.conflictingAgent
+            ? 'edit-deleted'
+            : 'simultaneous-write',
+        detectedAt: new Date(),
       }
 
       const pathConflicts = this.conflicts.get(normalizedPath) || []
       pathConflicts.push(conflict)
       this.conflicts.set(normalizedPath, pathConflicts)
 
-      console.log(`[FileSystemCoordination] Access denied for ${params.agentId}: ${conflictCheck.reason}`)
+      console.log(
+        `[FileSystemCoordination] Access denied for ${params.agentId}: ${conflictCheck.reason}`
+      )
 
       return {
         success: false,
@@ -154,9 +157,9 @@ export class FileSystemCoordinationMock implements FileSystemCoordinationContrac
           details: {
             path: normalizedPath,
             requestedOperation: params.operation,
-            lockedBy: conflictCheck.conflictingAgent
-          }
-        }
+            lockedBy: conflictCheck.conflictingAgent,
+          },
+        },
       }
     }
 
@@ -169,7 +172,7 @@ export class FileSystemCoordinationMock implements FileSystemCoordinationContrac
       if (!lockResult.success) {
         return {
           success: false,
-          error: lockResult.error
+          error: lockResult.error,
         }
       }
       lockToken = lockResult.data
@@ -182,7 +185,7 @@ export class FileSystemCoordinationMock implements FileSystemCoordinationContrac
       operation: params.operation,
       lockToken,
       grantedAt: new Date(),
-      expiresAt: new Date(Date.now() + this.rules.lockTimeout)
+      expiresAt: new Date(Date.now() + this.rules.lockTimeout),
     }
 
     const pathAccess = this.activeAccess.get(normalizedPath) || []
@@ -194,17 +197,19 @@ export class FileSystemCoordinationMock implements FileSystemCoordinationContrac
       operation: params.operation,
       lockToken,
       granted: true,
-      expiresAt: access.expiresAt
+      expiresAt: access.expiresAt,
     }
 
-    console.log(`[FileSystemCoordination] Access granted to ${params.agentId} for ${params.operation} on ${normalizedPath}`)
+    console.log(
+      `[FileSystemCoordination] Access granted to ${params.agentId} for ${params.operation} on ${normalizedPath}`
+    )
     if (lockToken) {
       console.log(`[FileSystemCoordination] Lock token: ${lockToken}`)
     }
 
     return {
       success: true,
-      data: grant
+      data: grant,
     }
   }
 
@@ -213,8 +218,8 @@ export class FileSystemCoordinationMock implements FileSystemCoordinationContrac
 
     // Remove from active access
     const pathAccess = this.activeAccess.get(grant.path) || []
-    const updatedAccess = pathAccess.filter(a =>
-      a.lockToken !== grant.lockToken && a.operation !== grant.operation
+    const updatedAccess = pathAccess.filter(
+      a => a.lockToken !== grant.lockToken && a.operation !== grant.operation
     )
 
     if (updatedAccess.length === 0) {
@@ -243,13 +248,13 @@ export class FileSystemCoordinationMock implements FileSystemCoordinationContrac
     const pathConflicts = this.conflicts.get(normalizedPath) || []
 
     // Filter to recent conflicts (last hour)
-    const recentConflicts = pathConflicts.filter(c =>
-      c.detectedAt.getTime() > Date.now() - 60 * 60 * 1000
+    const recentConflicts = pathConflicts.filter(
+      c => c.detectedAt.getTime() > Date.now() - 60 * 60 * 1000
     )
 
     return {
       success: true,
-      data: recentConflicts
+      data: recentConflicts,
     }
   }
 
@@ -268,14 +273,16 @@ export class FileSystemCoordinationMock implements FileSystemCoordinationContrac
       if (conflictCheck.hasConflict) {
         conflicts.push({
           request,
-          reason: conflictCheck.reason || 'File is locked'
+          reason: conflictCheck.reason || 'File is locked',
         })
       }
     }
 
     // If any conflicts, reject the entire batch
     if (conflicts.length > 0) {
-      console.log(`[FileSystemCoordination] Batch access denied: ${conflicts.length} conflicts found`)
+      console.log(
+        `[FileSystemCoordination] Batch access denied: ${conflicts.length} conflicts found`
+      )
 
       return {
         success: false,
@@ -287,10 +294,10 @@ export class FileSystemCoordinationMock implements FileSystemCoordinationContrac
             conflicts: conflicts.map(c => ({
               path: c.request.path,
               operation: c.request.operation,
-              reason: c.reason
-            }))
-          }
-        }
+              reason: c.reason,
+            })),
+          },
+        },
       }
     }
 
@@ -301,7 +308,9 @@ export class FileSystemCoordinationMock implements FileSystemCoordinationContrac
         grants.push(result.data)
       } else {
         // Rollback on failure
-        console.error(`[FileSystemCoordination] Batch grant failed, rolling back ${grants.length} grants`)
+        console.error(
+          `[FileSystemCoordination] Batch grant failed, rolling back ${grants.length} grants`
+        )
         for (const grant of grants) {
           await this.releaseFileAccess(grant)
         }
@@ -311,8 +320,8 @@ export class FileSystemCoordinationMock implements FileSystemCoordinationContrac
           error: result.error || {
             code: 'BATCH_GRANT_FAILED',
             message: 'Failed to grant batch access',
-            retryable: true
-          }
+            retryable: true,
+          },
         }
       }
     }
@@ -321,7 +330,7 @@ export class FileSystemCoordinationMock implements FileSystemCoordinationContrac
 
     return {
       success: true,
-      data: grants
+      data: grants,
     }
   }
 

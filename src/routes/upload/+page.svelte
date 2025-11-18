@@ -29,10 +29,7 @@
    * - At least 1 image uploaded
    * - Style inputs completed (non-null)
    */
-  const canProceed = $derived(
-    appStore.uploadedImages.length > 0 &&
-    appStore.styleInputs !== null
-  )
+  const canProceed = $derived(appStore.uploadedImages.length > 0 && appStore.styleInputs !== null)
 
   /**
    * Handle navigation to generate page
@@ -68,11 +65,7 @@
       <CostDisplayComponent />
 
       <div class="navigation">
-        <button
-          class="btn-primary"
-          disabled={!canProceed}
-          onclick={handleContinue}
-        >
+        <button class="btn-primary" disabled={!canProceed} onclick={handleContinue}>
           Continue to Generate Prompts →
         </button>
         <p class="help-text">
@@ -153,7 +146,9 @@
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
   }
 
   .btn-primary:hover:not(:disabled) {

@@ -25,7 +25,7 @@ import type {
   ServiceError,
   RegistrationToken,
   HandoffId,
-  SessionId
+  SessionId,
 } from '@contracts'
 
 /**
@@ -110,7 +110,7 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
       existing.lastSeen = new Date()
       return {
         success: true,
-        data: existing.token
+        data: existing.token,
       }
     }
 
@@ -121,8 +121,8 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
         error: {
           code: 'INVALID_CAPABILITIES',
           message: 'Agent must declare at least one capability',
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -134,17 +134,20 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
       version: params.version,
       token,
       registeredAt: new Date(),
-      lastSeen: new Date()
+      lastSeen: new Date(),
     }
 
     this.registrations.set(params.agentId, registration)
     this.tokenToAgent.set(token, params.agentId)
 
-    console.log(`[ClaudeCoordination] Agent registered: ${params.agentId} with capabilities:`, params.capabilities)
+    console.log(
+      `[ClaudeCoordination] Agent registered: ${params.agentId} with capabilities:`,
+      params.capabilities
+    )
 
     return {
       success: true,
-      data: token
+      data: token,
     }
   }
 
@@ -177,7 +180,7 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
 
     return {
       success: true,
-      data: availableTasks
+      data: availableTasks,
     }
   }
 
@@ -192,8 +195,8 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
         error: {
           code: 'TASK_NOT_FOUND',
           message: `Task ${taskId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -209,9 +212,9 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
           retryable: false,
           details: {
             currentStatus: task.status,
-            assignedTo: task.assignedTo
-          }
-        }
+            assignedTo: task.assignedTo,
+          },
+        },
       }
     }
 
@@ -226,7 +229,7 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
 
     return {
       success: true,
-      data: task
+      data: task,
     }
   }
 
@@ -241,8 +244,8 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
         error: {
           code: 'TASK_NOT_FOUND',
           message: `Task ${taskId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -253,8 +256,8 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
         error: {
           code: 'TASK_NOT_ASSIGNED',
           message: `Task ${taskId} is not assigned to Claude Code`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -264,7 +267,9 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
     }
 
     // In a real implementation, we'd store progress details
-    console.log(`[ClaudeCoordination] Progress update for ${taskId}: ${progress.percentComplete}% - ${progress.currentStep}`)
+    console.log(
+      `[ClaudeCoordination] Progress update for ${taskId}: ${progress.percentComplete}% - ${progress.currentStep}`
+    )
 
     return { success: true }
   }
@@ -280,8 +285,8 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
         error: {
           code: 'TASK_NOT_FOUND',
           message: `Task ${taskId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -292,8 +297,8 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
         error: {
           code: 'TASK_NOT_ASSIGNED',
           message: `Task ${taskId} is not assigned to Claude Code`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -321,20 +326,25 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
         error: {
           code: 'CONTEXT_NOT_FOUND',
           message: `Context ${contextId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
-    console.log(`[ClaudeCoordination] Retrieved context ${contextId} with ${result.data.messages.length} messages`)
+    console.log(
+      `[ClaudeCoordination] Retrieved context ${contextId} with ${result.data.messages.length} messages`
+    )
 
     return {
       success: true,
-      data: result.data
+      data: result.data,
     }
   }
 
-  async saveContext(contextId: ContextId, context: ConversationContext): Promise<ServiceResponse<void>> {
+  async saveContext(
+    contextId: ContextId,
+    context: ConversationContext
+  ): Promise<ServiceResponse<void>> {
     await this.simulateDelay()
 
     const result = await this.stateStore.saveContext(contextId, context)
@@ -342,7 +352,9 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
       return result
     }
 
-    console.log(`[ClaudeCoordination] Saved context ${contextId} with ${context.messages.length} messages`)
+    console.log(
+      `[ClaudeCoordination] Saved context ${contextId} with ${context.messages.length} messages`
+    )
 
     return { success: true }
   }
@@ -364,8 +376,8 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
         error: {
           code: 'TASK_NOT_FOUND',
           message: `Task ${params.taskId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -376,8 +388,8 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
         error: {
           code: 'TASK_NOT_ASSIGNED',
           message: `Task ${params.taskId} is not assigned to Claude Code`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -392,7 +404,7 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
       currentState: params.currentState,
       nextSteps: params.nextSteps,
       requestedAt: new Date(),
-      status: 'pending'
+      status: 'pending',
     }
 
     this.handoffs.set(handoffId, handoff)
@@ -406,7 +418,7 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
 
     return {
       success: true,
-      data: handoffId
+      data: handoffId,
     }
   }
 
@@ -437,8 +449,8 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
         error: {
           code: 'HANDOFF_NOT_FOUND',
           message: `Handoff ${handoffId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -448,8 +460,8 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
         error: {
           code: 'HANDOFF_NOT_FOR_AGENT',
           message: `Handoff is for ${handoff.toAgent}, not ${byAgent}`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -461,8 +473,8 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
         error: {
           code: 'TASK_NOT_FOUND',
           message: `Task ${handoff.taskId} not found`,
-          retryable: false
-        }
+          retryable: false,
+        },
       }
     }
 
@@ -478,7 +490,7 @@ export class ClaudeCoordinationMock implements ClaudeCoordinationContract {
 
     return {
       success: true,
-      data: task
+      data: task,
     }
   }
 

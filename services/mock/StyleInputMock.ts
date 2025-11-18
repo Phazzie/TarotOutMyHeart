@@ -46,7 +46,7 @@ const DRAFT_STORAGE_KEY = 'tarot_style_inputs_draft'
 
 /**
  * Mock implementation of StyleInputService
- * 
+ *
  * Provides form validation and draft persistence simulation.
  */
 export class StyleInputMockService implements IStyleInputService {
@@ -73,12 +73,14 @@ export class StyleInputMockService implements IStyleInputService {
       const themeValidation = this.validateTheme(input.theme)
       if (!themeValidation.isValid) {
         fields.theme = themeValidation
-        errors.push(...themeValidation.errors.map(msg => ({
-          code: StyleInputErrorCode.THEME_INVALID,
-          field: 'theme' as const,
-          message: msg,
-          currentValue: input.theme,
-        })))
+        errors.push(
+          ...themeValidation.errors.map(msg => ({
+            code: StyleInputErrorCode.THEME_INVALID,
+            field: 'theme' as const,
+            message: msg,
+            currentValue: input.theme,
+          }))
+        )
       }
     }
 
@@ -87,12 +89,14 @@ export class StyleInputMockService implements IStyleInputService {
       const toneValidation = this.validateTone(input.tone)
       if (!toneValidation.isValid) {
         fields.tone = toneValidation
-        errors.push(...toneValidation.errors.map(msg => ({
-          code: StyleInputErrorCode.TONE_INVALID,
-          field: 'tone' as const,
-          message: msg,
-          currentValue: input.tone,
-        })))
+        errors.push(
+          ...toneValidation.errors.map(msg => ({
+            code: StyleInputErrorCode.TONE_INVALID,
+            field: 'tone' as const,
+            message: msg,
+            currentValue: input.tone,
+          }))
+        )
       }
     }
 
@@ -101,12 +105,14 @@ export class StyleInputMockService implements IStyleInputService {
       const descriptionValidation = this.validateDescription(input.description)
       if (!descriptionValidation.isValid) {
         fields.description = descriptionValidation
-        errors.push(...descriptionValidation.errors.map(msg => ({
-          code: this.getDescriptionErrorCode(msg),
-          field: 'description' as const,
-          message: msg,
-          currentValue: input.description,
-        })))
+        errors.push(
+          ...descriptionValidation.errors.map(msg => ({
+            code: this.getDescriptionErrorCode(msg),
+            field: 'description' as const,
+            message: msg,
+            currentValue: input.description,
+          }))
+        )
       } else if (input.description.length < 50) {
         warnings.push('Consider adding more details to your description for better results')
       }
@@ -117,12 +123,14 @@ export class StyleInputMockService implements IStyleInputService {
       const conceptValidation = this.validateConcept(input.concept)
       if (!conceptValidation.isValid) {
         fields.concept = conceptValidation
-        errors.push(...conceptValidation.errors.map(msg => ({
-          code: StyleInputErrorCode.CONCEPT_TOO_LONG,
-          field: 'concept' as const,
-          message: msg,
-          currentValue: input.concept,
-        })))
+        errors.push(
+          ...conceptValidation.errors.map(msg => ({
+            code: StyleInputErrorCode.CONCEPT_TOO_LONG,
+            field: 'concept' as const,
+            message: msg,
+            currentValue: input.concept,
+          }))
+        )
       }
     }
 
@@ -131,19 +139,22 @@ export class StyleInputMockService implements IStyleInputService {
       const charactersValidation = this.validateCharacters(input.characters)
       if (!charactersValidation.isValid) {
         fields.characters = charactersValidation
-        errors.push(...charactersValidation.errors.map(msg => ({
-          code: StyleInputErrorCode.CHARACTERS_TOO_LONG,
-          field: 'characters' as const,
-          message: msg,
-          currentValue: input.characters,
-        })))
+        errors.push(
+          ...charactersValidation.errors.map(msg => ({
+            code: StyleInputErrorCode.CHARACTERS_TOO_LONG,
+            field: 'characters' as const,
+            message: msg,
+            currentValue: input.characters,
+          }))
+        )
       }
     }
 
     const isValid = errors.length === 0
-    const canProceed = isValid && 
-      input.theme !== undefined && 
-      input.tone !== undefined && 
+    const canProceed =
+      isValid &&
+      input.theme !== undefined &&
+      input.tone !== undefined &&
       input.description !== undefined &&
       input.description.length >= CHAR_LIMITS.description.min
 
@@ -175,7 +186,7 @@ export class StyleInputMockService implements IStyleInputService {
 
     // Validate before saving
     const validationResult = await this.validateStyleInputs(styleInputs)
-    
+
     if (!validationResult.success || !validationResult.data) {
       return {
         success: false,
@@ -186,7 +197,7 @@ export class StyleInputMockService implements IStyleInputService {
         },
       }
     }
-    
+
     if (!validationResult.data.validation.canProceed) {
       return {
         success: false,
@@ -432,7 +443,7 @@ export class StyleInputMockService implements IStyleInputService {
    * Simulate async delay
    */
   private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms))
+    return new Promise(resolve => setTimeout(resolve, ms))
   }
 }
 
@@ -440,3 +451,9 @@ export class StyleInputMockService implements IStyleInputService {
  * Singleton instance for use throughout the application
  */
 export const styleInputMockService = new StyleInputMockService()
+
+/**
+ * Export class alias for testing
+ * Tests need to instantiate their own instances to avoid state pollution
+ */
+export { StyleInputMockService as StyleInputMock }

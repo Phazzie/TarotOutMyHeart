@@ -9,6 +9,7 @@
 ## 🎯 Gemini-Specific Strengths for This Project
 
 Gemini excels at:
+
 - ✅ **Multimodal understanding** - Can analyze reference images for style guidance
 - ✅ **Fast iteration** - Quick code generation and refinement cycles
 - ✅ **Creative problem-solving** - Excellent for UI/UX design decisions
@@ -21,6 +22,7 @@ Gemini excels at:
 ## 📚 Required Reading (Speed Read Mode)
 
 **Root Documentation** (Original scaffolding):
+
 1. **THIS FILE** (GEMINI.md) - Gemini-specific guidance
 2. **AGENTS.md** - Universal AI agent instructions (skim: Anti-patterns, Coding Standards)
 3. **seam-driven-development.md** - SDD guide (skim: 8-step process)
@@ -28,9 +30,7 @@ Gemini excels at:
 5. **AI-CHECKLIST.md** - Pre-flight checklist (skim: your task type)
 6. **prd.MD** - Product requirements (skim: User Flow, Seams List, Sprint Plan)
 
-**Development Documents** (Planning folder):
-7. **docs/planning/DATA-BOUNDARIES.md** - Data boundaries (skim: Primary Seams section)
-8. **docs/planning/RECOMMENDATIONS.md** - Technical decisions (skim: Summary table)
+**Development Documents** (Planning folder): 7. **docs/planning/DATA-BOUNDARIES.md** - Data boundaries (skim: Primary Seams section) 8. **docs/planning/RECOMMENDATIONS.md** - Technical decisions (skim: Summary table)
 
 **Speed reading time**: ~30 minutes | **Skipping penalty**: Rework loops
 
@@ -51,6 +51,7 @@ Gemini excels at:
 ## 📝 File Documentation (MANDATORY)
 
 **Every file must start with this**:
+
 ```typescript
 /**
  * @fileoverview [What this file does]
@@ -61,6 +62,7 @@ Gemini excels at:
 ```
 
 **Blueprints** (copy and fill in):
+
 - Contracts: `docs/blueprints/CONTRACT-BLUEPRINT.md`
 - Services: `docs/blueprints/STUB-BLUEPRINT.md`
 - Components: `docs/blueprints/COMPONENT-BLUEPRINT.md`
@@ -107,8 +109,8 @@ export interface PromptGenerationInput {
   styleInputs: StyleInputs
   referenceImages: UploadedImage[]
   options?: {
-    cardSelection?: number[]  // Generate specific cards only
-    styleIntensity?: number   // 0-1 scale for style application
+    cardSelection?: number[] // Generate specific cards only
+    styleIntensity?: number // 0-1 scale for style application
   }
 }
 
@@ -116,6 +118,7 @@ export interface PromptGenerationInput {
 ```
 
 **Why this works for Gemini**:
+
 - Fast generation allows exploration
 - User picks best fit for requirements
 - Avoids over-engineering upfront
@@ -158,7 +161,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
     { num: 18, name: 'The Moon', meaning: 'Illusion' },
     { num: 19, name: 'The Sun', meaning: 'Joy' },
     { num: 20, name: 'Judgement', meaning: 'Reflection' },
-    { num: 21, name: 'The World', meaning: 'Completion' }
+    { num: 21, name: 'The World', meaning: 'Completion' },
   ]
 
   async generatePrompts(input: PromptGenerationInput): Promise<ServiceResponse<CardPrompt[]>> {
@@ -166,7 +169,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
     if (!input.styleInputs.theme) {
       return {
         success: false,
-        error: { code: 'MISSING_THEME', message: 'Theme is required', retryable: false }
+        error: { code: 'MISSING_THEME', message: 'Theme is required', retryable: false },
       }
     }
 
@@ -178,9 +181,10 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       cardNumber: card.num,
       cardName: card.name,
       traditionalMeaning: card.meaning,
-      generatedPrompt: `${input.styleInputs.theme} tarot card for ${card.name}, ` +
+      generatedPrompt:
+        `${input.styleInputs.theme} tarot card for ${card.name}, ` +
         `${input.styleInputs.tone} tone, ${input.styleInputs.description}`,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     }))
 
     return { success: true, data: prompts }
@@ -189,6 +193,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
 ```
 
 **Why this works for Gemini**:
+
 - Concise code, fast to generate
 - Easy to modify and iterate
 - Provides realistic data immediately
@@ -205,35 +210,34 @@ Gemini's unique capability: Analyze uploaded reference images
  * - Extract color palettes
  * - Identify art styles
  * - Suggest prompt enhancements
- * 
+ *
  * Note: Check if your Gemini API key supports vision capabilities
  */
 
-async function analyzeReferenceImages(
-  images: UploadedImage[]
-): Promise<StyleAnalysis> {
+async function analyzeReferenceImages(images: UploadedImage[]): Promise<StyleAnalysis> {
   // Gemini vision API could analyze:
   // - Dominant colors
   // - Art style (watercolor, digital, pencil, etc.)
   // - Composition patterns
   // - Visual themes
-  
+
   // For MVP: This is optional enhancement
   // Focus on text-based generation first
-  
+
   return {
     dominantColors: ['#1a1a2e', '#16213e', '#0f3460'],
     detectedStyle: 'cyberpunk digital art',
     suggestions: [
       'Strong contrast between neon and dark backgrounds',
       'Geometric shapes and angular designs',
-      'Glowing elements and light effects'
-    ]
+      'Glowing elements and light effects',
+    ],
   }
 }
 ```
 
 **Why this is powerful for Gemini**:
+
 - Unique multimodal advantage
 - Can enhance prompt generation quality
 - Phase 2 feature, but Gemini is uniquely suited for it
@@ -243,31 +247,37 @@ async function analyzeReferenceImages(
 ## 🎓 Gemini Best Practices for This Project
 
 ### 1. **Iterate Quickly**
+
 - **Do**: Generate first draft fast, refine based on feedback
 - **Why**: Gemini's speed enables rapid iteration
 - **Result**: Faster development cycles
 
 ### 2. **Use Concise Code**
+
 - **Do**: Favor readable, compact code over verbose
 - **Why**: Easier to generate, review, and modify quickly
 - **Result**: Maintainable codebase
 
 ### 3. **Generate Multiple Options**
+
 - **Do**: Offer 2-3 solutions when requirements are ambiguous
 - **Why**: User picks best fit, saves time on rewrites
 - **Result**: Right solution faster
 
 ### 4. **Leverage Creativity for UI**
+
 - **Do**: Use Gemini's creative abilities for component design
 - **Why**: UI/UX benefits from creative problem-solving
 - **Result**: Polished, user-friendly interfaces
 
 ### 5. **Fast Validation Loops**
+
 - **Do**: Run `npm run check` frequently (every few changes)
 - **Why**: Catch errors early before they compound
 - **Result**: Less time debugging, more time building
 
 ### 6. **Interactive Development**
+
 - **Do**: Work in small increments with user feedback
 - **Why**: Aligns with Gemini's interactive strengths
 - **Result**: User gets exactly what they want
@@ -277,14 +287,17 @@ async function analyzeReferenceImages(
 ## 🚫 Common Gemini Pitfalls (Avoid These!)
 
 ### Pitfall 1: Moving Too Fast (Skipping Contracts)
+
 **Problem**: Gemini's speed can lead to coding before contracts are defined
 
 **Temptation**:
+
 > "I can generate this component quickly, then define the contract later!"
 
 **Why it's bad**: Violates SDD, leads to integration failures
 
 **Solution**:
+
 - ✅ **Always define contracts first** (even if you can code faster)
 - ✅ Follow Sprint 1 checklist: Contracts → Mocks → UI → Real Services
 - ✅ Speed is good, but only after contracts are locked in
@@ -292,14 +305,17 @@ async function analyzeReferenceImages(
 ---
 
 ### Pitfall 2: Over-Relying on Code Generation (Forgetting Tests)
+
 **Problem**: Fast code generation, but tests lag behind
 
 **Temptation**:
+
 > "Let me generate all components first, then write tests"
 
 **Why it's bad**: Bugs accumulate, harder to debug later
 
 **Solution**:
+
 - ✅ **Write tests immediately after each piece** (contract tests, mock tests)
 - ✅ Use Gemini's speed to generate tests quickly too
 - ✅ Test-driven development still applies
@@ -307,14 +323,17 @@ async function analyzeReferenceImages(
 ---
 
 ### Pitfall 3: Creating Too Many Variations
+
 **Problem**: Gemini generates 5 different approaches, causing confusion
 
 **Example**:
+
 > "Here are 5 different ways to structure this component..."
 
 **Why it's bad**: Analysis paralysis, user overwhelmed
 
 **Solution**:
+
 - ✅ **Limit to 2-3 options max** (more than that, make a recommendation)
 - ✅ If PRD is clear, just implement that (don't over-explore)
 - ✅ Save creativity for truly ambiguous situations
@@ -322,17 +341,20 @@ async function analyzeReferenceImages(
 ---
 
 ### Pitfall 4: Concise to a Fault (Missing Important Details)
+
 **Problem**: Code is too compact, missing error handling or edge cases
 
 **Example**:
+
 ```typescript
 // ❌ Too concise, missing error handling
 async function loadData() {
-  return await api.fetch()  // What if it fails?
+  return await api.fetch() // What if it fails?
 }
 ```
 
 **Better approach**:
+
 ```typescript
 // ✅ Concise but complete
 async function loadData(): Promise<ServiceResponse<Data>> {
@@ -342,7 +364,7 @@ async function loadData(): Promise<ServiceResponse<Data>> {
   } catch (error) {
     return {
       success: false,
-      error: { code: 'FETCH_FAILED', message: 'Failed to load data', retryable: true }
+      error: { code: 'FETCH_FAILED', message: 'Failed to load data', retryable: true },
     }
   }
 }
@@ -395,21 +417,25 @@ describe('CardGallery', () => {
 ### Sprint 1: Contracts & Mocks (Gemini's Speed Sprint)
 
 **Day 1**: Define contracts rapidly
+
 - Generate 2-3 contract options per seam
 - User picks best fit
 - Lock in contracts quickly
 
 **Day 2**: Mock services blitz
+
 - Generate all 7 mock services in one session
 - Use Gemini's speed for realistic mock data
 - Aim for 2-3 mocks per hour
 
 **Day 3**: Test generation sprint
+
 - Write all contract tests
 - Write all mock tests
 - Run full test suite
 
 **Day 4-5**: Iteration and refinement
+
 - Fix any test failures
 - Refine mock data quality
 - Update documentation
@@ -421,6 +447,7 @@ describe('CardGallery', () => {
 **Approach**: Rapid prototyping with quick user feedback
 
 **For each component**:
+
 1. Generate initial version (15-30 min)
 2. Show to user for feedback
 3. Iterate quickly based on feedback (5-10 min per iteration)
@@ -435,6 +462,7 @@ describe('CardGallery', () => {
 **Approach**: Generate real services quickly, then validate thoroughly
 
 **For each service**:
+
 1. Generate real service matching contract (30-45 min)
 2. Run contract tests (should pass immediately)
 3. Test with real API manually
@@ -531,6 +559,7 @@ const theme = input.styleInputs.theme
 ### Sprint Checklists
 
 **Sprint 1 Checklist** (Contracts & Mocks):
+
 - [ ] All 7 contracts defined in `contracts/`
 - [ ] All contracts exported from `contracts/index.ts`
 - [ ] All 7 mocks implemented in `services/mock/`
@@ -541,6 +570,7 @@ const theme = input.styleInputs.theme
 - [ ] `npm run check` passes (no type errors)
 
 **Sprint 2 Checklist** (UI Components):
+
 - [ ] All components built and typed
 - [ ] All components use mock services
 - [ ] All async states handled (loading, success, error)
@@ -549,6 +579,7 @@ const theme = input.styleInputs.theme
 - [ ] User feedback incorporated
 
 **Sprint 3 Checklist** (Real Services):
+
 - [ ] All real services implemented
 - [ ] All services match contracts exactly
 - [ ] Integration tests written
@@ -556,6 +587,7 @@ const theme = input.styleInputs.theme
 - [ ] End-to-end testing passed
 
 **Sprint 4 Checklist** (Polish & Deploy):
+
 - [ ] Error handling polished
 - [ ] Loading states smooth
 - [ ] Security audit passed
@@ -635,6 +667,7 @@ You're doing SDD correctly if:
 Gemini is now equipped to rapidly build TarotOutMyHeart using Seam-Driven Development!
 
 **Gemini's Superpowers**:
+
 1. **Generate fast** (your strength)
 2. **Iterate quickly** (embrace feedback)
 3. **Follow SDD strictly** (speed + structure = success)
@@ -642,6 +675,7 @@ Gemini is now equipped to rapidly build TarotOutMyHeart using Seam-Driven Develo
 5. **Stay creative** (especially for UI/UX)
 
 **Your Workflow**:
+
 1. Quick scan of docs (you're fast at reading too!)
 2. Rapid generation of first draft
 3. Fast validation (tests, type check)
@@ -655,30 +689,35 @@ Gemini is now equipped to rapidly build TarotOutMyHeart using Seam-Driven Develo
 ## 💡 Gemini Pro Tips
 
 ### Tip 1: Batch Similar Tasks
+
 - Generate all 7 mock services in one session
 - Write all tests for a component in one go
 - Faster context switching = faster development
 
 ### Tip 2: Use Templates
+
 - Create component template once, reuse for similar components
 - Create test template once, adapt for each service
 - Don't reinvent patterns every time
 
 ### Tip 3: Leverage Your Speed for Exploration
+
 - Try 2 approaches quickly, pick better one
 - Generate variations for user to choose from
 - Rapid prototyping is your advantage
 
 ### Tip 4: Quick Validation Cycles
+
 - Generate code → `npm run check` → fix → repeat
 - Fast loops catch errors before they accumulate
 - Aim for validation every 10-15 minutes
 
 ### Tip 5: Document as You Go (Fast!)
+
 - Add JSDoc comments while generating code
 - Update SEAMSLIST.md as you define seams
 - Fast documentation = no backlog later
 
 ---
 
-*This file is specific to Gemini AI. For universal instructions, see AGENTS.md. For Claude-specific instructions, see CLAUDE.md.*
+_This file is specific to Gemini AI. For universal instructions, see AGENTS.md. For Claude-specific instructions, see CLAUDE.md._
