@@ -78,7 +78,7 @@
     onCostCalculated?: (cost: number) => void
   }
 
-  let {
+  const {
     showEstimate = true,
     showActual = true,
     showBreakdown = true,
@@ -112,29 +112,29 @@
   /**
    * Cost to display (actual if available, otherwise estimated)
    */
-  let displayCost = $derived<number>(
+  const displayCost = $derived<number>(
     actualCostData?.totalCost ?? estimatedCostData?.estimatedCost ?? 0
   )
 
   /**
    * Whether cost exceeds warning threshold
    */
-  let isOverBudget = $derived(displayCost > warningThreshold)
+  const isOverBudget = $derived(displayCost > warningThreshold)
 
   /**
    * Whether cost exceeds maximum threshold
    */
-  let isOverMaximum = $derived(displayCost >= COST_THRESHOLDS.maximum)
+  const isOverMaximum = $derived(displayCost >= COST_THRESHOLDS.maximum)
 
   /**
    * Whether cost exceeds high threshold
    */
-  let isHigh = $derived(displayCost >= COST_THRESHOLDS.high && !isOverMaximum)
+  const isHigh = $derived(displayCost >= COST_THRESHOLDS.high && !isOverMaximum)
 
   /**
    * CSS class for cost level styling
    */
-  let costLevelClass = $derived(
+  const costLevelClass = $derived(
     isOverMaximum
       ? 'cost-maximum'
       : isHigh
@@ -147,7 +147,7 @@
   /**
    * Warning message based on cost level
    */
-  let warningMessage = $derived<string | undefined>(
+  const warningMessage = $derived<string | undefined>(
     isOverMaximum
       ? `Cost exceeds maximum allowed ($${COST_THRESHOLDS.maximum.toFixed(2)}). Generation cannot proceed.`
       : isHigh
@@ -160,17 +160,17 @@
   /**
    * Per-card cost
    */
-  let perCardCost = $derived(displayCost / 22)
+  const perCardCost = $derived(displayCost / 22)
 
   /**
    * Whether both estimate and actual costs exist
    */
-  let hasBothCosts = $derived(estimatedCostData !== null && actualCostData !== null)
+  const hasBothCosts = $derived(estimatedCostData !== null && actualCostData !== null)
 
   /**
    * Cost difference between actual and estimate
    */
-  let costDifference = $derived<number | null>(
+  const costDifference = $derived<number | null>(
     hasBothCosts && actualCostData && estimatedCostData
       ? actualCostData.totalCost - estimatedCostData.estimatedCost
       : null
@@ -179,7 +179,7 @@
   /**
    * Whether actual cost exceeded estimate
    */
-  let exceededEstimate = $derived(costDifference !== null && costDifference > 0)
+  const exceededEstimate = $derived(costDifference !== null && costDifference > 0)
 
   // ============================================================================
   // FUNCTIONS

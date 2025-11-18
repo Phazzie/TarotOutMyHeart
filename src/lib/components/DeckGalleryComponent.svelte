@@ -53,7 +53,7 @@
     cards: GeneratedCard[]
   }
 
-  let { cards = [] }: Props = $props()
+  const { cards = [] }: Props = $props()
 
   // ============================================================================
   // SERVICE INITIALIZATION
@@ -69,10 +69,10 @@
   let displayCards = $state<DisplayCard[]>([])
 
   /** Current layout mode */
-  let layout = $state<DisplayLayout>('grid')
+  const layout = $state<DisplayLayout>('grid')
 
   /** Current card size */
-  let cardSize = $state<CardSize>('medium')
+  const cardSize = $state<CardSize>('medium')
 
   /** Current sort option */
   let sortBy = $state<SortOption>('number')
@@ -99,15 +99,15 @@
   let error = $state<string | null>(null)
 
   /** Whether lightbox is open (derived from lightboxState) */
-  let isLightboxOpen = $derived(lightboxState?.open ?? false)
+  const isLightboxOpen = $derived(lightboxState?.open ?? false)
 
   // ============================================================================
   // COMPUTED VALUES
   // ============================================================================
 
   /** Filtered and sorted cards */
-  let visibleCards = $derived.by(() => {
-    let filtered = displayCards.filter(dc => {
+  const visibleCards = $derived.by(() => {
+    const filtered = displayCards.filter(dc => {
       // Filter by status
       if (statusFilter === 'completed' && dc.card.generationStatus !== 'completed') {
         return false
@@ -153,15 +153,15 @@
   })
 
   /** Number of visible cards */
-  let visibleCount = $derived(visibleCards.length)
+  const visibleCount = $derived(visibleCards.length)
 
   /** Number of completed cards */
-  let completedCount = $derived(
+  const completedCount = $derived(
     displayCards.filter(dc => dc.card.generationStatus === 'completed').length
   )
 
   /** Number of failed cards */
-  let failedCount = $derived(
+  const failedCount = $derived(
     displayCards.filter(dc => dc.card.generationStatus === 'failed').length
   )
 

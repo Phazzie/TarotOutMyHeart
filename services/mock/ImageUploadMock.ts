@@ -374,3 +374,9 @@ export class ImageUploadMockService implements IImageUploadService {
  * Singleton instance for use throughout the application
  */
 export const imageUploadMockService = new ImageUploadMockService()
+
+/**
+ * Export class alias for testing
+ * Tests need to instantiate their own instances to avoid state pollution
+ */
+export { ImageUploadMockService as ImageUploadMock }

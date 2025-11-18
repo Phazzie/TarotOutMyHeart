@@ -200,7 +200,7 @@ class AppStore {
    * @returns Total cost in USD, or 0 if no costs yet
    */
   totalCost = $derived(() => {
-    let cost = 0
+    const cost = 0
 
     // Add prompt generation cost if available
     // Note: CardPrompt doesn't include cost directly

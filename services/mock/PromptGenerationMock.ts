@@ -361,3 +361,9 @@ export class PromptGenerationMockService implements IPromptGenerationService {
  * Singleton instance for use throughout the application
  */
 export const promptGenerationMockService = new PromptGenerationMockService()
+
+/**
+ * Export class alias for testing
+ * Tests need to instantiate their own instances to avoid state pollution
+ */
+export { PromptGenerationMockService as PromptGenerationMock }

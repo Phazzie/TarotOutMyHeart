@@ -451,3 +451,9 @@ export class StyleInputMockService implements IStyleInputService {
  * Singleton instance for use throughout the application
  */
 export const styleInputMockService = new StyleInputMockService()
+
+/**
+ * Export class alias for testing
+ * Tests need to instantiate their own instances to avoid state pollution
+ */
+export { StyleInputMockService as StyleInputMock }

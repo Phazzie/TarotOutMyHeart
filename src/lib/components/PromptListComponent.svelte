@@ -60,13 +60,13 @@
    * Map of card numbers to their edited prompt text (before save)
    * Allows cancel functionality
    */
-  let editedPromptTexts = $state<Map<number, string>>(new Map())
+  const editedPromptTexts = $state<Map<number, string>>(new Map())
 
   /**
    * Set of cards that have been user-edited
    * Used for visual indicators
    */
-  let userEditedCards = $state<Set<number>>(new Set())
+  const userEditedCards = $state<Set<number>>(new Set())
 
   /**
    * Card number currently being regenerated (for loading state)
@@ -80,27 +80,27 @@
   /**
    * Prompts from app store (reactive)
    */
-  let prompts = $derived(appStore.generatedPrompts)
+  const prompts = $derived(appStore.generatedPrompts)
 
   /**
    * Whether prompts are currently being generated
    */
-  let isGenerating = $derived(appStore.loadingStates.generatingPrompts)
+  const isGenerating = $derived(appStore.loadingStates.generatingPrompts)
 
   /**
    * Whether we have all 22 prompts
    */
-  let hasAllPrompts = $derived(appStore.hasAllPrompts)
+  const hasAllPrompts = $derived(appStore.hasAllPrompts)
 
   /**
    * Whether we can generate prompts (have style inputs and reference images)
    */
-  let canGenerate = $derived(appStore.styleInputs !== null && appStore.uploadedImages.length > 0)
+  const canGenerate = $derived(appStore.styleInputs !== null && appStore.uploadedImages.length > 0)
 
   /**
    * Sort prompts by card number for display
    */
-  let sortedPrompts = $derived([...prompts].sort((a, b) => a.cardNumber - b.cardNumber))
+  const sortedPrompts = $derived([...prompts].sort((a, b) => a.cardNumber - b.cardNumber))
 
   // ============================================================================
   // GENERATE ALL PROMPTS

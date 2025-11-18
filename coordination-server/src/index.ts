@@ -58,7 +58,7 @@ let wsServer: WebSocketServer | null = null
 /**
  * MCP server instance
  */
-let mcpServer: MCPCoordinationServer | null = null as MCPCoordinationServer | null
+const mcpServer: MCPCoordinationServer | null = null as MCPCoordinationServer | null
 
 // ========== Middleware ==========
 

@@ -208,3 +208,9 @@ export class DeckDisplayMockService implements IDeckDisplayService {
  * Singleton instance for use throughout the application
  */
 export const deckDisplayMockService = new DeckDisplayMockService()
+
+/**
+ * Export class alias for testing
+ * Tests need to instantiate their own instances to avoid state pollution
+ */
+export { DeckDisplayMockService as DeckDisplayMock }

@@ -339,3 +339,9 @@ export class ImageGenerationMockService implements IImageGenerationService {
  * Singleton instance for use throughout the application
  */
 export const imageGenerationMockService = new ImageGenerationMockService()
+
+/**
+ * Export class alias for testing
+ * Tests need to instantiate their own instances to avoid state pollution
+ */
+export { ImageGenerationMockService as ImageGenerationMock }
