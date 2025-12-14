@@ -2,7 +2,7 @@
  * @fileoverview Service Factory - Provides mock or real service instances
  * @purpose Central factory for dependency injection with USE_MOCKS toggle
  * @dataFlow Environment Config → Factory → Service Instances → Application
- * @updated 2025-11-07
+ * @updated 2025-11-15
  *
  * @example
  * ```typescript
@@ -21,46 +21,14 @@ import type { IDeckDisplayService } from '$contracts/DeckDisplay'
 import type { ICostCalculationService } from '$contracts/CostCalculation'
 import type { IDownloadService } from '$contracts/Download'
 
-// Import mock services (singleton instances)
-import { imageUploadMockService } from './mock/ImageUploadMock'
-import { styleInputMockService } from './mock/StyleInputMock'
-import { promptGenerationMockService } from './mock/PromptGenerationMock'
-import { imageGenerationMockService } from './mock/ImageGenerationMock'
-import { deckDisplayMockService } from './mock/DeckDisplayMock'
-import { costCalculationMockService } from './mock/CostCalculationMock'
-import { downloadMockService } from './mock/DownloadMock'
-
-// ============================================================================
-// SINGLETON INSTANCES
-// ============================================================================
-
-/**
- * Singleton mock service instances (imported from mock modules)
- *
- * NOTE: These singletons share state across all usages in the application.
- *
- * For testing:
- * - Tests that need isolated state should call the service's reset/cleanup methods
- *   between test runs to avoid test pollution
- * - Each mock service implements methods to clear its internal state
- * - Example: imageUploadMockService.clearAllImages() resets uploaded images
- *
- * For production:
- * - Real services will be instantiated here when implemented
- * - Real services will likely use external state management (database, API)
- *   instead of in-memory state
- *
- * Singleton instances are already created and exported from the mock files
- */
-
-// TODO: Import real services when implemented
-// import { ImageUploadService } from './real/ImageUploadService'
-// import { StyleInputService } from './real/StyleInputService'
-// import { PromptGenerationService } from './real/PromptGenerationService'
-// import { ImageGenerationService } from './real/ImageGenerationService'
-// import { DeckDisplayService } from './real/DeckDisplayService'
-// import { CostCalculationService } from './real/CostCalculationService'
-// import { DownloadService } from './real/DownloadService'
+// Import mock service classes
+import { ImageUploadMockService } from './mock/ImageUploadMock'
+import { StyleInputMockService } from './mock/StyleInputMock'
+import { PromptGenerationMockService } from './mock/PromptGenerationMock'
+import { ImageGenerationMockService } from './mock/ImageGenerationMock'
+import { DeckDisplayMockService } from './mock/DeckDisplayMock'
+import { CostCalculationMockService } from './mock/CostCalculationMock'
+import { DownloadMockService } from './mock/DownloadMock'
 
 // ============================================================================
 // CONFIGURATION
@@ -82,6 +50,43 @@ const USE_MOCKS = process.env['USE_MOCKS'] !== 'false' // Default to true
 if (typeof window !== 'undefined') {
   console.log(`🔧 Service Factory: Using ${USE_MOCKS ? 'MOCK' : 'REAL'} services`)
 }
+
+// ============================================================================
+// SINGLETON INSTANCES
+// ============================================================================
+
+/**
+ * Singleton mock service instances
+ *
+ * NOTE: These singletons share state across all usages in the application.
+ *
+ * For testing:
+ * - Tests that need isolated state should call the service's reset/cleanup methods
+ *   between test runs to avoid test pollution
+ * - Each mock service implements methods to clear its internal state
+ * - Example: imageUploadService.clearAllImages() resets uploaded images
+ *
+ * For production:
+ * - Real services will be instantiated here when implemented
+ * - Real services will likely use external state management (database, API)
+ *   instead of in-memory state
+ */
+const imageUploadMockService = new ImageUploadMockService()
+const styleInputMockService = new StyleInputMockService()
+const promptGenerationMockService = new PromptGenerationMockService()
+const imageGenerationMockService = new ImageGenerationMockService()
+const deckDisplayMockService = new DeckDisplayMockService()
+const costCalculationMockService = new CostCalculationMockService()
+const downloadMockService = new DownloadMockService()
+
+// TODO: Import real services when implemented
+// import { ImageUploadService } from './real/ImageUploadService'
+// import { StyleInputService } from './real/StyleInputService'
+// import { PromptGenerationService } from './real/PromptGenerationService'
+// import { ImageGenerationService } from './real/ImageGenerationService'
+// import { DeckDisplayService } from './real/DeckDisplayService'
+// import { CostCalculationService } from './real/CostCalculationService'
+// import { DownloadService } from './real/DownloadService'
 
 // ============================================================================
 // SERVICE INSTANCES

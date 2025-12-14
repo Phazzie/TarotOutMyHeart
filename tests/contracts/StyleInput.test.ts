@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { StyleInputMock } from '../../services/mock/StyleInputMock'
+import { StyleInputMockService } from '../../services/mock/StyleInputMock'
 import {
   StyleInputErrorCode,
   type ValidateStyleInputsInput,
@@ -16,10 +16,10 @@ import {
 } from '../../contracts/StyleInput'
 
 describe('StyleInput Contract', () => {
-  let service: StyleInputMock
+  let service: StyleInputMockService
 
   beforeEach(() => {
-    service = new StyleInputMock()
+    service = new StyleInputMockService()
   })
 
   describe('validateStyleInputs() Method', () => {

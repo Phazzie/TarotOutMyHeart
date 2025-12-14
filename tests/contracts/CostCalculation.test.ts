@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { CostCalculationMock } from '../../services/mock/CostCalculation'
+import { CostCalculationMockService } from '../../services/mock/CostCalculationMock'
 import type {
   ICostCalculationService,
   CalculateTotalCostInput,
@@ -23,7 +23,7 @@ describe('CostCalculation Contract', () => {
   let service: ICostCalculationService
 
   beforeEach(() => {
-    service = new CostCalculationMock()
+    service = new CostCalculationMockService()
   })
 
   describe('calculateTotalCost() Method', () => {

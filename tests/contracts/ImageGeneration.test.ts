@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { ImageGenerationMock } from '../../services/mock/ImageGenerationMock'
+import { ImageGenerationMockService } from '../../services/mock/ImageGenerationMock'
 import type {
   IImageGenerationService,
   GenerateImagesInput,
@@ -59,7 +59,7 @@ describe('ImageGeneration Contract', () => {
   let service: IImageGenerationService
 
   beforeEach(() => {
-    service = new ImageGenerationMock()
+    service = new ImageGenerationMockService()
   })
 
   describe('generateImages() Method', () => {

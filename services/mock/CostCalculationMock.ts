@@ -1,48 +1,46 @@
 /**
- * @fileoverview Mock implementation of Cost Calculation service
- * @purpose Provide realistic API cost calculations and tracking
- * @dataFlow API Usage Data → Cost Calculation → Formatted Display
- * @mockBehavior
- *   - Calculates costs from usage data
- *   - Applies Grok pricing structure
- *   - Formats costs for display
- *   - Tracks total session costs
- *   - Simulates minimal delays (50ms)
- * @dependencies contracts/CostCalculation.ts
- * @updated 2025-11-07
+ * @fileoverview Mock implementation of ICostCalculationService
+ * @purpose Provide realistic mock behavior for cost calculation operations
+ * @boundary Seam #6: CostCalculationSeam
+ * @contract contracts/CostCalculation.ts
  */
 
+import type { ServiceResponse } from '$contracts/types/common'
 import type {
   ICostCalculationService,
   CalculateTotalCostInput,
   CalculateTotalCostOutput,
-  CalculatePromptCostInput,
-  CalculatePromptCostOutput,
-  CalculateImageCostInput,
-  CalculateImageCostOutput,
+  EstimateCostInput,
+  EstimateCostOutput,
   FormatCostInput,
   FormatCostOutput,
-  GetCostSummaryOutput,
+  CostSummary,
+  CostEstimate,
   TextCostBreakdown,
   ImageCostBreakdown,
-  TotalCostBreakdown,
-  CostSummary,
+  VisionCostBreakdown,
+} from '$contracts/CostCalculation'
+import {
+  CostCalculationErrorCode,
+  GROK_PRICING,
+  COST_THRESHOLDS,
+  formatCurrency,
+  getWarningLevel,
+  getWarningMessage,
 } from '$contracts/CostCalculation'
 
-import { GROK_PRICING } from '$contracts/CostCalculation'
-import type { ServiceResponse } from '$contracts/types/common'
-
 /**
- * Mock implementation of CostCalculationService
- *
- * Calculates and formats API costs based on Grok pricing.
+ * Mock implementation of ICostCalculationService
+ * Calculates and formats API usage costs
  */
 export class CostCalculationMockService implements ICostCalculationService {
-  private sessionCosts: TotalCostBreakdown[] = []
-
   /**
-   * Calculate total cost from all operations
+   * Simulate async delay
    */
+  private async delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
   async calculateTotalCost(
     input: CalculateTotalCostInput
   ): Promise<ServiceResponse<CalculateTotalCostOutput>> {
@@ -50,192 +48,162 @@ export class CostCalculationMockService implements ICostCalculationService {
 
     const { promptUsage, imageUsage } = input
 
+    // Validate input
+    if (!promptUsage) {
+      return {
+        success: false,
+        error: {
+          code: CostCalculationErrorCode.MISSING_PROMPT_USAGE,
+          message: 'Missing prompt usage data',
+          retryable: false,
+        },
+      }
+    }
+
+    if (!imageUsage) {
+      return {
+        success: false,
+        error: {
+          code: CostCalculationErrorCode.MISSING_IMAGE_USAGE,
+          message: 'Missing image usage data',
+          retryable: false,
+        },
+      }
+    }
+
     // Calculate text costs
-    const textBreakdown: TextCostBreakdown = {
+    const textCost: TextCostBreakdown = {
       inputTokens: promptUsage.promptTokens,
       outputTokens: promptUsage.completionTokens,
       inputCost: promptUsage.promptTokens * GROK_PRICING.textInputTokens,
       outputCost: promptUsage.completionTokens * GROK_PRICING.textOutputTokens,
-      totalCost: 0,
+      totalCost:
+        promptUsage.promptTokens * GROK_PRICING.textInputTokens +
+        promptUsage.completionTokens * GROK_PRICING.textOutputTokens,
     }
-    textBreakdown.totalCost = textBreakdown.inputCost + textBreakdown.outputCost
 
     // Calculate image costs
-    const imageBreakdown: ImageCostBreakdown = {
+    const imageCost: ImageCostBreakdown = {
       imagesGenerated: imageUsage.successfulImages,
       imagesFailed: imageUsage.failedImages,
-      imagesRetried: 0, // Mock: no retries tracked
+      imagesRetried: 0, // Not tracked in mock
       generationCost: GROK_PRICING.imageGeneration,
       totalCost: imageUsage.successfulImages * GROK_PRICING.imageGeneration,
     }
 
-    // Total breakdown
-    const totalCost = textBreakdown.totalCost + imageBreakdown.totalCost
-    const costBreakdown: TotalCostBreakdown = {
-      textCost: textBreakdown,
-      imageCost: imageBreakdown,
-      totalCost,
-      currency: 'USD',
+    // Calculate vision API costs (1 request for prompt generation)
+    const visionCost: VisionCostBreakdown = {
+      requestCount: 1,
+      requestCost: GROK_PRICING.visionRequest,
+      totalCost: GROK_PRICING.visionRequest,
     }
 
-    // Save to session
-    this.sessionCosts.push(costBreakdown)
-
-    return {
-      success: true,
-      data: {
-        costBreakdown,
-        totalCost,
-        currency: 'USD',
-      },
-    }
-  }
-
-  /**
-   * Calculate cost for prompt generation only
-   */
-  async calculatePromptCost(
-    input: CalculatePromptCostInput
-  ): Promise<ServiceResponse<CalculatePromptCostOutput>> {
-    await this.delay(50)
-
-    const { promptUsage } = input
-
-    const textBreakdown: TextCostBreakdown = {
-      inputTokens: promptUsage.promptTokens,
-      outputTokens: promptUsage.completionTokens,
-      inputCost: promptUsage.promptTokens * GROK_PRICING.textInputTokens,
-      outputCost: promptUsage.completionTokens * GROK_PRICING.textOutputTokens,
-      totalCost: 0,
-    }
-    textBreakdown.totalCost = textBreakdown.inputCost + textBreakdown.outputCost
-
-    return {
-      success: true,
-      data: {
-        textBreakdown,
-        totalCost: textBreakdown.totalCost,
-        currency: 'USD',
-      },
-    }
-  }
-
-  /**
-   * Calculate cost for image generation only
-   */
-  async calculateImageCost(
-    input: CalculateImageCostInput
-  ): Promise<ServiceResponse<CalculateImageCostOutput>> {
-    await this.delay(50)
-
-    const { imageUsage } = input
-
-    const imageBreakdown: ImageCostBreakdown = {
-      imagesGenerated: imageUsage.successfulImages,
-      imagesFailed: imageUsage.failedImages,
-      imagesRetried: 0,
-      generationCost: GROK_PRICING.imageGeneration,
-      totalCost: imageUsage.successfulImages * GROK_PRICING.imageGeneration,
-    }
-
-    return {
-      success: true,
-      data: {
-        imageBreakdown,
-        totalCost: imageBreakdown.totalCost,
-        currency: 'USD',
-      },
-    }
-  }
-
-  /**
-   * Format cost for display
-   */
-  async formatCost(input: FormatCostInput): Promise<ServiceResponse<FormatCostOutput>> {
-    await this.delay(50)
-
-    const { cost, format } = input
-
-    let formattedCost: string
-
-    switch (format) {
-      case 'detailed':
-        formattedCost = `$${cost.toFixed(4)} USD`
-        break
-      case 'summary':
-        formattedCost = `$${cost.toFixed(2)}`
-        break
-      case 'minimal':
-        formattedCost = cost < 0.01 ? '<$0.01' : `$${cost.toFixed(2)}`
-        break
-      default:
-        formattedCost = `$${cost.toFixed(2)}`
-    }
-
-    return {
-      success: true,
-      data: {
-        formatted: formattedCost,
-        raw: cost,
-        currency: 'USD',
-      },
-    }
-  }
-
-  /**
-   * Get cost summary for session
-   */
-  async getCostSummary(): Promise<ServiceResponse<GetCostSummaryOutput>> {
-    await this.delay(50)
-
-    const totalSessionCost = this.sessionCosts.reduce(
-      (sum, breakdown) => sum + breakdown.totalCost,
-      0
-    )
-    const totalOperations = this.sessionCosts.length
+    const totalCost = textCost.totalCost + imageCost.totalCost + visionCost.totalCost
+    const warningLevel = getWarningLevel(totalCost)
 
     const summary: CostSummary = {
-      totalCost: totalSessionCost,
-      operationCount: totalOperations,
-      breakdown: this.sessionCosts,
-      currency: 'USD',
+      textCost,
+      imageCost,
+      visionCost,
+      totalCost,
+      warningLevel,
+      formattedCost: formatCurrency(totalCost),
     }
 
     return {
       success: true,
       data: {
         summary,
+        exceeded: totalCost >= COST_THRESHOLDS.warning,
+        canProceed: totalCost < COST_THRESHOLDS.maximum,
       },
     }
   }
 
-  /**
-   * Clear cost history
-   */
-  async clearCostHistory(): Promise<ServiceResponse<void>> {
+  async estimateCost(input: EstimateCostInput): Promise<ServiceResponse<EstimateCostOutput>> {
     await this.delay(50)
 
-    this.sessionCosts = []
+    const { imageCount, referenceImageCount, estimatedPromptLength = 1000 } = input
+
+    if (imageCount <= 0 || imageCount > 100) {
+      return {
+        success: false,
+        error: {
+          code: CostCalculationErrorCode.INVALID_IMAGE_COUNT,
+          message: 'Invalid image count for estimation',
+          retryable: false,
+        },
+      }
+    }
+
+    // Estimate prompt generation cost
+    const estimatedInputTokens = 500 + referenceImageCount * 500 + estimatedPromptLength
+    const estimatedOutputTokens = imageCount * 200 // ~200 tokens per card prompt
+    const promptGenerationCost =
+      estimatedInputTokens * GROK_PRICING.textInputTokens +
+      estimatedOutputTokens * GROK_PRICING.textOutputTokens +
+      GROK_PRICING.visionRequest
+
+    // Estimate image generation cost
+    const imageGenerationCost = imageCount * GROK_PRICING.imageGeneration
+
+    const estimatedCost = promptGenerationCost + imageGenerationCost
+    const warningLevel = getWarningLevel(estimatedCost)
+
+    const estimate: CostEstimate = {
+      estimatedCost,
+      breakdown: {
+        promptGeneration: promptGenerationCost,
+        imageGeneration: imageGenerationCost,
+      },
+      assumptions: [
+        `${referenceImageCount} reference image(s)`,
+        `${imageCount} cards to generate`,
+        `~${estimatedPromptLength} tokens of style description`,
+        `Using grok-vision-beta for prompts`,
+        `Using grok-2-image-alpha for images`,
+      ],
+    }
 
     return {
       success: true,
-      data: undefined,
+      data: {
+        estimate,
+        canAfford: estimatedCost < COST_THRESHOLDS.maximum,
+        warningMessage: getWarningMessage(warningLevel, estimatedCost),
+      },
     }
   }
 
-  // ============================================================================
-  // PRIVATE HELPER METHODS
-  // ============================================================================
+  async formatCost(input: FormatCostInput): Promise<ServiceResponse<FormatCostOutput>> {
+    await this.delay(10)
 
-  /**
-   * Simulate async delay
-   */
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
+    const { cost, format = 'summary', includeWarning = false } = input
+
+    let formatted: string
+
+    switch (format) {
+      case 'detailed':
+        formatted = `Total: ${formatCurrency(cost)}`
+        break
+      case 'minimal':
+        formatted = `~${formatCurrency(cost, 0)}`
+        break
+      case 'summary':
+      default:
+        formatted = formatCurrency(cost)
+        break
+    }
+
+    const warningLevel = getWarningLevel(cost)
+
+    return {
+      success: true,
+      data: {
+        formatted,
+        warningLevel,
+        warningMessage: includeWarning ? getWarningMessage(warningLevel, cost) : undefined,
+      },
+    }
   }
 }
-
-/**
- * Singleton instance for use throughout the application
- */
-export const costCalculationMockService = new CostCalculationMockService()

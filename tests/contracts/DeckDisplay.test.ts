@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { DeckDisplayMock } from '../../services/mock/DeckDisplayMock'
+import { DeckDisplayMockService } from '../../services/mock/DeckDisplayMock'
 import {
   DeckDisplayErrorCode,
   DISPLAY_LAYOUTS,
@@ -57,11 +57,11 @@ const createMockCards = (count: number = 22): GeneratedCard[] => {
 }
 
 describe('DeckDisplay Contract', () => {
-  let service: DeckDisplayMock
+  let service: DeckDisplayMockService
   let mockCards: GeneratedCard[]
 
   beforeEach(() => {
-    service = new DeckDisplayMock()
+    service = new DeckDisplayMockService()
     mockCards = createMockCards(22)
   })
 

@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Complete Mock Service Rewrite** (2025-12-14):
+  - **Deleted and rewrote all 7 Tarot mock services from scratch**
+  - Root cause: Original mocks were written without referencing contracts, causing 114 type errors
+  - **Changes**:
+    - `ImageUploadMockService`: Implements `IImageUploadService` with full validation
+    - `StyleInputMockService`: Implements `IStyleInputService` with localStorage draft support
+    - `PromptGenerationMockService`: Implements `IPromptGenerationService` with 22 Major Arcana prompts
+    - `ImageGenerationMockService`: Implements `IImageGenerationService` with progress tracking
+    - `DeckDisplayMockService`: Implements `IDeckDisplayService` with gallery/lightbox state
+    - `CostCalculationMockService`: Implements `ICostCalculationService` with Grok pricing
+    - `DownloadMockService`: Implements `IDownloadService` with browser download simulation
+  - **Key fixes**:
+    - Renamed private helper `sortCards` → `sortCardsInternal` to avoid interface conflict
+    - Added `!` non-null assertions where array indexing is safe
+    - Removed unused imports (GrokModel, CardPrompt, DisplayLayout, CardSize, etc.)
+    - Fixed enum imports (value imports not type imports)
+  - Updated `factory.ts` to instantiate new mock service classes
+  - Updated all 7 test files to use correct class names (XxxMockService)
+  - **Result**: `npm run check` now shows 0 errors (down from 114)
+
 - **Type Safety in Mock Services** (2025-11-15):
   - Fixed `StyleInputMock.ts`: Changed `StyleInputErrorCode` from type import to value import (enums must be imported as values)
   - Fixed `StyleInputMock.ts`: Removed unused `currentStyleInputs` private field
