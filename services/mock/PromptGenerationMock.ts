@@ -80,7 +80,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
   async generatePrompts(
     input: GeneratePromptsInput
   ): Promise<ServiceResponse<GeneratePromptsOutput>> {
-    const { referenceImageUrls, styleInputs, onProgress } = input
+    const { referenceImageUrls, styleInputs, model, onProgress } = input
 
     // Validate input
     if (!referenceImageUrls || referenceImageUrls.length === 0) {
@@ -89,6 +89,38 @@ export class PromptGenerationMockService implements IPromptGenerationService {
         error: {
           code: PromptGenerationErrorCode.NO_REFERENCE_IMAGES,
           message: 'No reference images provided',
+          retryable: false,
+        },
+      }
+    }
+
+    // Validate each reference image URL is a valid URL
+    const invalidUrls = referenceImageUrls.filter(url => {
+      try {
+        new URL(url)
+        return false
+      } catch {
+        return true
+      }
+    })
+    if (invalidUrls.length > 0) {
+      return {
+        success: false,
+        error: {
+          code: PromptGenerationErrorCode.INVALID_REFERENCE_URL,
+          message: `Invalid reference image URL(s): ${invalidUrls.join(', ')}`,
+          retryable: false,
+        },
+      }
+    }
+
+    // Validate model if provided
+    if (model !== undefined && !Object.values(GROK_MODELS).includes(model)) {
+      return {
+        success: false,
+        error: {
+          code: PromptGenerationErrorCode.INVALID_MODEL,
+          message: `Invalid model: "${model}". Supported models: ${Object.values(GROK_MODELS).join(', ')}`,
           retryable: false,
         },
       }
@@ -190,7 +222,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       }
     }
 
-    // Check for duplicates
+    // Check for duplicates (same card number appearing multiple times)
     if (cardNumbers.size !== prompts.length) {
       errors.push({
         code: PromptGenerationErrorCode.DUPLICATE_CARD_NUMBER,
@@ -198,7 +230,28 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       })
     }
 
-    // Check prompt lengths
+    // Check for prompts that conflict with service-stored prompts
+    // (same cardNumber but different ID indicates an unrecognized/duplicate prompt)
+    if (this.generatedPrompts.size > 0) {
+      for (const prompt of prompts) {
+        for (const [storedId, storedPrompt] of this.generatedPrompts.entries()) {
+          if (storedPrompt.cardNumber === prompt.cardNumber && storedId !== prompt.id) {
+            errors.push({
+              code: PromptGenerationErrorCode.DUPLICATE_CARD_NUMBER,
+              message: `Card number ${prompt.cardNumber} conflicts with existing prompt`,
+              cardNumber: prompt.cardNumber,
+              promptId: prompt.id,
+            })
+            if (!invalidPrompts.includes(prompt)) {
+              invalidPrompts.push(prompt)
+            }
+            break
+          }
+        }
+      }
+    }
+
+    // Check prompt lengths and confidence
     for (const prompt of prompts) {
       if (prompt.generatedPrompt.length < 20) {
         errors.push({
@@ -218,6 +271,18 @@ export class PromptGenerationMockService implements IPromptGenerationService {
         })
         invalidPrompts.push(prompt)
       }
+      // Check confidence range (must be 0-1)
+      if (prompt.confidence < 0 || prompt.confidence > 1) {
+        errors.push({
+          code: PromptGenerationErrorCode.PROMPT_TOO_SHORT, // Closest available code for invalid metadata
+          message: `Prompt for card ${prompt.cardNumber} has confidence out of range: ${prompt.confidence}`,
+          cardNumber: prompt.cardNumber,
+          promptId: prompt.id,
+        })
+        if (!invalidPrompts.includes(prompt)) {
+          invalidPrompts.push(prompt)
+        }
+      }
     }
 
     return {
@@ -233,7 +298,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
   async regeneratePrompt(
     input: RegeneratePromptInput
   ): Promise<ServiceResponse<RegeneratePromptOutput>> {
-    await this.delay(500)
+    await this.delay(50)
 
     const { cardNumber, referenceImageUrls, styleInputs, feedback } = input
 
@@ -243,6 +308,17 @@ export class PromptGenerationMockService implements IPromptGenerationService {
         error: {
           code: PromptGenerationErrorCode.NO_REFERENCE_IMAGES,
           message: 'No reference images provided',
+          retryable: false,
+        },
+      }
+    }
+
+    if (!styleInputs.theme || !styleInputs.tone || !styleInputs.description) {
+      return {
+        success: false,
+        error: {
+          code: PromptGenerationErrorCode.INVALID_STYLE_INPUTS,
+          message: 'Missing required style inputs',
           retryable: false,
         },
       }
@@ -303,7 +379,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
 
     const updatedPrompt: CardPrompt = {
       ...existingPrompt,
-      generatedPrompt: editedPrompt,
+      generatedPrompt: `[edited] ${editedPrompt}`,
       generatedAt: new Date(),
     }
 
@@ -323,10 +399,33 @@ export class PromptGenerationMockService implements IPromptGenerationService {
   ): Promise<ServiceResponse<ApiUsage>> {
     await this.delay(50)
 
-    const { referenceImageUrls } = input
+    const { referenceImageUrls, styleInputs } = input
+
+    // Validate input
+    if (!referenceImageUrls || referenceImageUrls.length === 0) {
+      return {
+        success: false,
+        error: {
+          code: PromptGenerationErrorCode.NO_REFERENCE_IMAGES,
+          message: 'No reference images provided',
+          retryable: false,
+        },
+      }
+    }
+
+    if (!styleInputs.theme || !styleInputs.tone || !styleInputs.description) {
+      return {
+        success: false,
+        error: {
+          code: PromptGenerationErrorCode.INVALID_STYLE_INPUTS,
+          message: 'Missing required style inputs',
+          retryable: false,
+        },
+      }
+    }
 
     // Estimate based on number of images
-    const imageCount = referenceImageUrls?.length || 1
+    const imageCount = referenceImageUrls.length
     const estimatedInputTokens = 500 + imageCount * 500
     const estimatedOutputTokens = MAJOR_ARCANA_COUNT * 200
 
@@ -334,7 +433,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       promptTokens: estimatedInputTokens,
       completionTokens: estimatedOutputTokens,
       totalTokens: estimatedInputTokens + estimatedOutputTokens,
-      estimatedCost: (estimatedInputTokens * 0.000002 + estimatedOutputTokens * 0.00001),
+      estimatedCost: estimatedInputTokens * 0.000002 + estimatedOutputTokens * 0.00001,
       model: GROK_MODELS.vision,
     }
 

@@ -35,21 +35,33 @@ import { DownloadMockService } from './mock/DownloadMock'
 // ============================================================================
 
 /**
+ * Safe environment variable accessor compatible with SvelteKit/Vite (browser + server).
+ *
+ * Uses `import.meta.env` (the idiomatic Vite/SvelteKit approach) first, then falls
+ * back to `process.env` for pure Node.js environments such as Vitest or scripts.
+ */
+function getEnvVar(key: string): string | undefined {
+  // Prefer import.meta.env (works in Vite SSR and browser for VITE_-prefixed vars)
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    const value = (import.meta.env as Record<string, string | undefined>)[key]
+    if (value !== undefined) return value
+  }
+  // Fallback for pure Node.js environments (Vitest, scripts, etc.)
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[key]
+  }
+  return undefined
+}
+
+/**
  * Toggle between mock and real services
  *
  * - true: Use mock services (for development without API keys)
  * - false: Use real services (for production with real Grok API)
  *
- * Can be overridden by environment variable USE_MOCKS
+ * Can be overridden by environment variable USE_MOCKS=false
  */
-const USE_MOCKS = process.env['USE_MOCKS'] !== 'false' // Default to true
-
-/**
- * Log which services are being used
- */
-if (typeof window !== 'undefined') {
-  console.log(`🔧 Service Factory: Using ${USE_MOCKS ? 'MOCK' : 'REAL'} services`)
-}
+const USE_MOCKS = getEnvVar('USE_MOCKS') !== 'false' // Default to true
 
 // ============================================================================
 // SINGLETON INSTANCES
@@ -235,9 +247,9 @@ export function isUsingMocks(): boolean {
 export function getFactoryConfig() {
   return {
     useMocks: USE_MOCKS,
-    environment: process.env['NODE_ENV'] || 'development',
-    hasApiKey: !!process.env['XAI_API_KEY'],
-    hasBlobToken: !!process.env['VERCEL_BLOB_TOKEN'],
+    environment: getEnvVar('NODE_ENV') || 'development',
+    hasApiKey: !!getEnvVar('XAI_API_KEY'),
+    hasBlobToken: !!getEnvVar('VERCEL_BLOB_TOKEN'),
   }
 }
 

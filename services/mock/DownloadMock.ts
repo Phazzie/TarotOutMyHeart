@@ -17,6 +17,7 @@ import type {
 } from '$contracts/Download'
 import {
   DownloadErrorCode,
+  DOWNLOAD_FORMATS,
   generateCardFilename,
   generateDeckFilename,
 } from '$contracts/Download'
@@ -34,17 +35,36 @@ export class DownloadMockService implements IDownloadService {
   }
 
   /**
-   * Trigger browser download
+   * Trigger browser download (guarded for non-browser environments)
    */
   private triggerDownload(blob: Blob, filename: string): void {
+    const hasBlobApi =
+      typeof URL !== 'undefined' &&
+      typeof URL.createObjectURL === 'function' &&
+      typeof URL.revokeObjectURL === 'function'
+    const hasDomApi =
+      typeof document !== 'undefined' &&
+      typeof document.createElement === 'function' &&
+      document.body !== null
+
+    if (!hasBlobApi || !hasDomApi) {
+      return
+    }
+
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
-    link.href = url
-    link.download = filename
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+
+    try {
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+    } finally {
+      if (link.parentNode !== null) {
+        link.parentNode.removeChild(link)
+      }
+      URL.revokeObjectURL(url)
+    }
   }
 
   async downloadDeck(input: DownloadDeckInput): Promise<ServiceResponse<DownloadDeckOutput>> {
@@ -52,9 +72,22 @@ export class DownloadMockService implements IDownloadService {
       generatedCards,
       styleInputs,
       deckName = 'tarot-deck',
+      format = 'zip',
       includeMetadata = true,
       onProgress,
     } = input
+
+    // Validate format
+    if (!DOWNLOAD_FORMATS.includes(format)) {
+      return {
+        success: false,
+        error: {
+          code: DownloadErrorCode.INVALID_FORMAT,
+          message: `Invalid format: "${format}". Must be one of: ${DOWNLOAD_FORMATS.join(', ')}`,
+          retryable: false,
+        },
+      }
+    }
 
     // Validate input
     if (!generatedCards || generatedCards.length === 0) {
@@ -63,6 +96,18 @@ export class DownloadMockService implements IDownloadService {
         error: {
           code: DownloadErrorCode.NO_CARDS_PROVIDED,
           message: 'No cards provided for download',
+          retryable: false,
+        },
+      }
+    }
+
+    // Enforce exactly 22 cards (complete deck)
+    if (generatedCards.length < 22) {
+      return {
+        success: false,
+        error: {
+          code: DownloadErrorCode.INCOMPLETE_CARDS,
+          message: `Deck is incomplete: ${generatedCards.length}/22 cards provided`,
           retryable: false,
         },
       }
@@ -222,6 +267,7 @@ export class DownloadMockService implements IDownloadService {
 
     const { generatedCards, deckName = 'tarot-deck', includeMetadata = true } = input
 
+    // Validate no cards provided
     if (!generatedCards || generatedCards.length === 0) {
       return {
         success: false,
@@ -233,14 +279,26 @@ export class DownloadMockService implements IDownloadService {
       }
     }
 
-    const completedCards = generatedCards.filter(c => c.generationStatus === 'completed')
-
-    if (completedCards.length === 0) {
+    // Enforce exactly 22 cards (complete deck)
+    if (generatedCards.length < 22) {
       return {
         success: false,
         error: {
           code: DownloadErrorCode.INCOMPLETE_CARDS,
-          message: 'No completed cards',
+          message: `Deck is incomplete: ${generatedCards.length}/22 cards provided`,
+          retryable: false,
+        },
+      }
+    }
+
+    // Check that all cards have images
+    const cardsWithoutImages = generatedCards.filter(c => !c.imageUrl && !c.imageDataUrl)
+    if (cardsWithoutImages.length > 0) {
+      return {
+        success: false,
+        error: {
+          code: DownloadErrorCode.MISSING_IMAGES,
+          message: `${cardsWithoutImages.length} card(s) are missing images`,
           retryable: false,
         },
       }
@@ -249,13 +307,25 @@ export class DownloadMockService implements IDownloadService {
     // Create mock blob
     const mockContent = JSON.stringify({
       deckName,
-      cardCount: completedCards.length,
+      cardCount: generatedCards.length,
       includeMetadata,
     })
 
     const blob = new Blob([mockContent], { type: 'application/zip' })
     const filename = generateDeckFilename(deckName)
-    const url = URL.createObjectURL(blob)
+
+    // Create URL with fallback for test environments where URL.createObjectURL may not be implemented
+    let url: string
+    if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+      try {
+        url = URL.createObjectURL(blob)
+      } catch {
+        // Fallback for jsdom/test environments where createObjectURL is not fully implemented
+        url = `mock-blob:${filename}`
+      }
+    } else {
+      url = `mock-blob:${filename}`
+    }
 
     return {
       success: true,

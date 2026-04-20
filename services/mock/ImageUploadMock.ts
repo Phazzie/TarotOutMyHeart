@@ -122,13 +122,32 @@ export class ImageUploadMockService implements IImageUploadService {
     const failedImages: ImageValidationError[] = []
 
     for (const file of files) {
+      // Check for duplicate (same name + size as existing upload)
+      const isDuplicate = Array.from(this.uploadedImages.values()).some(
+        existing => existing.fileName === file.name && existing.fileSize === file.size
+      )
+
+      if (isDuplicate) {
+        failedImages.push({
+          code: ImageUploadErrorCode.DUPLICATE_IMAGE,
+          message: `File "${file.name}" has already been uploaded`,
+          fileName: file.name,
+        })
+        continue
+      }
+
       const errors = this.validateFile(file)
 
       if (errors.length > 0) {
         failedImages.push(...errors)
       } else {
         const id = this.generateId()
-        const previewUrl = URL.createObjectURL(file)
+
+        // Guard URL.createObjectURL for non-browser environments (e.g., Vitest/jsdom)
+        const previewUrl =
+          typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function'
+            ? URL.createObjectURL(file)
+            : `mock://preview/${encodeURIComponent(file.name)}`
 
         const uploadedImage: UploadedImage = {
           id,
@@ -146,7 +165,7 @@ export class ImageUploadMockService implements IImageUploadService {
     }
 
     return {
-      success: true,
+      success: failedImages.length === 0,
       data: {
         uploadedImages,
         failedImages,
@@ -173,8 +192,10 @@ export class ImageUploadMockService implements IImageUploadService {
       }
     }
 
-    // Revoke the object URL to free memory
-    URL.revokeObjectURL(image.previewUrl)
+    // Revoke the object URL to free memory (guard for non-browser environments)
+    if (typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+      URL.revokeObjectURL(image.previewUrl)
+    }
     this.uploadedImages.delete(imageId)
 
     const remainingImages = Array.from(this.uploadedImages.values())
@@ -193,6 +214,19 @@ export class ImageUploadMockService implements IImageUploadService {
     await this.delay(100)
 
     const { files } = input
+
+    // Validate total file count upfront
+    if (files.length > MAX_IMAGES) {
+      return {
+        success: false,
+        error: {
+          code: ImageUploadErrorCode.TOO_MANY_FILES,
+          message: `Too many files: ${files.length} provided, maximum is ${MAX_IMAGES}`,
+          retryable: false,
+        },
+      }
+    }
+
     const validImages: ImageValidationResult[] = []
     const invalidImages: ImageValidationError[] = []
 
@@ -242,9 +276,11 @@ export class ImageUploadMockService implements IImageUploadService {
   async clearAllImages(): Promise<ServiceResponse<void>> {
     await this.delay(100)
 
-    // Revoke all preview URLs
+    // Revoke all preview URLs to free memory (guard for non-browser environments)
     for (const image of this.uploadedImages.values()) {
-      URL.revokeObjectURL(image.previewUrl)
+      if (typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+        URL.revokeObjectURL(image.previewUrl)
+      }
     }
 
     this.uploadedImages.clear()

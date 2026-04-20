@@ -101,12 +101,19 @@ export class StyleInputMockService implements IStyleInputService {
   ): Promise<ServiceResponse<ValidateStyleInputsOutput>> {
     await this.delay(50)
 
+    // Only validate fields that are explicitly present in the input
+    const makeSkippedValidation = (fieldName: keyof StyleInputs): FieldValidation => ({
+      fieldName,
+      isValid: true,
+      errors: [],
+    })
+
     const fields: Record<keyof StyleInputs, FieldValidation> = {
-      theme: this.validateField('theme', input.theme),
-      tone: this.validateField('tone', input.tone),
-      description: this.validateField('description', input.description),
-      concept: this.validateField('concept', input.concept),
-      characters: this.validateField('characters', input.characters),
+      theme: 'theme' in input ? this.validateField('theme', input.theme) : makeSkippedValidation('theme'),
+      tone: 'tone' in input ? this.validateField('tone', input.tone) : makeSkippedValidation('tone'),
+      description: 'description' in input ? this.validateField('description', input.description) : makeSkippedValidation('description'),
+      concept: 'concept' in input ? this.validateField('concept', input.concept) : makeSkippedValidation('concept'),
+      characters: 'characters' in input ? this.validateField('characters', input.characters) : makeSkippedValidation('characters'),
     }
 
     const allErrors: StyleInputValidationError[] = []
@@ -117,23 +124,25 @@ export class StyleInputMockService implements IStyleInputService {
         isValid = false
         for (const errorMsg of validation.errors) {
           allErrors.push({
-            code: this.getErrorCodeForField(fieldName as keyof StyleInputs),
+            code: this.getErrorCodeForField(fieldName as keyof StyleInputs, errorMsg),
             field: fieldName as keyof StyleInputs,
             message: errorMsg,
-            currentValue: input[fieldName as keyof StyleInputs],
+            currentValue: input[fieldName as keyof ValidateStyleInputsInput],
           })
         }
       }
     }
 
-    // Required fields check for canProceed
-    const hasRequiredFields =
-      fields.theme.isValid && fields.tone.isValid && fields.description.isValid
+    // canProceed: all required fields must be present in input AND valid
+    const hasValidTheme = 'theme' in input && fields.theme.isValid
+    const hasValidTone = 'tone' in input && fields.tone.isValid
+    const hasValidDescription = 'description' in input && fields.description.isValid
+    const canProceed = hasValidTheme && hasValidTone && hasValidDescription
 
     const validation: StyleInputsValidation = {
       isValid,
       fields,
-      canProceed: hasRequiredFields,
+      canProceed,
     }
 
     return {
@@ -146,14 +155,18 @@ export class StyleInputMockService implements IStyleInputService {
     }
   }
 
-  private getErrorCodeForField(field: keyof StyleInputs): StyleInputErrorCode {
+  private getErrorCodeForField(field: keyof StyleInputs, errorMessage: string): StyleInputErrorCode {
     switch (field) {
       case 'theme':
-        return StyleInputErrorCode.THEME_REQUIRED
+        if (errorMessage.toLowerCase().includes('required')) return StyleInputErrorCode.THEME_REQUIRED
+        return StyleInputErrorCode.THEME_TOO_LONG
       case 'tone':
-        return StyleInputErrorCode.TONE_REQUIRED
+        if (errorMessage.toLowerCase().includes('required')) return StyleInputErrorCode.TONE_REQUIRED
+        return StyleInputErrorCode.TONE_TOO_LONG
       case 'description':
-        return StyleInputErrorCode.DESCRIPTION_REQUIRED
+        if (errorMessage.toLowerCase().includes('required')) return StyleInputErrorCode.DESCRIPTION_REQUIRED
+        if (errorMessage.toLowerCase().includes('at least')) return StyleInputErrorCode.DESCRIPTION_TOO_SHORT
+        return StyleInputErrorCode.DESCRIPTION_TOO_LONG
       case 'concept':
         return StyleInputErrorCode.CONCEPT_TOO_LONG
       case 'characters':
@@ -231,13 +244,13 @@ export class StyleInputMockService implements IStyleInputService {
       }
     }
 
-    // Return defaults if no draft
+    // Return defaults when no draft found or loadFromDraft is false
     return {
       success: true,
       data: {
         found: false,
-        styleInputs: null,
-        loadedFrom: 'none',
+        styleInputs: { ...DEFAULT_STYLE_INPUTS },
+        loadedFrom: 'default',
       },
     }
   }

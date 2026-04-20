@@ -95,18 +95,33 @@ export class ImageGenerationMockService implements IImageGenerationService {
     return card
   }
 
+  /**
+   * Runtime type guard to validate a prompt has the expected shape
+   */
+  private isValidPrompt(
+    prompt: unknown
+  ): prompt is { cardNumber: CardNumber; cardName: string; generatedPrompt: string } {
+    if (typeof prompt !== 'object' || prompt === null) return false
+    const p = prompt as Record<string, unknown>
+    return (
+      typeof p['cardNumber'] === 'number' &&
+      typeof p['cardName'] === 'string' &&
+      typeof p['generatedPrompt'] === 'string'
+    )
+  }
+
   async generateImages(
     input: GenerateImagesInput
   ): Promise<ServiceResponse<GenerateImagesOutput>> {
-    const { prompts, onProgress, allowPartialSuccess = true } = input
+    const { prompts, onProgress, allowPartialSuccess = true, saveToStorage = true } = input
 
     // Validate prompts
     if (!prompts || prompts.length === 0) {
       return {
         success: false,
         error: {
-          code: ImageGenerationErrorCode.INVALID_PROMPTS,
-          message: 'No prompts provided',
+          code: ImageGenerationErrorCode.WRONG_PROMPT_COUNT,
+          message: `Expected ${MAJOR_ARCANA_COUNT} prompts, got ${prompts?.length ?? 0}`,
           retryable: false,
         },
       }
@@ -143,6 +158,18 @@ export class ImageGenerationMockService implements IImageGenerationService {
 
       const prompt = prompts[i]!
 
+      // Validate prompt shape at runtime (contract tests may pass malformed prompts)
+      if (!this.isValidPrompt(prompt)) {
+        return {
+          success: false,
+          error: {
+            code: ImageGenerationErrorCode.INVALID_PROMPTS,
+            message: `Invalid prompt shape at index ${i}: expected { cardNumber, cardName, generatedPrompt }`,
+            retryable: false,
+          },
+        }
+      }
+
       // Update progress
       if (onProgress) {
         const progress: ImageGenerationProgress = {
@@ -157,7 +184,7 @@ export class ImageGenerationMockService implements IImageGenerationService {
         onProgress(progress)
       }
 
-      await this.delay(300) // Simulate generation time
+      await this.delay(50) // Simulate generation time (mock: 50ms per card = ~1.1s total)
 
       // Simulate occasional failures (10% chance)
       const shouldFail = Math.random() < 0.1
@@ -168,6 +195,12 @@ export class ImageGenerationMockService implements IImageGenerationService {
         prompt.generatedPrompt,
         shouldFail ? 'failed' : 'completed'
       )
+
+      // When not saving to storage, populate imageDataUrl instead of (or in addition to) imageUrl
+      if (!shouldFail && !saveToStorage) {
+        card.imageDataUrl = `data:image/png;base64,mock-base64-data-for-card-${prompt.cardNumber}`
+        card.imageUrl = undefined
+      }
 
       if (shouldFail) {
         failed++
@@ -274,6 +307,18 @@ export class ImageGenerationMockService implements IImageGenerationService {
     await this.delay(500)
 
     const { cardNumber, prompt, previousAttempts = 0 } = input
+
+    // Validate cardNumber bounds (0-21)
+    if (cardNumber < 0 || cardNumber > 21) {
+      return {
+        success: false,
+        error: {
+          code: ImageGenerationErrorCode.INVALID_PROMPTS,
+          message: `Invalid card number: ${cardNumber}. Must be between 0 and 21.`,
+          retryable: false,
+        },
+      }
+    }
 
     // Get card name from number
     const cardNames = [
