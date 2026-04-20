@@ -30,7 +30,7 @@ import type {
   LightboxState,
   SortOption,
 } from '$contracts/DeckDisplay'
-import { DeckDisplayErrorCode } from '$contracts/DeckDisplay'
+import { DeckDisplayErrorCode, DISPLAY_LAYOUTS, CARD_SIZES } from '$contracts/DeckDisplay'
 import type { GeneratedCard } from '$contracts/ImageGeneration'
 
 /**
@@ -101,6 +101,30 @@ export class DeckDisplayMockService implements IDeckDisplayService {
         error: {
           code: DeckDisplayErrorCode.NO_CARDS_PROVIDED,
           message: 'No cards provided for display',
+          retryable: false,
+        },
+      }
+    }
+
+    // Validate layout if explicitly provided
+    if (input.initialLayout !== undefined && !DISPLAY_LAYOUTS.includes(input.initialLayout)) {
+      return {
+        success: false,
+        error: {
+          code: DeckDisplayErrorCode.INVALID_LAYOUT,
+          message: `Invalid layout: "${input.initialLayout}". Must be one of: ${DISPLAY_LAYOUTS.join(', ')}`,
+          retryable: false,
+        },
+      }
+    }
+
+    // Validate size if explicitly provided
+    if (input.initialSize !== undefined && !CARD_SIZES.includes(input.initialSize)) {
+      return {
+        success: false,
+        error: {
+          code: DeckDisplayErrorCode.INVALID_SIZE,
+          message: `Invalid size: "${input.initialSize}". Must be one of: ${CARD_SIZES.join(', ')}`,
           retryable: false,
         },
       }

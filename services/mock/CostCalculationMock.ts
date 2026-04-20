@@ -125,7 +125,7 @@ export class CostCalculationMockService implements ICostCalculationService {
 
     const { imageCount, referenceImageCount, estimatedPromptLength = 1000 } = input
 
-    if (imageCount <= 0 || imageCount > 100) {
+    if (imageCount <= 0) {
       return {
         success: false,
         error: {
