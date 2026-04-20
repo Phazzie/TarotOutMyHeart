@@ -15,13 +15,14 @@
 **Symptom:** When no saved draft exists, returns `{ found: false, loadedFrom: 'none', data: null }` but contract tests expect `{ found: false, loadedFrom: 'default', data: DEFAULT_STYLE_INPUTS }`.
 
 **Fix needed:**
+
 ```typescript
 // When no draft found, return defaults:
 return {
   success: true,
   data: {
     found: false,
-    loadedFrom: 'default',   // ← must be 'default', not 'none'
+    loadedFrom: 'default', // ← must be 'default', not 'none'
     data: DEFAULT_STYLE_INPUTS,
   },
 }
@@ -37,6 +38,7 @@ return {
 **Methods:** `validateStyleInputs()`
 
 **Fix needed:** Return specific error codes per field:
+
 - Theme > 50 chars → `THEME_TOO_LONG`
 - Tone > 50 chars → `TONE_TOO_LONG`
 - Description < 10 chars → `DESCRIPTION_TOO_SHORT`
@@ -53,6 +55,7 @@ return {
 **Symptom:** Invalid values for `initialLayout` (e.g. `'invalid'`) and `initialSize` (e.g. `'extra-large'`) are accepted without returning error codes `INVALID_LAYOUT` / `INVALID_SIZE`.
 
 **Fix needed:**
+
 ```typescript
 if (input.initialLayout && !DISPLAY_LAYOUTS.includes(input.initialLayout)) {
   return { success: false, error: { code: DeckDisplayErrorCode.INVALID_LAYOUT, ... } }
@@ -86,12 +89,13 @@ if (input.initialSize && !CARD_SIZES.includes(input.initialSize)) {
 **Problem:** ~100 tests for Download, ImageUpload, ImageGeneration, PromptGeneration fail because they rely on browser APIs (`File`, `Blob`, `URL.createObjectURL`) that don't exist in Node.js.
 
 **Fix needed:**
+
 ```typescript
 // vitest.config.ts
 import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
-    environment: 'jsdom',  // ← add this
+    environment: 'jsdom', // ← add this
     // ... rest of config
   },
 })
@@ -100,6 +104,7 @@ export default defineConfig({
 Or use per-file override with `// @vitest-environment jsdom` at top of each affected test file.
 
 **Affected test files:**
+
 - `tests/contracts/Download.test.ts` (~38 failures)
 - `tests/contracts/ImageUpload.test.ts` (~25 failures)
 - `tests/contracts/ImageGeneration.test.ts` (~30 failures)
@@ -111,12 +116,12 @@ Or use per-file override with `// @vitest-environment jsdom` at top of each affe
 
 Replace with `as unknown as X` pattern or `// @ts-expect-error` for intentionally invalid test inputs:
 
-| File | Line(s) | Fix |
-|------|---------|-----|
-| `tests/contracts/DeckDisplay.test.ts` | 145, 155, 210, 263, 360, 901, 910, 920 | `'invalid' as unknown as DisplayLayout` |
-| `tests/contracts/Download.test.ts` | 32, 33, 37, 234, 248, 347, 494 | `'completed' as unknown as GenerationStatus` etc. |
-| `tests/contracts/PromptGeneration.test.ts` | 332 | `'invalid-model' as unknown as GrokModel` |
-| `tests/contracts/ImageGeneration.test.ts` | 257 | `[{ invalid: 'data' }] as unknown as CardPrompt[]` |
+| File                                       | Line(s)                                | Fix                                                |
+| ------------------------------------------ | -------------------------------------- | -------------------------------------------------- |
+| `tests/contracts/DeckDisplay.test.ts`      | 145, 155, 210, 263, 360, 901, 910, 920 | `'invalid' as unknown as DisplayLayout`            |
+| `tests/contracts/Download.test.ts`         | 32, 33, 37, 234, 248, 347, 494         | `'completed' as unknown as GenerationStatus` etc.  |
+| `tests/contracts/PromptGeneration.test.ts` | 332                                    | `'invalid-model' as unknown as GrokModel`          |
+| `tests/contracts/ImageGeneration.test.ts`  | 257                                    | `[{ invalid: 'data' }] as unknown as CardPrompt[]` |
 
 ---
 
@@ -125,6 +130,7 @@ Replace with `as unknown as X` pattern or `// @ts-expect-error` for intentionall
 ### 7. Implement 7 Real Services
 
 Create matching real implementations in `services/real/`:
+
 - `ImageUploadService.ts` — needs Vercel Blob token (`BLOB_READ_WRITE_TOKEN`)
 - `StyleInputService.ts` — uses localStorage/session storage
 - `PromptGenerationService.ts` — needs Grok API key (`GROK_API_KEY`) + `grok-vision-beta` model
@@ -138,6 +144,7 @@ Each real service must implement the same interface as its mock (contracts are i
 ### 8. Write Integration Tests
 
 In `tests/integration/`:
+
 - One test file per seam testing the real service against the live API
 - Gate with `process.env.RUN_INTEGRATION_TESTS === 'true'`
 - Requires `GROK_API_KEY` and `BLOB_READ_WRITE_TOKEN` env vars
@@ -145,6 +152,7 @@ In `tests/integration/`:
 ### 9. Build UI Components
 
 SvelteKit components needed (Sprint 2 in PRD):
+
 - `ImageUpload.svelte` — drag-and-drop, preview, 5-image max
 - `StyleInputForm.svelte` — theme/tone/description/concept fields with validation
 - `PromptReview.svelte` — show/edit 22 generated prompts
@@ -180,7 +188,7 @@ By root cause:
 ```
 services/mock/
 ├── ImageUploadMock.ts      ✅ complete
-├── StyleInputMock.ts       ⚠️  loadedFrom + error codes wrong  
+├── StyleInputMock.ts       ⚠️  loadedFrom + error codes wrong
 ├── PromptGenerationMock.ts ⚠️  needs JSDOM for URL tests
 ├── ImageGenerationMock.ts  ⚠️  needs JSDOM for File/Blob tests
 ├── DeckDisplayMock.ts      ⚠️  initializeDisplay validation missing

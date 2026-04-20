@@ -65,7 +65,11 @@ export class DeckDisplayMockService implements IDeckDisplayService {
   /**
    * Sort cards by the specified option (internal helper)
    */
-  private sortCardsInternal(cards: DisplayCard[], sortBy: SortOption, ascending: boolean): DisplayCard[] {
+  private sortCardsInternal(
+    cards: DisplayCard[],
+    sortBy: SortOption,
+    ascending: boolean
+  ): DisplayCard[] {
     const sorted = [...cards].sort((a, b) => {
       let comparison = 0
       switch (sortBy) {
@@ -93,7 +97,12 @@ export class DeckDisplayMockService implements IDeckDisplayService {
   ): Promise<ServiceResponse<InitializeDisplayOutput>> {
     await this.delay(50)
 
-    const { generatedCards, initialLayout = 'grid', initialSize = 'medium', autoOpenFirst = false } = input
+    const {
+      generatedCards,
+      initialLayout = 'grid',
+      initialSize = 'medium',
+      autoOpenFirst = false,
+    } = input
 
     if (!generatedCards || generatedCards.length === 0) {
       return {

@@ -109,11 +109,24 @@ export class StyleInputMockService implements IStyleInputService {
     })
 
     const fields: Record<keyof StyleInputs, FieldValidation> = {
-      theme: 'theme' in input ? this.validateField('theme', input.theme) : makeSkippedValidation('theme'),
-      tone: 'tone' in input ? this.validateField('tone', input.tone) : makeSkippedValidation('tone'),
-      description: 'description' in input ? this.validateField('description', input.description) : makeSkippedValidation('description'),
-      concept: 'concept' in input ? this.validateField('concept', input.concept) : makeSkippedValidation('concept'),
-      characters: 'characters' in input ? this.validateField('characters', input.characters) : makeSkippedValidation('characters'),
+      theme:
+        'theme' in input
+          ? this.validateField('theme', input.theme)
+          : makeSkippedValidation('theme'),
+      tone:
+        'tone' in input ? this.validateField('tone', input.tone) : makeSkippedValidation('tone'),
+      description:
+        'description' in input
+          ? this.validateField('description', input.description)
+          : makeSkippedValidation('description'),
+      concept:
+        'concept' in input
+          ? this.validateField('concept', input.concept)
+          : makeSkippedValidation('concept'),
+      characters:
+        'characters' in input
+          ? this.validateField('characters', input.characters)
+          : makeSkippedValidation('characters'),
     }
 
     const allErrors: StyleInputValidationError[] = []
@@ -155,17 +168,24 @@ export class StyleInputMockService implements IStyleInputService {
     }
   }
 
-  private getErrorCodeForField(field: keyof StyleInputs, errorMessage: string): StyleInputErrorCode {
+  private getErrorCodeForField(
+    field: keyof StyleInputs,
+    errorMessage: string
+  ): StyleInputErrorCode {
     switch (field) {
       case 'theme':
-        if (errorMessage.toLowerCase().includes('required')) return StyleInputErrorCode.THEME_REQUIRED
+        if (errorMessage.toLowerCase().includes('required'))
+          return StyleInputErrorCode.THEME_REQUIRED
         return StyleInputErrorCode.THEME_TOO_LONG
       case 'tone':
-        if (errorMessage.toLowerCase().includes('required')) return StyleInputErrorCode.TONE_REQUIRED
+        if (errorMessage.toLowerCase().includes('required'))
+          return StyleInputErrorCode.TONE_REQUIRED
         return StyleInputErrorCode.TONE_TOO_LONG
       case 'description':
-        if (errorMessage.toLowerCase().includes('required')) return StyleInputErrorCode.DESCRIPTION_REQUIRED
-        if (errorMessage.toLowerCase().includes('at least')) return StyleInputErrorCode.DESCRIPTION_TOO_SHORT
+        if (errorMessage.toLowerCase().includes('required'))
+          return StyleInputErrorCode.DESCRIPTION_REQUIRED
+        if (errorMessage.toLowerCase().includes('at least'))
+          return StyleInputErrorCode.DESCRIPTION_TOO_SHORT
         return StyleInputErrorCode.DESCRIPTION_TOO_LONG
       case 'concept':
         return StyleInputErrorCode.CONCEPT_TOO_LONG

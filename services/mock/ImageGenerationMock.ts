@@ -85,7 +85,8 @@ export class ImageGenerationMockService implements IImageGenerationService {
       cardNumber,
       cardName,
       prompt,
-      imageUrl: status === 'completed' ? this.generatePlaceholderImageUrl(cardNumber, cardName) : undefined,
+      imageUrl:
+        status === 'completed' ? this.generatePlaceholderImageUrl(cardNumber, cardName) : undefined,
       imageDataUrl: undefined,
       generationStatus: status,
       generatedAt: status === 'completed' ? new Date() : undefined,
@@ -110,9 +111,7 @@ export class ImageGenerationMockService implements IImageGenerationService {
     )
   }
 
-  async generateImages(
-    input: GenerateImagesInput
-  ): Promise<ServiceResponse<GenerateImagesOutput>> {
+  async generateImages(input: GenerateImagesInput): Promise<ServiceResponse<GenerateImagesOutput>> {
     const { prompts, onProgress, allowPartialSuccess = true, saveToStorage = true } = input
 
     // Validate prompts
@@ -322,11 +321,28 @@ export class ImageGenerationMockService implements IImageGenerationService {
 
     // Get card name from number
     const cardNames = [
-      'The Fool', 'The Magician', 'The High Priestess', 'The Empress', 'The Emperor',
-      'The Hierophant', 'The Lovers', 'The Chariot', 'Strength', 'The Hermit',
-      'Wheel of Fortune', 'Justice', 'The Hanged Man', 'Death', 'Temperance',
-      'The Devil', 'The Tower', 'The Star', 'The Moon', 'The Sun',
-      'Judgement', 'The World'
+      'The Fool',
+      'The Magician',
+      'The High Priestess',
+      'The Empress',
+      'The Emperor',
+      'The Hierophant',
+      'The Lovers',
+      'The Chariot',
+      'Strength',
+      'The Hermit',
+      'Wheel of Fortune',
+      'Justice',
+      'The Hanged Man',
+      'Death',
+      'Temperance',
+      'The Devil',
+      'The Tower',
+      'The Star',
+      'The Moon',
+      'The Sun',
+      'Judgement',
+      'The World',
     ]
 
     const cardName = cardNames[cardNumber] || `Card ${cardNumber}`
@@ -439,9 +455,9 @@ export class ImageGenerationMockService implements IImageGenerationService {
     }
   }
 
-  async estimateCost(
-    input: { imageCount: number }
-  ): Promise<ServiceResponse<EstimateImageCostOutput>> {
+  async estimateCost(input: {
+    imageCount: number
+  }): Promise<ServiceResponse<EstimateImageCostOutput>> {
     await this.delay(50)
 
     const { imageCount } = input

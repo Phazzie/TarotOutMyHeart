@@ -608,13 +608,13 @@ errors.push({ code: StyleInputErrorCode.THEME_INVALID }) // ✅
 
 **Key mistakes in original mocks (for reference)**:
 
-| Issue | Example |
-|-------|---------|
-| Wrong field names | `prompt` vs `generatedPrompt` |
-| Extra fields | `currency`, `total` (don't exist in contract) |
-| Missing fields | `confidence` not returned |
-| Enum as type | `import type { ErrorCode }` - can't use as value |
-| Naming conflict | Private method named same as interface method |
+| Issue             | Example                                          |
+| ----------------- | ------------------------------------------------ |
+| Wrong field names | `prompt` vs `generatedPrompt`                    |
+| Extra fields      | `currency`, `total` (don't exist in contract)    |
+| Missing fields    | `confidence` not returned                        |
+| Enum as type      | `import type { ErrorCode }` - can't use as value |
+| Naming conflict   | Private method named same as interface method    |
 
 **Prevention checklist for future mocks**:
 
@@ -645,6 +645,7 @@ errors.push({ code: StyleInputErrorCode.THEME_INVALID }) // ✅
 **Key takeaway**:
 
 > **When dealing with extensively broken code, sometimes the fastest path forward is:**
+>
 > 1. Delete the broken code entirely
 > 2. Read the spec/contract/requirements carefully
 > 3. Write fresh code with the spec visible

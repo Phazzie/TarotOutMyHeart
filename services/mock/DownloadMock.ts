@@ -179,13 +179,15 @@ export class DownloadMockService implements IDownloadService {
         name: c.cardName,
         filename: generateCardFilename(c.cardNumber, c.cardName),
       })),
-      metadata: includeMetadata ? {
-        generatedAt: new Date().toISOString(),
-        deckName,
-        styleInputs,
-        cardCount: cardsWithImages.length,
-        version: '1.0.0',
-      } : null,
+      metadata: includeMetadata
+        ? {
+            generatedAt: new Date().toISOString(),
+            deckName,
+            styleInputs,
+            cardCount: cardsWithImages.length,
+            version: '1.0.0',
+          }
+        : null,
     })
 
     const mockBlob = new Blob([mockZipContent], { type: 'application/zip' })
