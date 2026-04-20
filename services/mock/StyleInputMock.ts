@@ -1,17 +1,11 @@
 /**
- * @fileoverview Mock implementation of StyleInput service
- * @purpose Provide realistic style input validation and storage for UI development
- * @dataFlow Form Input → Validation → In-memory/localStorage storage → Validation Results
- * @mockBehavior
- *   - Validates all fields against character limits
- *   - Validates required fields (theme, tone, description)
- *   - Simulates localStorage draft save/load
- *   - Returns predefined dropdown options
- *   - Simulates 100ms processing delay
- * @dependencies contracts/StyleInput.ts
- * @updated 2025-11-07
+ * @fileoverview Mock implementation of IStyleInputService
+ * @purpose Provide realistic mock behavior for style input operations
+ * @boundary Seam #2: StyleInputSeam
+ * @contract contracts/StyleInput.ts
  */
 
+import type { ServiceResponse } from '$contracts/types/common'
 import type {
   IStyleInputService,
   ValidateStyleInputsInput,
@@ -27,198 +21,176 @@ import type {
   FieldValidation,
   StyleInputValidationError,
 } from '$contracts/StyleInput'
-
-import { StyleInputErrorCode } from '$contracts/StyleInput'
-
 import {
+  StyleInputErrorCode,
   CHAR_LIMITS,
   PREDEFINED_THEMES,
   PREDEFINED_TONES,
   DEFAULT_STYLE_INPUTS,
 } from '$contracts/StyleInput'
 
-import type { ServiceResponse } from '$contracts/types/common'
+const STORAGE_KEY = 'tarot-style-draft'
 
 /**
- * localStorage key for draft storage
- */
-const DRAFT_STORAGE_KEY = 'tarot_style_inputs_draft'
-
-/**
- * Mock implementation of StyleInputService
- *
- * Provides form validation and draft persistence simulation.
+ * Mock implementation of IStyleInputService
+ * Validates inputs and persists drafts to localStorage
  */
 export class StyleInputMockService implements IStyleInputService {
   /**
-   * Validate style inputs
+   * Simulate async delay
    */
+  private async delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  /**
+   * Validate a single field
+   */
+  private validateField(fieldName: keyof StyleInputs, value: string | undefined): FieldValidation {
+    const errors: string[] = []
+
+    switch (fieldName) {
+      case 'theme':
+        if (!value || value.trim().length === 0) {
+          errors.push('Theme is required')
+        } else if (value.length > CHAR_LIMITS.theme) {
+          errors.push(`Theme must be ${CHAR_LIMITS.theme} characters or less`)
+        }
+        break
+
+      case 'tone':
+        if (!value || value.trim().length === 0) {
+          errors.push('Tone is required')
+        } else if (value.length > CHAR_LIMITS.tone) {
+          errors.push(`Tone must be ${CHAR_LIMITS.tone} characters or less`)
+        }
+        break
+
+      case 'description':
+        if (!value || value.trim().length === 0) {
+          errors.push('Description is required')
+        } else if (value.length < CHAR_LIMITS.description.min) {
+          errors.push(`Description must be at least ${CHAR_LIMITS.description.min} characters`)
+        } else if (value.length > CHAR_LIMITS.description.max) {
+          errors.push(`Description must be ${CHAR_LIMITS.description.max} characters or less`)
+        }
+        break
+
+      case 'concept':
+        if (value && value.length > CHAR_LIMITS.concept) {
+          errors.push(`Concept must be ${CHAR_LIMITS.concept} characters or less`)
+        }
+        break
+
+      case 'characters':
+        if (value && value.length > CHAR_LIMITS.characters) {
+          errors.push(`Characters must be ${CHAR_LIMITS.characters} characters or less`)
+        }
+        break
+    }
+
+    return {
+      fieldName,
+      isValid: errors.length === 0,
+      errors,
+    }
+  }
+
   async validateStyleInputs(
     input: ValidateStyleInputsInput
   ): Promise<ServiceResponse<ValidateStyleInputsOutput>> {
-    await this.delay(100)
+    await this.delay(50)
 
-    const errors: StyleInputValidationError[] = []
-    const warnings: string[] = []
     const fields: Record<keyof StyleInputs, FieldValidation> = {
-      theme: { fieldName: 'theme', isValid: true, errors: [] },
-      tone: { fieldName: 'tone', isValid: true, errors: [] },
-      description: { fieldName: 'description', isValid: true, errors: [] },
-      concept: { fieldName: 'concept', isValid: true, errors: [] },
-      characters: { fieldName: 'characters', isValid: true, errors: [] },
+      theme: this.validateField('theme', input.theme),
+      tone: this.validateField('tone', input.tone),
+      description: this.validateField('description', input.description),
+      concept: this.validateField('concept', input.concept),
+      characters: this.validateField('characters', input.characters),
     }
 
-    // Validate theme
-    if (input.theme !== undefined) {
-      const themeValidation = this.validateTheme(input.theme)
-      if (!themeValidation.isValid) {
-        fields.theme = themeValidation
-        errors.push(
-          ...themeValidation.errors.map(msg => ({
-            code: StyleInputErrorCode.THEME_INVALID,
-            field: 'theme' as const,
-            message: msg,
-            currentValue: input.theme,
-          }))
-        )
+    const allErrors: StyleInputValidationError[] = []
+    let isValid = true
+
+    for (const [fieldName, validation] of Object.entries(fields)) {
+      if (!validation.isValid) {
+        isValid = false
+        for (const errorMsg of validation.errors) {
+          allErrors.push({
+            code: this.getErrorCodeForField(fieldName as keyof StyleInputs),
+            field: fieldName as keyof StyleInputs,
+            message: errorMsg,
+            currentValue: input[fieldName as keyof StyleInputs],
+          })
+        }
       }
     }
 
-    // Validate tone
-    if (input.tone !== undefined) {
-      const toneValidation = this.validateTone(input.tone)
-      if (!toneValidation.isValid) {
-        fields.tone = toneValidation
-        errors.push(
-          ...toneValidation.errors.map(msg => ({
-            code: StyleInputErrorCode.TONE_INVALID,
-            field: 'tone' as const,
-            message: msg,
-            currentValue: input.tone,
-          }))
-        )
-      }
-    }
-
-    // Validate description (required field)
-    if (input.description !== undefined) {
-      const descriptionValidation = this.validateDescription(input.description)
-      if (!descriptionValidation.isValid) {
-        fields.description = descriptionValidation
-        errors.push(
-          ...descriptionValidation.errors.map(msg => ({
-            code: this.getDescriptionErrorCode(msg),
-            field: 'description' as const,
-            message: msg,
-            currentValue: input.description,
-          }))
-        )
-      } else if (input.description.length < 50) {
-        warnings.push('Consider adding more details to your description for better results')
-      }
-    }
-
-    // Validate concept (optional)
-    if (input.concept !== undefined) {
-      const conceptValidation = this.validateConcept(input.concept)
-      if (!conceptValidation.isValid) {
-        fields.concept = conceptValidation
-        errors.push(
-          ...conceptValidation.errors.map(msg => ({
-            code: StyleInputErrorCode.CONCEPT_TOO_LONG,
-            field: 'concept' as const,
-            message: msg,
-            currentValue: input.concept,
-          }))
-        )
-      }
-    }
-
-    // Validate characters (optional)
-    if (input.characters !== undefined) {
-      const charactersValidation = this.validateCharacters(input.characters)
-      if (!charactersValidation.isValid) {
-        fields.characters = charactersValidation
-        errors.push(
-          ...charactersValidation.errors.map(msg => ({
-            code: StyleInputErrorCode.CHARACTERS_TOO_LONG,
-            field: 'characters' as const,
-            message: msg,
-            currentValue: input.characters,
-          }))
-        )
-      }
-    }
-
-    const isValid = errors.length === 0
-    const canProceed =
-      isValid &&
-      input.theme !== undefined &&
-      input.tone !== undefined &&
-      input.description !== undefined &&
-      input.description.length >= CHAR_LIMITS.description.min
+    // Required fields check for canProceed
+    const hasRequiredFields =
+      fields.theme.isValid && fields.tone.isValid && fields.description.isValid
 
     const validation: StyleInputsValidation = {
       isValid,
       fields,
-      canProceed,
+      canProceed: hasRequiredFields,
     }
 
     return {
       success: true,
       data: {
         validation,
-        errors,
-        warnings,
+        errors: allErrors,
+        warnings: [],
       },
     }
   }
 
-  /**
-   * Save style inputs
-   */
+  private getErrorCodeForField(field: keyof StyleInputs): StyleInputErrorCode {
+    switch (field) {
+      case 'theme':
+        return StyleInputErrorCode.THEME_REQUIRED
+      case 'tone':
+        return StyleInputErrorCode.TONE_REQUIRED
+      case 'description':
+        return StyleInputErrorCode.DESCRIPTION_REQUIRED
+      case 'concept':
+        return StyleInputErrorCode.CONCEPT_TOO_LONG
+      case 'characters':
+        return StyleInputErrorCode.CHARACTERS_TOO_LONG
+      default:
+        return StyleInputErrorCode.SAVE_FAILED
+    }
+  }
+
   async saveStyleInputs(
     input: SaveStyleInputsInput
   ): Promise<ServiceResponse<SaveStyleInputsOutput>> {
-    await this.delay(150)
+    await this.delay(100)
 
     const { styleInputs, saveAsDraft } = input
 
     // Validate before saving
     const validationResult = await this.validateStyleInputs(styleInputs)
-
-    if (!validationResult.success || !validationResult.data) {
-      return {
-        success: false,
-        error: validationResult.error || {
-          code: 'VALIDATION_FAILED',
-          message: 'Style inputs validation failed',
-          retryable: false,
-        },
-      }
-    }
-
-    if (!validationResult.data.validation.canProceed) {
+    if (!validationResult.data?.validation.canProceed) {
       return {
         success: false,
         error: {
-          code: 'VALIDATION_FAILED',
-          message: 'Style inputs contain errors',
+          code: StyleInputErrorCode.SAVE_FAILED,
+          message: 'Cannot save invalid style inputs',
           retryable: false,
         },
       }
     }
 
-    // Save to localStorage if requested
     let savedToDraft = false
     if (saveAsDraft) {
       try {
-        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(styleInputs))
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(styleInputs))
         savedToDraft = true
-      } catch (error) {
-        // localStorage might not be available or quota exceeded
-        // Continue anyway, just don't save draft
-        console.warn('Could not save draft to localStorage:', error)
+      } catch {
+        // localStorage might be unavailable
+        savedToDraft = false
       }
     }
 
@@ -233,38 +205,33 @@ export class StyleInputMockService implements IStyleInputService {
     }
   }
 
-  /**
-   * Load previously saved style inputs
-   */
   async loadStyleInputs(
     input: LoadStyleInputsInput
   ): Promise<ServiceResponse<LoadStyleInputsOutput>> {
-    await this.delay(100)
+    await this.delay(50)
 
     const { loadFromDraft } = input
 
-    // Try to load from draft if requested
     if (loadFromDraft) {
       try {
-        const draftJson = localStorage.getItem(DRAFT_STORAGE_KEY)
-        if (draftJson) {
-          const draft = JSON.parse(draftJson) as StyleInputs
+        const stored = localStorage.getItem(STORAGE_KEY)
+        if (stored) {
+          const styleInputs = JSON.parse(stored) as StyleInputs
           return {
             success: true,
             data: {
               found: true,
-              styleInputs: draft,
+              styleInputs,
               loadedFrom: 'draft',
             },
           }
         }
-      } catch (error) {
-        // localStorage error or invalid JSON - continue to defaults
-        console.warn('Could not load draft from localStorage:', error)
+      } catch {
+        // localStorage might be unavailable or data corrupted
       }
     }
 
-    // Return defaults if no draft found
+    // Return defaults if no draft
     return {
       success: true,
       data: {
@@ -275,11 +242,8 @@ export class StyleInputMockService implements IStyleInputService {
     }
   }
 
-  /**
-   * Get default style input values
-   */
   async getDefaults(): Promise<ServiceResponse<GetDefaultsOutput>> {
-    await this.delay(50)
+    await this.delay(10)
 
     return {
       success: true,
@@ -289,11 +253,8 @@ export class StyleInputMockService implements IStyleInputService {
     }
   }
 
-  /**
-   * Get predefined options for dropdowns
-   */
   async getPredefinedOptions(): Promise<ServiceResponse<GetPredefinedOptionsOutput>> {
-    await this.delay(50)
+    await this.delay(10)
 
     return {
       success: true,
@@ -304,156 +265,18 @@ export class StyleInputMockService implements IStyleInputService {
     }
   }
 
-  /**
-   * Clear draft from localStorage
-   */
   async clearDraft(): Promise<ServiceResponse<void>> {
-    await this.delay(100)
+    await this.delay(50)
 
     try {
-      localStorage.removeItem(DRAFT_STORAGE_KEY)
-      return {
-        success: true,
-        data: undefined,
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: {
-          code: 'CLEAR_FAILED',
-          message: 'Could not clear draft',
-          retryable: true,
-        },
-      }
-    }
-  }
-
-  // ============================================================================
-  // PRIVATE VALIDATION METHODS
-  // ============================================================================
-
-  /**
-   * Validate theme field
-   */
-  private validateTheme(theme: string): FieldValidation {
-    const errors: string[] = []
-
-    if (!theme || theme.trim().length === 0) {
-      errors.push('Please select or enter a theme')
-    } else if (theme.length > CHAR_LIMITS.theme) {
-      errors.push(`Theme must be ${CHAR_LIMITS.theme} characters or less`)
+      localStorage.removeItem(STORAGE_KEY)
+    } catch {
+      // localStorage might be unavailable
     }
 
     return {
-      fieldName: 'theme',
-      isValid: errors.length === 0,
-      errors,
+      success: true,
+      data: undefined,
     }
-  }
-
-  /**
-   * Validate tone field
-   */
-  private validateTone(tone: string): FieldValidation {
-    const errors: string[] = []
-
-    if (!tone || tone.trim().length === 0) {
-      errors.push('Please select or enter a tone')
-    } else if (tone.length > CHAR_LIMITS.tone) {
-      errors.push(`Tone must be ${CHAR_LIMITS.tone} characters or less`)
-    }
-
-    return {
-      fieldName: 'tone',
-      isValid: errors.length === 0,
-      errors,
-    }
-  }
-
-  /**
-   * Validate description field (required)
-   */
-  private validateDescription(description: string): FieldValidation {
-    const errors: string[] = []
-
-    if (!description || description.trim().length === 0) {
-      errors.push('Description is required')
-    } else if (description.length < CHAR_LIMITS.description.min) {
-      errors.push(`Description must be at least ${CHAR_LIMITS.description.min} characters`)
-    } else if (description.length > CHAR_LIMITS.description.max) {
-      errors.push(`Description must be ${CHAR_LIMITS.description.max} characters or less`)
-    }
-
-    return {
-      fieldName: 'description',
-      isValid: errors.length === 0,
-      errors,
-    }
-  }
-
-  /**
-   * Validate concept field (optional)
-   */
-  private validateConcept(concept: string): FieldValidation {
-    const errors: string[] = []
-
-    if (concept && concept.length > CHAR_LIMITS.concept) {
-      errors.push(`Concept must be ${CHAR_LIMITS.concept} characters or less`)
-    }
-
-    return {
-      fieldName: 'concept',
-      isValid: errors.length === 0,
-      errors,
-    }
-  }
-
-  /**
-   * Validate characters field (optional)
-   */
-  private validateCharacters(characters: string): FieldValidation {
-    const errors: string[] = []
-
-    if (characters && characters.length > CHAR_LIMITS.characters) {
-      errors.push(`Characters must be ${CHAR_LIMITS.characters} characters or less`)
-    }
-
-    return {
-      fieldName: 'characters',
-      isValid: errors.length === 0,
-      errors,
-    }
-  }
-
-  /**
-   * Get appropriate error code for description errors
-   */
-  private getDescriptionErrorCode(errorMessage: string): StyleInputErrorCode {
-    if (errorMessage.includes('required')) {
-      return StyleInputErrorCode.DESCRIPTION_REQUIRED
-    } else if (errorMessage.includes('at least')) {
-      return StyleInputErrorCode.DESCRIPTION_TOO_SHORT
-    } else if (errorMessage.includes('or less')) {
-      return StyleInputErrorCode.DESCRIPTION_TOO_LONG
-    }
-    return StyleInputErrorCode.DESCRIPTION_INVALID
-  }
-
-  /**
-   * Simulate async delay
-   */
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
   }
 }
-
-/**
- * Singleton instance for use throughout the application
- */
-export const styleInputMockService = new StyleInputMockService()
-
-/**
- * Export class alias for testing
- * Tests need to instantiate their own instances to avoid state pollution
- */
-export { StyleInputMockService as StyleInputMock }

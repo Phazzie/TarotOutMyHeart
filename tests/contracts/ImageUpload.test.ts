@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { ImageUploadMock } from '../../services/mock/ImageUploadMock'
+import { ImageUploadMockService } from '../../services/mock/ImageUploadMock'
 import {
   ImageUploadErrorCode,
   MAX_IMAGES,
@@ -18,7 +18,7 @@ describe('ImageUpload Contract', () => {
   let service: IImageUploadService
 
   beforeEach(() => {
-    service = new ImageUploadMock()
+    service = new ImageUploadMockService()
   })
 
   // Helper function to create mock File objects

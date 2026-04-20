@@ -1,197 +1,270 @@
 /**
- * @fileoverview Mock implementation of Download service
- * @purpose Provide deck download functionality as ZIP file
- * @dataFlow Generated Cards → ZIP Creation → Browser Download
- * @mockBehavior
- *   - Simulates ZIP file creation (2-3 seconds)
- *   - Creates mock download with metadata
- *   - Reports progress during packaging
- *   - Simulates browser download trigger
- * @dependencies contracts/Download.ts
- * @updated 2025-11-07
+ * @fileoverview Mock implementation of IDownloadService
+ * @purpose Provide realistic mock behavior for download operations
+ * @boundary Seam #7: DownloadSeam
+ * @contract contracts/Download.ts
  */
 
+import type { ServiceResponse } from '$contracts/types/common'
 import type {
   IDownloadService,
   DownloadDeckInput,
   DownloadDeckOutput,
-  DownloadIndividualCardInput,
-  DownloadIndividualCardOutput,
-  GetDownloadSizeInput,
-  GetDownloadSizeOutput,
-  DownloadProgress,
+  DownloadCardInput,
+  DownloadCardOutput,
+  PrepareDownloadInput,
+  PrepareDownloadOutput,
+} from '$contracts/Download'
+import {
+  DownloadErrorCode,
+  generateCardFilename,
+  generateDeckFilename,
 } from '$contracts/Download'
 
-import { CARD_FILENAME_PATTERN } from '$contracts/Download'
-import type { ServiceResponse } from '$contracts/types/common'
-
 /**
- * Mock implementation of DownloadService
- *
- * Simulates deck download as ZIP file with progress tracking.
+ * Mock implementation of IDownloadService
+ * Simulates file download operations
  */
 export class DownloadMockService implements IDownloadService {
   /**
-   * Download complete deck as ZIP
+   * Simulate async delay
    */
-  async downloadDeck(input: DownloadDeckInput): Promise<ServiceResponse<DownloadDeckOutput>> {
-    const { generatedCards, deckName, onProgress } = input
+  private async delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
 
-    // Simulate progress
+  /**
+   * Trigger browser download
+   */
+  private triggerDownload(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  async downloadDeck(input: DownloadDeckInput): Promise<ServiceResponse<DownloadDeckOutput>> {
+    const {
+      generatedCards,
+      styleInputs,
+      deckName = 'tarot-deck',
+      includeMetadata = true,
+      onProgress,
+    } = input
+
+    // Validate input
+    if (!generatedCards || generatedCards.length === 0) {
+      return {
+        success: false,
+        error: {
+          code: DownloadErrorCode.NO_CARDS_PROVIDED,
+          message: 'No cards provided for download',
+          retryable: false,
+        },
+      }
+    }
+
+    // Check for completed cards
+    const completedCards = generatedCards.filter(c => c.generationStatus === 'completed')
+    if (completedCards.length === 0) {
+      return {
+        success: false,
+        error: {
+          code: DownloadErrorCode.INCOMPLETE_CARDS,
+          message: 'No completed cards to download',
+          retryable: false,
+        },
+      }
+    }
+
+    // Check for missing images
+    const cardsWithImages = completedCards.filter(c => c.imageUrl || c.imageDataUrl)
+    if (cardsWithImages.length === 0) {
+      return {
+        success: false,
+        error: {
+          code: DownloadErrorCode.MISSING_IMAGES,
+          message: 'No cards have images to download',
+          retryable: false,
+        },
+      }
+    }
+
+    // Progress: preparing
     if (onProgress) {
       onProgress({
         status: 'Preparing download...',
         progress: 0,
-        currentStep: 'Initializing',
+        currentStep: 'preparing',
       })
-      await this.delay(500)
+    }
 
+    await this.delay(200)
+
+    // Progress: fetching
+    if (onProgress) {
       onProgress({
-        status: 'Creating ZIP archive...',
+        status: 'Fetching images...',
         progress: 25,
-        currentStep: 'Packaging images',
+        currentStep: 'fetching',
       })
-      await this.delay(1000)
-
-      onProgress({
-        status: 'Adding metadata...',
-        progress: 75,
-        currentStep: 'Adding metadata',
-      })
-      await this.delay(500)
-
-      onProgress({
-        status: 'Finalizing download...',
-        progress: 90,
-        currentStep: 'Finalizing',
-      })
-      await this.delay(500)
-
-      onProgress({
-        status: 'Complete!',
-        progress: 100,
-        currentStep: 'Download ready',
-      })
-    } else {
-      await this.delay(2500)
     }
 
-    // In mock, we don't actually create a ZIP or trigger download
-    // Real implementation would use JSZip and trigger browser download
-
-    const filename = `${this.sanitizeFilename(deckName)}.zip`
-    const mockSize = generatedCards.length * 1024 * 500 // Mock: ~500KB per card
-
-    return {
-      success: true,
-      data: {
-        filename,
-        size: mockSize,
-        cardCount: generatedCards.length,
-        downloaded: true,
-        downloadUrl: `mock://download/${filename}`, // Mock URL
-      },
-    }
-  }
-
-  /**
-   * Download individual card
-   */
-  async downloadIndividualCard(
-    input: DownloadIndividualCardInput
-  ): Promise<ServiceResponse<DownloadIndividualCardOutput>> {
     await this.delay(500)
 
-    const { card } = input
+    // Progress: packaging
+    if (onProgress) {
+      onProgress({
+        status: 'Creating archive...',
+        progress: 50,
+        currentStep: 'packaging',
+      })
+    }
 
-    const filename = this.formatCardFilename(card.cardNumber, card.cardName)
-    const mockSize = 1024 * 500 // Mock: 500KB
+    await this.delay(300)
+
+    // Create mock ZIP content
+    const mockZipContent = JSON.stringify({
+      cards: cardsWithImages.map(c => ({
+        number: c.cardNumber,
+        name: c.cardName,
+        filename: generateCardFilename(c.cardNumber, c.cardName),
+      })),
+      metadata: includeMetadata ? {
+        generatedAt: new Date().toISOString(),
+        deckName,
+        styleInputs,
+        cardCount: cardsWithImages.length,
+        version: '1.0.0',
+      } : null,
+    })
+
+    const mockBlob = new Blob([mockZipContent], { type: 'application/zip' })
+    const filename = generateDeckFilename(deckName)
+
+    // Progress: downloading
+    if (onProgress) {
+      onProgress({
+        status: 'Starting download...',
+        progress: 75,
+        currentStep: 'downloading',
+      })
+    }
+
+    // Trigger download
+    this.triggerDownload(mockBlob, filename)
+
+    await this.delay(200)
+
+    // Progress: complete
+    if (onProgress) {
+      onProgress({
+        status: 'Download complete!',
+        progress: 100,
+        currentStep: 'complete',
+      })
+    }
 
     return {
       success: true,
       data: {
-        filename,
-        size: mockSize,
         downloaded: true,
-        downloadUrl: `mock://download/${filename}`,
+        filename,
+        fileSize: mockBlob.size,
+        cardCount: cardsWithImages.length,
+        includedMetadata: includeMetadata,
       },
     }
   }
 
-  /**
-   * Get estimated download size
-   */
-  async getDownloadSize(
-    input: GetDownloadSizeInput
-  ): Promise<ServiceResponse<GetDownloadSizeOutput>> {
+  async downloadCard(input: DownloadCardInput): Promise<ServiceResponse<DownloadCardOutput>> {
     await this.delay(100)
 
-    const { generatedCards, format } = input
+    const { card, filename: customFilename } = input
 
-    // Mock: Estimate ~500KB per card + overhead
-    const cardSize = 1024 * 500
-    const totalImageSize = generatedCards.length * cardSize
-    const metadataSize = 1024 * 10 // 10KB for metadata
-    const zipOverhead = totalImageSize * 0.05 // 5% overhead for ZIP
+    if (!card.imageUrl && !card.imageDataUrl) {
+      return {
+        success: false,
+        error: {
+          code: DownloadErrorCode.MISSING_IMAGES,
+          message: 'Card has no image to download',
+          retryable: false,
+        },
+      }
+    }
 
-    const estimatedSize =
-      format === 'zip' ? totalImageSize + metadataSize + zipOverhead : totalImageSize + metadataSize
+    const filename = customFilename || generateCardFilename(card.cardNumber, card.cardName)
+
+    // Create mock image blob
+    const mockBlob = new Blob(['mock single card image'], { type: 'image/png' })
+
+    // Trigger download
+    this.triggerDownload(mockBlob, filename)
 
     return {
       success: true,
       data: {
-        estimatedSize: Math.round(estimatedSize),
-        formattedSize: this.formatBytes(estimatedSize),
-        cardCount: generatedCards.length,
+        downloaded: true,
+        filename,
+        fileSize: mockBlob.size,
       },
     }
   }
 
-  // ============================================================================
-  // PRIVATE HELPER METHODS
-  // ============================================================================
+  async prepareDownload(
+    input: PrepareDownloadInput
+  ): Promise<ServiceResponse<PrepareDownloadOutput>> {
+    await this.delay(200)
 
-  /**
-   * Format card filename according to pattern
-   */
-  private formatCardFilename(cardNumber: number, cardName: string): string {
-    const numberPadded = cardNumber.toString().padStart(2, '0')
-    const nameSanitized = this.sanitizeFilename(cardName)
-    return `${numberPadded}-${nameSanitized}.png`
-  }
+    const { generatedCards, deckName = 'tarot-deck', includeMetadata = true } = input
 
-  /**
-   * Sanitize filename by removing/replacing invalid characters
-   */
-  private sanitizeFilename(name: string): string {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
-  }
+    if (!generatedCards || generatedCards.length === 0) {
+      return {
+        success: false,
+        error: {
+          code: DownloadErrorCode.NO_CARDS_PROVIDED,
+          message: 'No cards provided',
+          retryable: false,
+        },
+      }
+    }
 
-  /**
-   * Format bytes to human-readable string
-   */
-  private formatBytes(bytes: number): string {
-    if (bytes === 0) return '0 Bytes'
+    const completedCards = generatedCards.filter(c => c.generationStatus === 'completed')
 
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    if (completedCards.length === 0) {
+      return {
+        success: false,
+        error: {
+          code: DownloadErrorCode.INCOMPLETE_CARDS,
+          message: 'No completed cards',
+          retryable: false,
+        },
+      }
+    }
 
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
-  }
+    // Create mock blob
+    const mockContent = JSON.stringify({
+      deckName,
+      cardCount: completedCards.length,
+      includeMetadata,
+    })
 
-  /**
-   * Simulate async delay
-   */
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
+    const blob = new Blob([mockContent], { type: 'application/zip' })
+    const filename = generateDeckFilename(deckName)
+    const url = URL.createObjectURL(blob)
+
+    return {
+      success: true,
+      data: {
+        blob,
+        filename,
+        fileSize: blob.size,
+        url,
+      },
+    }
   }
 }
-
-/**
- * Singleton instance for use throughout the application
- */
-export const downloadMockService = new DownloadMockService()

@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { DownloadMock } from '../../services/mock/Download'
+import { DownloadMockService } from '../../services/mock/DownloadMock'
 import {
   type IDownloadService,
   type DownloadDeckInput,
@@ -25,7 +25,7 @@ describe('Download Contract', () => {
   let mockStyleInputs: StyleInputs
 
   beforeEach(() => {
-    service = new DownloadMock()
+    service = new DownloadMockService()
 
     // Create 22 mock cards with valid data
     mockCards = Array.from({ length: 22 }, (_, i) => ({

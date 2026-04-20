@@ -1,17 +1,11 @@
 /**
- * @fileoverview Mock implementation of Prompt Generation service
- * @purpose Provide realistic Grok vision API simulation for generating tarot card prompts
- * @dataFlow Reference Images + Style → Mock AI Processing → 22 Card Prompts
- * @mockBehavior
- *   - Simulates 3-5 second generation time
- *   - Generates realistic prompts based on style inputs
- *   - Reports progress callbacks (0%, 25%, 50%, 75%, 100%)
- *   - Returns 22 unique Major Arcana prompts
- *   - Calculates mock API costs
- * @dependencies contracts/PromptGeneration.ts, contracts/StyleInput.ts
- * @updated 2025-11-07
+ * @fileoverview Mock implementation of IPromptGenerationService
+ * @purpose Provide realistic mock behavior for AI prompt generation
+ * @boundary Seam #3: PromptGenerationSeam
+ * @contract contracts/PromptGeneration.ts
  */
 
+import type { ServiceResponse } from '$contracts/types/common'
 import type {
   IPromptGenerationService,
   GeneratePromptsInput,
@@ -23,100 +17,136 @@ import type {
   EditPromptInput,
   EditPromptOutput,
   CardPrompt,
+  ApiUsage,
+  GenerationProgress,
+  PromptValidationError,
   CardNumber,
   PromptId,
-  ApiUsage,
-  PromptValidationError,
 } from '$contracts/PromptGeneration'
-
 import {
+  PromptGenerationErrorCode,
   MAJOR_ARCANA_NAMES,
   MAJOR_ARCANA_MEANINGS,
+  MAJOR_ARCANA_COUNT,
   GROK_MODELS,
-  PromptGenerationErrorCode,
 } from '$contracts/PromptGeneration'
 
-import type { ServiceResponse } from '$contracts/types/common'
-
 /**
- * Mock implementation of PromptGenerationService
- *
- * Simulates Grok vision API calls with realistic delays and generated content.
+ * Mock implementation of IPromptGenerationService
+ * Generates realistic prompts for all 22 Major Arcana cards
  */
 export class PromptGenerationMockService implements IPromptGenerationService {
+  private generatedPrompts: Map<PromptId, CardPrompt> = new Map()
+
   /**
-   * Generate all 22 Major Arcana card prompts
+   * Generate a unique PromptId
    */
+  private generateId(): PromptId {
+    return crypto.randomUUID() as PromptId
+  }
+
+  /**
+   * Simulate async delay
+   */
+  private async delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  /**
+   * Generate a realistic prompt for a single card
+   */
+  private generateCardPrompt(
+    cardNumber: CardNumber,
+    theme: string,
+    tone: string,
+    description: string
+  ): CardPrompt {
+    const cardName = MAJOR_ARCANA_NAMES[cardNumber]
+    const meaning = MAJOR_ARCANA_MEANINGS[cardNumber]
+
+    const prompt = `A ${tone.toLowerCase()} ${theme.toLowerCase()} tarot card illustration of "${cardName}". ${description} The imagery should embody the themes of ${meaning.toLowerCase()}. Highly detailed, dramatic lighting, symbolic elements prominently featured.`
+
+    return {
+      id: this.generateId(),
+      cardNumber,
+      cardName,
+      traditionalMeaning: meaning,
+      generatedPrompt: prompt,
+      confidence: 0.85 + Math.random() * 0.14, // 0.85-0.99
+      generatedAt: new Date(),
+    }
+  }
+
   async generatePrompts(
     input: GeneratePromptsInput
   ): Promise<ServiceResponse<GeneratePromptsOutput>> {
-    const { referenceImageUrls, styleInputs, model, onProgress } = input
+    const { referenceImageUrls, styleInputs, onProgress } = input
 
-    // Validate inputs
+    // Validate input
     if (!referenceImageUrls || referenceImageUrls.length === 0) {
       return {
         success: false,
         error: {
-          code: 'NO_REFERENCE_IMAGES',
-          message: 'At least one reference image is required',
+          code: PromptGenerationErrorCode.NO_REFERENCE_IMAGES,
+          message: 'No reference images provided',
           retryable: false,
         },
       }
     }
 
-    // Simulate progress callbacks
-    if (onProgress) {
-      onProgress({ progress: 0, status: 'Analyzing reference images...', currentStep: 'analyzing' })
-      await this.delay(800)
-
-      onProgress({
-        progress: 25,
-        status: 'Generating prompts for Fool through Lovers...',
-        currentStep: 'generating',
-      })
-      await this.delay(1000)
-
-      onProgress({
-        progress: 50,
-        status: 'Generating prompts for Chariot through Hanged Man...',
-        currentStep: 'generating',
-      })
-      await this.delay(1000)
-
-      onProgress({
-        progress: 75,
-        status: 'Generating prompts for Death through World...',
-        currentStep: 'generating',
-      })
-      await this.delay(1000)
-
-      onProgress({ progress: 100, status: 'Finalizing prompts...', currentStep: 'complete' })
-      await this.delay(500)
-    } else {
-      // No progress callback, just simulate total generation time
-      await this.delay(4000)
+    if (!styleInputs.theme || !styleInputs.tone || !styleInputs.description) {
+      return {
+        success: false,
+        error: {
+          code: PromptGenerationErrorCode.INVALID_STYLE_INPUTS,
+          message: 'Missing required style inputs',
+          retryable: false,
+        },
+      }
     }
 
-    // Generate all 22 prompts
     const cardPrompts: CardPrompt[] = []
-    for (let i = 0; i < 22; i++) {
-      const cardNumber = i as CardNumber
-      const prompt = this.generatePromptForCard(
-        cardNumber,
+
+    // Simulate progressive generation
+    for (let i = 0; i < MAJOR_ARCANA_COUNT; i++) {
+      // Update progress
+      if (onProgress) {
+        const progress: GenerationProgress = {
+          status: `Generating prompt for ${MAJOR_ARCANA_NAMES[i]}...`,
+          progress: Math.round((i / MAJOR_ARCANA_COUNT) * 100),
+          currentStep: i < MAJOR_ARCANA_COUNT - 1 ? 'generating' : 'validating',
+        }
+        onProgress(progress)
+      }
+
+      await this.delay(100) // Simulate per-card delay
+
+      const prompt = this.generateCardPrompt(
+        i as CardNumber,
         styleInputs.theme,
         styleInputs.tone,
         styleInputs.description
       )
+
       cardPrompts.push(prompt)
+      this.generatedPrompts.set(prompt.id, prompt)
     }
 
-    // Mock API usage
+    // Final progress update
+    if (onProgress) {
+      onProgress({
+        status: 'Complete',
+        progress: 100,
+        currentStep: 'complete',
+      })
+    }
+
     const usage: ApiUsage = {
-      model: model || GROK_MODELS.vision,
-      promptTokens: 450, // Approximate for reference images + style + system prompt
-      completionTokens: 2200, // ~100 tokens per card * 22
-      totalTokens: 2650,
-      estimatedCost: 0.0265, // Mock cost: $0.01 per 1K tokens
+      promptTokens: 2500,
+      completionTokens: 4500,
+      totalTokens: 7000,
+      estimatedCost: 0.035,
+      model: GROK_MODELS.vision,
     }
 
     return {
@@ -124,75 +154,69 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       data: {
         cardPrompts,
         usage,
-        requestId: `mock_req_${crypto.randomUUID()}`,
+        requestId: crypto.randomUUID(),
         generatedAt: new Date(),
-        model: model || GROK_MODELS.vision,
+        model: GROK_MODELS.vision,
       },
     }
   }
 
-  /**
-   * Validate generated prompts
-   */
   async validatePrompts(
     input: ValidatePromptsInput
   ): Promise<ServiceResponse<ValidatePromptsOutput>> {
-    await this.delay(200)
+    await this.delay(100)
 
     const { prompts } = input
     const invalidPrompts: CardPrompt[] = []
     const errors: PromptValidationError[] = []
 
-    // Check count
-    if (prompts.length !== 22) {
+    // Check for 22 prompts
+    if (prompts.length !== MAJOR_ARCANA_COUNT) {
       errors.push({
         code: PromptGenerationErrorCode.INCOMPLETE_RESPONSE,
-        message: `Expected 22 prompts, received ${prompts.length}`,
+        message: `Expected ${MAJOR_ARCANA_COUNT} prompts, got ${prompts.length}`,
       })
     }
 
-    // Check for duplicates and missing cards
-    const cardNumbers = new Set<number>()
-    for (const prompt of prompts) {
-      if (cardNumbers.has(prompt.cardNumber)) {
+    // Check for all card numbers present
+    const cardNumbers = new Set(prompts.map(p => p.cardNumber))
+    for (let i = 0; i < MAJOR_ARCANA_COUNT; i++) {
+      if (!cardNumbers.has(i as CardNumber)) {
         errors.push({
-          code: PromptGenerationErrorCode.DUPLICATE_CARD_NUMBER,
-          message: `Card ${prompt.cardNumber} appears multiple times`,
-          cardNumber: prompt.cardNumber,
-          promptId: prompt.id,
+          code: PromptGenerationErrorCode.MISSING_CARD_NUMBER,
+          message: `Missing card number ${i}`,
+          cardNumber: i as CardNumber,
         })
-        invalidPrompts.push(prompt)
-      }
-      cardNumbers.add(prompt.cardNumber)
-
-      // Check prompt length
-      if (prompt.generatedPrompt.length < 50) {
-        errors.push({
-          code: PromptGenerationErrorCode.PROMPT_TOO_SHORT,
-          message: `Prompt for ${prompt.cardName} is too short`,
-          cardNumber: prompt.cardNumber,
-          promptId: prompt.id,
-        })
-        invalidPrompts.push(prompt)
-      } else if (prompt.generatedPrompt.length > 2000) {
-        errors.push({
-          code: PromptGenerationErrorCode.PROMPT_TOO_LONG,
-          message: `Prompt for ${prompt.cardName} is too long`,
-          cardNumber: prompt.cardNumber,
-          promptId: prompt.id,
-        })
-        invalidPrompts.push(prompt)
       }
     }
 
-    // Check for missing cards
-    for (let i = 0; i < 22; i++) {
-      if (!cardNumbers.has(i)) {
+    // Check for duplicates
+    if (cardNumbers.size !== prompts.length) {
+      errors.push({
+        code: PromptGenerationErrorCode.DUPLICATE_CARD_NUMBER,
+        message: 'Duplicate card numbers detected',
+      })
+    }
+
+    // Check prompt lengths
+    for (const prompt of prompts) {
+      if (prompt.generatedPrompt.length < 20) {
         errors.push({
-          code: PromptGenerationErrorCode.MISSING_CARD_NUMBER,
-          message: `Card ${i} (${MAJOR_ARCANA_NAMES[i]}) is missing`,
-          cardNumber: i as CardNumber,
+          code: PromptGenerationErrorCode.PROMPT_TOO_SHORT,
+          message: `Prompt for card ${prompt.cardNumber} is too short`,
+          cardNumber: prompt.cardNumber,
+          promptId: prompt.id,
         })
+        invalidPrompts.push(prompt)
+      }
+      if (prompt.generatedPrompt.length > 2000) {
+        errors.push({
+          code: PromptGenerationErrorCode.PROMPT_TOO_LONG,
+          message: `Prompt for card ${prompt.cardNumber} is too long`,
+          cardNumber: prompt.cardNumber,
+          promptId: prompt.id,
+        })
+        invalidPrompts.push(prompt)
       }
     }
 
@@ -206,31 +230,48 @@ export class PromptGenerationMockService implements IPromptGenerationService {
     }
   }
 
-  /**
-   * Regenerate a single prompt
-   */
   async regeneratePrompt(
     input: RegeneratePromptInput
   ): Promise<ServiceResponse<RegeneratePromptOutput>> {
-    await this.delay(2000) // Shorter delay for single card
+    await this.delay(500)
 
-    const { cardNumber, styleInputs } = input
+    const { cardNumber, referenceImageUrls, styleInputs, feedback } = input
 
-    // Generate new prompt
-    const prompt = this.generatePromptForCard(
+    if (!referenceImageUrls || referenceImageUrls.length === 0) {
+      return {
+        success: false,
+        error: {
+          code: PromptGenerationErrorCode.NO_REFERENCE_IMAGES,
+          message: 'No reference images provided',
+          retryable: false,
+        },
+      }
+    }
+
+    // Generate new prompt, incorporating feedback if provided
+    let prompt = this.generateCardPrompt(
       cardNumber,
       styleInputs.theme,
       styleInputs.tone,
       styleInputs.description
     )
 
-    // Mock API usage for single prompt
+    // If feedback was provided, append it to the prompt
+    if (feedback) {
+      prompt = {
+        ...prompt,
+        generatedPrompt: `${prompt.generatedPrompt} Additional direction: ${feedback}`,
+      }
+    }
+
+    this.generatedPrompts.set(prompt.id, prompt)
+
     const usage: ApiUsage = {
+      promptTokens: 150,
+      completionTokens: 250,
+      totalTokens: 400,
+      estimatedCost: 0.002,
       model: GROK_MODELS.vision,
-      promptTokens: 450,
-      completionTokens: 100,
-      totalTokens: 550,
-      estimatedCost: 0.0055,
     }
 
     return {
@@ -238,57 +279,63 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       data: {
         cardPrompt: prompt,
         usage,
-        requestId: `mock_regen_${crypto.randomUUID()}`,
+        requestId: crypto.randomUUID(),
       },
     }
   }
 
-  /**
-   * Edit a generated prompt
-   */
   async editPrompt(input: EditPromptInput): Promise<ServiceResponse<EditPromptOutput>> {
-    await this.delay(100)
+    await this.delay(50)
 
     const { promptId, editedPrompt } = input
+    const existingPrompt = this.generatedPrompts.get(promptId)
 
-    // In mock, we just create a new prompt with the edited text
-    // Real implementation would update existing prompt
-    const cardPrompt: CardPrompt = {
-      id: promptId,
-      cardNumber: 0 as CardNumber, // Would retrieve from storage
-      cardName: 'The Fool', // Would retrieve from storage
-      traditionalMeaning: MAJOR_ARCANA_MEANINGS[0], // Would retrieve from storage
+    if (!existingPrompt) {
+      return {
+        success: false,
+        error: {
+          code: PromptGenerationErrorCode.INVALID_RESPONSE_FORMAT,
+          message: 'Prompt not found',
+          retryable: false,
+        },
+      }
+    }
+
+    const updatedPrompt: CardPrompt = {
+      ...existingPrompt,
       generatedPrompt: editedPrompt,
-      confidence: 0.95, // Mock confidence
       generatedAt: new Date(),
     }
+
+    this.generatedPrompts.set(promptId, updatedPrompt)
 
     return {
       success: true,
       data: {
-        cardPrompt,
+        cardPrompt: updatedPrompt,
         edited: true,
       },
     }
   }
 
-  /**
-   * Estimate cost for generating prompts
-   */
   async estimateCost(
     input: Omit<GeneratePromptsInput, 'onProgress'>
   ): Promise<ServiceResponse<ApiUsage>> {
-    await this.delay(100)
+    await this.delay(50)
 
-    const { model } = input
+    const { referenceImageUrls } = input
 
-    // Mock cost estimation
+    // Estimate based on number of images
+    const imageCount = referenceImageUrls?.length || 1
+    const estimatedInputTokens = 500 + imageCount * 500
+    const estimatedOutputTokens = MAJOR_ARCANA_COUNT * 200
+
     const usage: ApiUsage = {
-      model: model || GROK_MODELS.vision,
-      promptTokens: 450, // Estimated based on reference images + style
-      completionTokens: 2200, // ~100 tokens per card * 22
-      totalTokens: 2650,
-      estimatedCost: 0.0265, // Mock cost: $0.01 per 1K tokens
+      promptTokens: estimatedInputTokens,
+      completionTokens: estimatedOutputTokens,
+      totalTokens: estimatedInputTokens + estimatedOutputTokens,
+      estimatedCost: (estimatedInputTokens * 0.000002 + estimatedOutputTokens * 0.00001),
+      model: GROK_MODELS.vision,
     }
 
     return {
@@ -296,74 +343,4 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       data: usage,
     }
   }
-
-  // ============================================================================
-  // PRIVATE HELPER METHODS
-  // ============================================================================
-
-  /**
-   * Generate a realistic prompt for a specific card
-   */
-  private generatePromptForCard(
-    cardNumber: CardNumber,
-    theme: string,
-    tone: string,
-    description: string
-  ): CardPrompt {
-    const cardName = MAJOR_ARCANA_NAMES[cardNumber]
-    const traditionalMeaning = MAJOR_ARCANA_MEANINGS[cardNumber]
-
-    // Create a prompt that incorporates the style inputs and card meaning
-    const generatedPrompt = `Create a ${theme.toLowerCase()} style tarot card for "${cardName}" (Card ${cardNumber}) with a ${tone.toLowerCase()} tone. ${description} This card represents ${traditionalMeaning.toLowerCase()}. The composition should feature symbolic elements that capture the essence of ${traditionalMeaning}. Incorporate ${theme.toLowerCase()} artistic elements and maintain a ${tone.toLowerCase()} atmosphere throughout. Include traditional tarot symbolism while staying true to the ${theme} aesthetic. The card should evoke feelings of ${this.getEmotionalKeywords(traditionalMeaning)} and convey the concept of ${traditionalMeaning}. Focus on visual storytelling that immediately communicates the card's meaning through ${theme.toLowerCase()} imagery and ${tone.toLowerCase()} color palette.`
-
-    return {
-      id: crypto.randomUUID() as PromptId,
-      cardNumber,
-      cardName,
-      traditionalMeaning,
-      generatedPrompt,
-      confidence: 0.95, // Mock confidence score
-      generatedAt: new Date(),
-    }
-  }
-
-  /**
-   * Extract emotional keywords from card meaning
-   */
-  private getEmotionalKeywords(_meaning: string): string {
-    // Simple keyword extraction for more varied prompts
-    // In a real implementation, this could analyze the meaning string
-    const keywords = [
-      'wonder and curiosity',
-      'mystery and wisdom',
-      'power and transformation',
-      'balance and harmony',
-      'courage and determination',
-      'introspection and guidance',
-      'rebirth and renewal',
-      'enlightenment and hope',
-    ]
-
-    // Return a random keyword set
-    const randomIndex = Math.floor(Math.random() * keywords.length)
-    return keywords[randomIndex] || 'mystery and wisdom'
-  }
-
-  /**
-   * Simulate async delay
-   */
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
-  }
 }
-
-/**
- * Singleton instance for use throughout the application
- */
-export const promptGenerationMockService = new PromptGenerationMockService()
-
-/**
- * Export class alias for testing
- * Tests need to instantiate their own instances to avoid state pollution
- */
-export { PromptGenerationMockService as PromptGenerationMock }

@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { PromptGenerationMock } from '../../services/mock/PromptGenerationMock'
+import { PromptGenerationMockService } from '../../services/mock/PromptGenerationMock'
 import {
   type IPromptGenerationService,
   type CardPrompt,
@@ -37,7 +37,7 @@ describe('PromptGeneration Contract', () => {
   ]
 
   beforeEach(() => {
-    service = new PromptGenerationMock()
+    service = new PromptGenerationMockService()
   })
 
   describe('generatePrompts() Method', () => {

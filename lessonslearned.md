@@ -574,6 +574,86 @@ errors.push({ code: StyleInputErrorCode.THEME_INVALID }) // ✅
 
 ---
 
+### Lesson #7: Sometimes Delete and Rewrite Is Faster Than Fix 🔄
+
+**Date**: 2025-12-14
+**Phase**: Phase 3 Recovery
+**What happened**: Faced with 114 TypeScript errors across 7 mock services, attempted to fix them incrementally but realized a complete rewrite was more efficient.
+
+**The decision point**:
+
+- 114 errors across 7 files
+- Many errors were interconnected (wrong field names cascading through code)
+- Original mocks didn't follow contract structure at all
+- Incremental fixes would require reading bad code and contracts simultaneously
+- Time estimate for fixes: 2+ hours
+- Time estimate for rewrite: 1 hour
+
+**What we did**:
+
+1. **Deleted all 7 broken mock files** - Clean slate
+2. **Read EVERY contract first** - Understood what we needed to implement
+3. **Wrote fresh mocks from scratch** - With contracts open side-by-side
+4. **Named classes consistently** - `XxxMockService` pattern for all
+5. **Ran `npm run check` after each file** - Caught errors immediately
+6. **Updated factory.ts** - Instantiate new classes
+7. **Updated test imports** - Use correct class names
+
+**Result**:
+
+- 114 errors → 0 errors in ~45 minutes
+- All 7 mocks now properly implement their contracts
+- Code is cleaner and more consistent
+- Tests compile and can be extended
+
+**Key mistakes in original mocks (for reference)**:
+
+| Issue | Example |
+|-------|---------|
+| Wrong field names | `prompt` vs `generatedPrompt` |
+| Extra fields | `currency`, `total` (don't exist in contract) |
+| Missing fields | `confidence` not returned |
+| Enum as type | `import type { ErrorCode }` - can't use as value |
+| Naming conflict | Private method named same as interface method |
+
+**Prevention checklist for future mocks**:
+
+```markdown
+### Before writing a single line of mock code:
+
+- [ ] Read the contract file completely
+- [ ] List all methods the interface requires
+- [ ] List all types (input/output) used by each method
+- [ ] Identify enums vs types (import differently)
+- [ ] Create class with correct suffix pattern (XxxMockService)
+
+### While writing mock code:
+
+- [ ] Have contract file visible on screen
+- [ ] Copy exact field names from contract types
+- [ ] Run `npm run check` after completing each method
+- [ ] No `as any` type escapes
+
+### After completing mock:
+
+- [ ] `npm run check` - 0 errors
+- [ ] `git grep "as any" [file]` - empty result
+- [ ] All interface methods implemented
+- [ ] Update factory.ts to use new mock
+```
+
+**Key takeaway**:
+
+> **When dealing with extensively broken code, sometimes the fastest path forward is:**
+> 1. Delete the broken code entirely
+> 2. Read the spec/contract/requirements carefully
+> 3. Write fresh code with the spec visible
+> 4. Validate after each small chunk
+>
+> **Don't waste time trying to understand and fix fundamentally wrong code.**
+
+---
+
 ### What Worked Well
 
 _To be filled during development_
