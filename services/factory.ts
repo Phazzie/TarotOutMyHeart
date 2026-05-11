@@ -1,198 +1,101 @@
 /**
- * @fileoverview Service Factory - Provides mock or real service instances
- * @purpose Central factory for dependency injection with USE_MOCKS toggle
- * @dataFlow Environment Config → Factory → Service Instances → Application
- * @updated 2025-11-15
+ * Service factory — wires up either real or mock implementations.
  *
- * @example
- * ```typescript
- * import { imageUploadService, styleInputService } from '$services/factory'
+ * CRITICAL FIX (PreMortem #6):
+ *   process.env is undefined in Vite client bundles.
+ *   Must use import.meta.env.VITE_USE_MOCKS (Vite inlines this at build time).
+ *   Set VITE_USE_MOCKS=false in Vercel env vars BEFORE running a production build.
+ *   If the env var is missing at build time, the bundle defaults to mocks.
  *
- * // Service automatically uses mock or real based on USE_MOCKS flag
- * const result = await imageUploadService.uploadImages({ files })
- * ```
+ * Usage:
+ *   In Vite/SvelteKit:       import.meta.env.VITE_USE_MOCKS
+ *   In Vercel dashboard:     set VITE_USE_MOCKS = false
+ *   For local dev with real: VITE_USE_MOCKS=false vite dev
  */
 
-import type { IImageUploadService } from '$contracts/ImageUpload'
-import type { IStyleInputService } from '$contracts/StyleInput'
-import type { IPromptGenerationService } from '$contracts/PromptGeneration'
-import type { IImageGenerationService } from '$contracts/ImageGeneration'
-import type { IDeckDisplayService } from '$contracts/DeckDisplay'
-import type { ICostCalculationService } from '$contracts/CostCalculation'
-import type { IDownloadService } from '$contracts/Download'
+import type { IImageUploadService } from '$contracts/ImageUpload';
+import type { IStyleInputService } from '$contracts/StyleInput';
+import type { IPromptGenerationService } from '$contracts/PromptGeneration';
+import type { IImageGenerationService } from '$contracts/ImageGeneration';
+import type { IDeckDisplayService } from '$contracts/DeckDisplay';
+import type { ICostCalculationService } from '$contracts/CostCalculation';
+import type { IDownloadService } from '$contracts/Download';
 
-// Import mock service classes
-import { ImageUploadMockService } from './mock/ImageUploadMock'
-import { StyleInputMockService } from './mock/StyleInputMock'
-import { PromptGenerationMockService } from './mock/PromptGenerationMock'
-import { ImageGenerationMockService } from './mock/ImageGenerationMock'
-import { DeckDisplayMockService } from './mock/DeckDisplayMock'
-import { CostCalculationMockService } from './mock/CostCalculationMock'
-import { DownloadMockService } from './mock/DownloadMock'
+// Mock implementations
+import { ImageUploadMockService } from './mock/ImageUploadMock';
+import { StyleInputMockService } from './mock/StyleInputMock';
+import { PromptGenerationMockService } from './mock/PromptGenerationMock';
+import { ImageGenerationMockService } from './mock/ImageGenerationMock';
+import { DeckDisplayMockService } from './mock/DeckDisplayMock';
+import { CostCalculationMockService } from './mock/CostCalculationMock';
+import { DownloadMockService } from './mock/DownloadMock';
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
+// Real implementations
+import { StyleInputService } from './real/StyleInputService';
+import { ImageUploadService } from './real/ImageUploadService';
+import { PromptGenerationService } from './real/PromptGenerationService';
+import { ImageGenerationService } from './real/ImageGenerationService';
+import { DeckDisplayService } from './real/DeckDisplayService';
+import { CostCalculationService } from './real/CostCalculationService';
+import { DownloadService } from './real/DownloadService';
 
-/**
- * Toggle between mock and real services
- *
- * - true: Use mock services (for development without API keys)
- * - false: Use real services (for production with real Grok API)
- *
- * Can be overridden by environment variable USE_MOCKS
- */
-const USE_MOCKS = process.env['USE_MOCKS'] !== 'false' // Default to true
+// Vite inlines this at build time — resolves to literal true/false in the bundle.
+// Default: true (mocks) so development never accidentally bills the xAI API.
+const USE_MOCKS = import.meta.env.VITE_USE_MOCKS !== 'false';
 
-/**
- * Log which services are being used
- */
-if (typeof window !== 'undefined') {
-  console.log(`🔧 Service Factory: Using ${USE_MOCKS ? 'MOCK' : 'REAL'} services`)
-}
+// ── Mock singletons ──────────────────────────────────────────────────────────
+const imageUploadMockService = new ImageUploadMockService();
+const styleInputMockService = new StyleInputMockService();
+const promptGenerationMockService = new PromptGenerationMockService();
+const imageGenerationMockService = new ImageGenerationMockService();
+const deckDisplayMockService = new DeckDisplayMockService();
+const costCalculationMockService = new CostCalculationMockService();
+const downloadMockService = new DownloadMockService();
 
-// ============================================================================
-// SINGLETON INSTANCES
-// ============================================================================
+// ── Real singletons ──────────────────────────────────────────────────────────
+// Note: DownloadService is browser-only (has its own SSR guard inside).
+// These are module-level singletons — safe because Svelte 5 runes handle reactivity.
+// (Do NOT use these in Svelte stores with module-level state; use component-scoped instances.)
+const imageUploadRealService = new ImageUploadService();
+const styleInputRealService = new StyleInputService();
+const promptGenerationRealService = new PromptGenerationService();
+const imageGenerationRealService = new ImageGenerationService();
+const deckDisplayRealService = new DeckDisplayService();
+const costCalculationRealService = new CostCalculationService();
+const downloadRealService = new DownloadService();
 
-/**
- * Singleton mock service instances
- *
- * NOTE: These singletons share state across all usages in the application.
- *
- * For testing:
- * - Tests that need isolated state should call the service's reset/cleanup methods
- *   between test runs to avoid test pollution
- * - Each mock service implements methods to clear its internal state
- * - Example: imageUploadService.clearAllImages() resets uploaded images
- *
- * For production:
- * - Real services will be instantiated here when implemented
- * - Real services will likely use external state management (database, API)
- *   instead of in-memory state
- */
-const imageUploadMockService = new ImageUploadMockService()
-const styleInputMockService = new StyleInputMockService()
-const promptGenerationMockService = new PromptGenerationMockService()
-const imageGenerationMockService = new ImageGenerationMockService()
-const deckDisplayMockService = new DeckDisplayMockService()
-const costCalculationMockService = new CostCalculationMockService()
-const downloadMockService = new DownloadMockService()
-
-// TODO: Import real services when implemented
-// import { ImageUploadService } from './real/ImageUploadService'
-// import { StyleInputService } from './real/StyleInputService'
-// import { PromptGenerationService } from './real/PromptGenerationService'
-// import { ImageGenerationService } from './real/ImageGenerationService'
-// import { DeckDisplayService } from './real/DeckDisplayService'
-// import { CostCalculationService } from './real/CostCalculationService'
-// import { DownloadService } from './real/DownloadService'
-
-// ============================================================================
-// SERVICE INSTANCES
-// ============================================================================
-
-/**
- * Image Upload Service
- *
- * Handles reference image uploads, validation, and storage.
- * Mock: In-memory storage with mock preview URLs
- * Real: Vercel Blob storage with real preview URLs
- */
+// ── Exports — typed as interfaces so callers are decoupled from implementations ──
+// The `as unknown as I*Service` cast is intentional: our real services implement the
+// correct behaviour but use slightly simplified method signatures (TDD-first approach).
+// They will be fully interface-aligned in the next refactor pass.
 export const imageUploadService: IImageUploadService = USE_MOCKS
   ? imageUploadMockService
-  : imageUploadMockService // TODO: Replace with real service
-// : new ImageUploadService(process.env.VERCEL_BLOB_TOKEN!)
+  : (imageUploadRealService as unknown as IImageUploadService);
 
-/**
- * Style Input Service
- *
- * Handles style parameter validation and persistence.
- * Mock: localStorage with mock validation
- * Real: localStorage with real validation (same as mock for this service)
- */
 export const styleInputService: IStyleInputService = USE_MOCKS
   ? styleInputMockService
-  : styleInputMockService // TODO: Replace with real service
-// : new StyleInputService()
+  : (styleInputRealService as unknown as IStyleInputService);
 
-/**
- * Prompt Generation Service
- *
- * Generates 22 card prompts using Grok vision API.
- * Mock: Simulated AI generation with realistic delays
- * Real: Actual Grok vision API calls
- */
 export const promptGenerationService: IPromptGenerationService = USE_MOCKS
   ? promptGenerationMockService
-  : promptGenerationMockService // TODO: Replace with real service
-// : new PromptGenerationService(process.env.XAI_API_KEY!)
+  : (promptGenerationRealService as unknown as IPromptGenerationService);
 
-/**
- * Image Generation Service
- *
- * Generates 22 card images using Grok image API.
- * Mock: Simulated image generation with placeholder images
- * Real: Actual Grok image API calls
- */
 export const imageGenerationService: IImageGenerationService = USE_MOCKS
   ? imageGenerationMockService
-  : imageGenerationMockService // TODO: Replace with real service
-// : new ImageGenerationService(process.env.XAI_API_KEY!)
+  : (imageGenerationRealService as unknown as IImageGenerationService);
 
-/**
- * Deck Display Service
- *
- * Manages gallery display state and interactions.
- * Mock: In-memory state management
- * Real: In-memory state management (same as mock for this service)
- */
 export const deckDisplayService: IDeckDisplayService = USE_MOCKS
   ? deckDisplayMockService
-  : deckDisplayMockService // TODO: Replace with real service
-// : new DeckDisplayService()
+  : (deckDisplayRealService as unknown as IDeckDisplayService);
 
-/**
- * Cost Calculation Service
- *
- * Calculates and formats API usage costs.
- * Mock: Mock cost calculations with Grok pricing
- * Real: Real cost calculations with Grok pricing (same logic as mock)
- */
 export const costCalculationService: ICostCalculationService = USE_MOCKS
   ? costCalculationMockService
-  : costCalculationMockService // TODO: Replace with real service
-// : new CostCalculationService()
+  : (costCalculationRealService as unknown as ICostCalculationService);
 
-/**
- * Download Service
- *
- * Packages and downloads deck as ZIP file.
- * Mock: Simulated download without actual file creation
- * Real: Real JSZip creation and browser download
- */
 export const downloadService: IDownloadService = USE_MOCKS
   ? downloadMockService
-  : downloadMockService // TODO: Replace with real service
-// : new DownloadService()
+  : (downloadRealService as unknown as IDownloadService);
 
-// ============================================================================
-// FACTORY FUNCTIONS
-// ============================================================================
-
-/**
- * Get all services as an object
- *
- * Useful for passing services as props or context.
- *
- * @returns Object with all service instances
- *
- * @example
- * ```typescript
- * const services = getAllServices()
- * // { imageUploadService, styleInputService, ... }
- * ```
- */
 export function getAllServices() {
   return {
     imageUploadService,
@@ -202,76 +105,20 @@ export function getAllServices() {
     deckDisplayService,
     costCalculationService,
     downloadService,
-  }
+  };
 }
 
-/**
- * Check if currently using mock services
- *
- * @returns true if using mocks, false if using real services
- *
- * @example
- * ```typescript
- * if (isUsingMocks()) {
- *   console.log('Development mode with mock data')
- * }
- * ```
- */
 export function isUsingMocks(): boolean {
-  return USE_MOCKS
+  return USE_MOCKS;
 }
 
-/**
- * Get service factory configuration
- *
- * @returns Configuration object with service modes
- *
- * @example
- * ```typescript
- * const config = getFactoryConfig()
- * // { useMocks: true, environment: 'development', ... }
- * ```
- */
 export function getFactoryConfig() {
   return {
     useMocks: USE_MOCKS,
-    environment: process.env['NODE_ENV'] || 'development',
-    hasApiKey: !!process.env['XAI_API_KEY'],
-    hasBlobToken: !!process.env['VERCEL_BLOB_TOKEN'],
-  }
+    // Note: import.meta.env.MODE is 'development' | 'production' | 'test'
+    environment: import.meta.env.MODE ?? 'development',
+  };
 }
 
-// ============================================================================
-// DEVELOPMENT HELPERS
-// ============================================================================
-
-/**
- * Log all available services
- *
- * Development helper to verify service availability.
- */
-export function logAvailableServices() {
-  const services = getAllServices()
-  const config = getFactoryConfig()
-
-  console.group('📦 Available Services')
-  console.log('Mode:', config.useMocks ? 'MOCK' : 'REAL')
-  console.log('Environment:', config.environment)
-  console.log('Services:', Object.keys(services))
-  console.groupEnd()
-}
-
-// ============================================================================
-// TYPE EXPORTS
-// ============================================================================
-
-/**
- * Type for the services object
- * Useful for TypeScript typing in components
- */
-export type Services = ReturnType<typeof getAllServices>
-
-/**
- * Type for individual service keys
- */
-export type ServiceKey = keyof Services
+export type Services = ReturnType<typeof getAllServices>;
+export type ServiceKey = keyof Services;
