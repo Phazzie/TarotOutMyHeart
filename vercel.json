@@ -1,0 +1,14 @@
+{
+  "framework": "sveltekit",
+  "functions": {
+    "src/routes/api/prompts/+server.ts": {
+      "maxDuration": 90
+    },
+    "src/routes/api/generate/card/+server.ts": {
+      "maxDuration": 60
+    },
+    "src/routes/api/upload/+server.ts": {
+      "maxDuration": 30
+    }
+  }
+}
