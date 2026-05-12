@@ -8,15 +8,16 @@
  *   - INVALID_INPUT:  Missing cardNumber, cardName, or generatedPrompt
  *   - API_ERROR:      xAI returns non-200
  *   - TIMEOUT:        Image gen takes 15–45s; each call must fit within Vercel function limit
- *                     Requires vercel.json maxDuration: 60 (Pro) or 120 (Pro upgrade)
  *
- * Note: Vercel Hobby plan has 10s limit — this WILL timeout on Hobby.
- *       Upgrade to Vercel Pro and set maxDuration: 60 in vercel.json.
+ * Note: BLOB_READ_WRITE_TOKEN is optional — if not set, falls back to returning the
+ *       image URL directly from xAI (no persistent storage). Set it up when you create
+ *       a Vercel Blob store in the Vercel dashboard.
  */
 import { json } from '@sveltejs/kit';
 import OpenAI from 'openai';
 import { put } from '@vercel/blob';
-import { XAI_API_KEY, BLOB_READ_WRITE_TOKEN } from '$env/static/private';
+import { XAI_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
 
 export const config = { maxDuration: 60 }; // Vercel Pro required
@@ -72,8 +73,11 @@ export const POST: RequestHandler = async ({ request }) => {
       );
     }
 
-    // Images come back as base64 — store in Vercel Blob for persistent URLs
-    if (imageData.b64_json && BLOB_READ_WRITE_TOKEN) {
+    // Images come back as base64 — store in Vercel Blob for persistent URLs.
+    // BLOB_READ_WRITE_TOKEN is read from dynamic env (optional; set it in Vercel dashboard
+    // after creating a Blob store under Storage > Create > Blob).
+    const blobToken = env.BLOB_READ_WRITE_TOKEN;
+    if (imageData.b64_json && blobToken) {
       const imageBuffer = Buffer.from(imageData.b64_json, 'base64');
       const paddedNum = String(cardNumber).padStart(2, '0');
       const safeName = cardName.replace(/\s+/g, '_');
@@ -82,13 +86,13 @@ export const POST: RequestHandler = async ({ request }) => {
       const blob = await put(blobFileName, imageBuffer, {
         access: 'public',
         contentType: 'image/png',
-        token: BLOB_READ_WRITE_TOKEN,
+        token: blobToken,
       });
 
       return json({ success: true, data: { imageUrl: blob.url } });
     }
 
-    // Fallback: return URL directly if available
+    // Fallback: return URL directly if available (no Blob store configured)
     if (imageData.url) {
       return json({ success: true, data: { imageUrl: imageData.url } });
     }
