@@ -4,21 +4,25 @@
  * Keeps BLOB_READ_WRITE_TOKEN secret — never exposed to client.
  *
  * PreMortem protections:
- *   - UNAUTHORIZED:    No BLOB_READ_WRITE_TOKEN in env
+ *   - UNAUTHORIZED:    No BLOB_READ_WRITE_TOKEN in env (graceful 500, not crash)
  *   - INVALID_TYPE:    File type validation (server-side enforcement)
  *   - FILE_TOO_LARGE:  Size check after parsing FormData
  *   - BLOB_ERROR:      Vercel Blob SDK errors
+ *
+ * Note: BLOB_READ_WRITE_TOKEN is optional at build time; read from dynamic env
+ *       so the build succeeds even before a Blob store is configured.
  */
 import { json } from '@sveltejs/kit';
 import { put } from '@vercel/blob';
-import { BLOB_READ_WRITE_TOKEN } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png'];
 
 export const POST: RequestHandler = async ({ request }) => {
-  if (!BLOB_READ_WRITE_TOKEN) {
+  const blobToken = env.BLOB_READ_WRITE_TOKEN;
+  if (!blobToken) {
     return json(
       { success: false, error: { code: 'UNAUTHORIZED', message: 'Blob storage not configured.' } },
       { status: 500 },
@@ -60,7 +64,7 @@ export const POST: RequestHandler = async ({ request }) => {
   try {
     const blob = await put(file.name, file, {
       access: 'public',
-      token: BLOB_READ_WRITE_TOKEN,
+      token: blobToken,
     });
 
     return json({ success: true, data: { url: blob.url } }, { status: 200 });
