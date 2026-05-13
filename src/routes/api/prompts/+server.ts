@@ -13,14 +13,14 @@
  */
 import { json } from '@sveltejs/kit';
 import OpenAI from 'openai';
-import { XAI_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { MAJOR_ARCANA_NAMES, MAJOR_ARCANA_MEANINGS } from '$contracts/PromptGeneration';
 import type { RequestHandler } from './$types';
 
 export const config = { maxDuration: 90 }; // Vercel Pro: up to 300s
 
 export const POST: RequestHandler = async ({ request }) => {
-  if (!XAI_API_KEY) {
+  if (!env.XAI_API_KEY) {
     return json(
       { success: false, error: { code: 'UNAUTHORIZED', message: 'API key not configured.' } },
       { status: 500 },
@@ -46,7 +46,7 @@ export const POST: RequestHandler = async ({ request }) => {
     );
   }
 
-  const client = new OpenAI({ baseURL: 'https://api.x.ai/v1', apiKey: XAI_API_KEY });
+  const client = new OpenAI({ baseURL: 'https://api.x.ai/v1', apiKey: env.XAI_API_KEY });
 
   // Build the vision prompt — describe the style once, then ask for all 22 card prompts
   const styleDescription = [
