@@ -7,14 +7,16 @@
  * - UNAUTHORIZED: No BLOB_READ_WRITE_TOKEN in env (graceful 500, not crash)
  * - INVALID_TYPE: File type validation (server-side enforcement)
  * - FILE_TOO_LARGE: Size check after parsing FormData
- * - BLOB_ERROR: Vercel Blob SDK errors
+ * - BLOB_ERROR: Falls back to data URL so the app remains functional
+ *
+ * Storage strategy:
+ * 1. Vercel Blob (public access) — persistent, fast; requires store to be public
+ *    in Vercel Dashboard (Storage → tarot-cards → Settings → Enable Public Access)
+ * 2. Data URL fallback — works when blob store is private or unavailable;
+ *    URL is returned inline (base64); larger than a blob URL but fully functional.
  *
  * Note: BLOB_READ_WRITE_TOKEN is optional at build time; read from dynamic env
  * so the build succeeds even before a Blob store is configured.
- *
- * Storage: Uses access: 'private' — compatible with both public and private Vercel Blob stores.
- * The returned URL is the blob's canonical URL. For browser display, the Vercel Blob store
- * should be set to public in the Vercel dashboard (Storage → tarot-cards → Settings).
  */
 import { json } from '@sveltejs/kit';
 import { put } from '@vercel/blob';
@@ -25,14 +27,6 @@ const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png'];
 
 export const POST: RequestHandler = async ({ request }) => {
-  const blobToken = env.BLOB_READ_WRITE_TOKEN;
-  if (!blobToken) {
-    return json(
-      { success: false, error: { code: 'UNAUTHORIZED', message: 'Blob storage not configured.' } },
-      { status: 500 },
-    );
-  }
-
   let formData: FormData;
   try {
     formData = await request.formData();
@@ -68,18 +62,30 @@ export const POST: RequestHandler = async ({ request }) => {
     );
   }
 
-  try {
-    const blob = await put(file.name, file, {
-      access: 'private',
-      token: blobToken,
-    });
+  // Read file bytes once (needed for both blob and data URL paths)
+  const fileBuffer = Buffer.from(await file.arrayBuffer());
 
-    return json({ success: true, data: { url: blob.url } }, { status: 200 });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Upload failed.';
-    return json(
-      { success: false, error: { code: 'BLOB_ERROR', message } },
-      { status: 500 },
-    );
+  // Strategy 1: Vercel Blob (requires public store in Vercel dashboard)
+  const blobToken = env.BLOB_READ_WRITE_TOKEN;
+  if (blobToken) {
+    try {
+      const blob = await put(file.name, fileBuffer, {
+        access: 'public',
+        contentType: file.type,
+        token: blobToken,
+      });
+      return json({ success: true, data: { url: blob.url } }, { status: 200 });
+    } catch (blobErr) {
+      // Blob failed — log and fall through to data URL
+      console.warn(
+        'Blob upload failed, using data URL fallback:',
+        blobErr instanceof Error ? blobErr.message : blobErr,
+      );
+    }
   }
+
+  // Strategy 2: Data URL — always works; stored in app state
+  const base64 = fileBuffer.toString('base64');
+  const dataUrl = `data:${file.type};base64,${base64}`;
+  return json({ success: true, data: { url: dataUrl } }, { status: 200 });
 };

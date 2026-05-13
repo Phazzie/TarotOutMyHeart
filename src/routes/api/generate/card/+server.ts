@@ -10,7 +10,8 @@
  * - TIMEOUT: Image gen takes 15–45s; each call must fit within Vercel function limit
  *
  * Storage strategy (in priority order):
- * 1. Vercel Blob (private access) — persistent storage when BLOB_READ_WRITE_TOKEN set
+ * 1. Vercel Blob (public access) — persistent, fast; requires store to be public
+ *    in Vercel Dashboard (Storage → tarot-cards → Settings → Enable Public Access)
  * 2. xAI URL — if xAI returns a direct URL instead of base64
  * 3. Data URL — always works; stored in app state, used for zip download
  *
@@ -83,9 +84,7 @@ export const POST: RequestHandler = async ({ request }) => {
       );
     }
 
-    // Strategy 1: Store in Vercel Blob (private store compatible).
-    // Returns a private blob URL — browser access requires the store to be set to public
-    // in the Vercel dashboard, or a signed URL mechanism to be added here.
+    // Strategy 1: Store in Vercel Blob (requires public store in Vercel dashboard).
     const blobToken = env.BLOB_READ_WRITE_TOKEN;
     if (imageData.b64_json && blobToken) {
       try {
@@ -95,7 +94,7 @@ export const POST: RequestHandler = async ({ request }) => {
         const blobFileName = `cards/${paddedNum}_${safeName}.png`;
 
         const blob = await put(blobFileName, imageBuffer, {
-          access: 'private',
+          access: 'public',
           contentType: 'image/png',
           token: blobToken,
         });
