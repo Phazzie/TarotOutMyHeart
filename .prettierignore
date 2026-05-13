@@ -1,0 +1,14 @@
+# Generated / build output
+.svelte-kit/
+build/
+node_modules/
+
+# Documentation — formatted separately
+docs/
+lessonslearned.md
+*.md
+
+# Template / scaffold files with [Feature] placeholder syntax
+# (contain intentionally invalid TypeScript used as copy-paste templates)
+contracts/[Feature]*.ts
+services/templates/

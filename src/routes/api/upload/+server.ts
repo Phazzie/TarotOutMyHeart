@@ -4,13 +4,17 @@
  * Keeps BLOB_READ_WRITE_TOKEN secret — never exposed to client.
  *
  * PreMortem protections:
- *   - UNAUTHORIZED:    No BLOB_READ_WRITE_TOKEN in env (graceful 500, not crash)
- *   - INVALID_TYPE:    File type validation (server-side enforcement)
- *   - FILE_TOO_LARGE:  Size check after parsing FormData
- *   - BLOB_ERROR:      Vercel Blob SDK errors
+ * - UNAUTHORIZED: No BLOB_READ_WRITE_TOKEN in env (graceful 500, not crash)
+ * - INVALID_TYPE: File type validation (server-side enforcement)
+ * - FILE_TOO_LARGE: Size check after parsing FormData
+ * - BLOB_ERROR: Vercel Blob SDK errors
  *
  * Note: BLOB_READ_WRITE_TOKEN is optional at build time; read from dynamic env
- *       so the build succeeds even before a Blob store is configured.
+ * so the build succeeds even before a Blob store is configured.
+ *
+ * Storage: Uses access: 'private' — compatible with both public and private Vercel Blob stores.
+ * The returned URL is the blob's canonical URL. For browser display, the Vercel Blob store
+ * should be set to public in the Vercel dashboard (Storage → tarot-cards → Settings).
  */
 import { json } from '@sveltejs/kit';
 import { put } from '@vercel/blob';
@@ -34,7 +38,10 @@ export const POST: RequestHandler = async ({ request }) => {
     formData = await request.formData();
   } catch {
     return json(
-      { success: false, error: { code: 'INVALID_REQUEST', message: 'Expected multipart form data.' } },
+      {
+        success: false,
+        error: { code: 'INVALID_REQUEST', message: 'Expected multipart form data.' },
+      },
       { status: 400 },
     );
   }
@@ -63,7 +70,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
   try {
     const blob = await put(file.name, file, {
-      access: 'public',
+      access: 'private',
       token: blobToken,
     });
 

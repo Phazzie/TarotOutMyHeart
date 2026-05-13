@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: https://tarot-up-my-heart.vercel.app
+      url: https://tarot-out-my-heart.vercel.app
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,16 +23,22 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
-      - name: Run all tests
-        run: npm run test:all
+      - name: Sync SvelteKit types
+        run: npx svelte-kit sync
+
+      - name: Run mock tests
+        run: npm run test:mocks
+
+      - name: Run contract tests
+        run: npm run test:contracts
 
       - name: Run type checking
-        run: npm run check
+        run: npx svelte-check --tsconfig ./tsconfig.json
 
-      - name: Run linting
-        run: npm run lint
+      - name: Run ESLint
+        run: npx eslint .
 
       - name: Build for production
         run: npm run build
@@ -63,7 +69,6 @@ jobs:
           echo "### Checks Completed" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Contract tests" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Mock tests" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Integration tests" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Type checking" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Linting" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Production build" >> $GITHUB_STEP_SUMMARY

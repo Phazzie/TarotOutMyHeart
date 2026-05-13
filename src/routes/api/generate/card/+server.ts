@@ -4,25 +4,29 @@
  * Called once per card by ImageGenerationService (per-card approach avoids serverless timeout).
  *
  * PreMortem protections:
- *   - UNAUTHORIZED:   No XAI_API_KEY
- *   - INVALID_INPUT:  Missing cardNumber, cardName, or generatedPrompt
- *   - API_ERROR:      xAI returns non-200
- *   - TIMEOUT:        Image gen takes 15–45s; each call must fit within Vercel function limit
+ * - UNAUTHORIZED: No XAI_API_KEY
+ * - INVALID_INPUT: Missing cardNumber, cardName, or generatedPrompt
+ * - API_ERROR: xAI returns non-200
+ * - TIMEOUT: Image gen takes 15–45s; each call must fit within Vercel function limit
  *
- * Note: BLOB_READ_WRITE_TOKEN is optional — if not set, falls back to returning the
- *       image URL directly from xAI (no persistent storage). Set it up when you create
- *       a Vercel Blob store in the Vercel dashboard.
+ * Storage strategy (in priority order):
+ * 1. Vercel Blob (private access) — persistent storage when BLOB_READ_WRITE_TOKEN set
+ * 2. xAI URL — if xAI returns a direct URL instead of base64
+ * 3. Data URL — always works; stored in app state, used for zip download
+ *
+ * Note: XAI_API_KEY and BLOB_READ_WRITE_TOKEN are read from dynamic env at runtime
+ * so the build succeeds even when they're not set at build time.
  */
 import { json } from '@sveltejs/kit';
 import OpenAI from 'openai';
 import { put } from '@vercel/blob';
-import { XAI_API_KEY } from '$env/static/private';
 import { env } from '$env/dynamic/private';
 import type { RequestHandler } from './$types';
 
 export const config = { maxDuration: 60 }; // Vercel Pro required
 
 export const POST: RequestHandler = async ({ request }) => {
+  const XAI_API_KEY = env.XAI_API_KEY;
   if (!XAI_API_KEY) {
     return json(
       { success: false, error: { code: 'UNAUTHORIZED', message: 'API key not configured.' } },
@@ -44,7 +48,13 @@ export const POST: RequestHandler = async ({ request }) => {
 
   if (cardNumber === undefined || !cardName || !generatedPrompt) {
     return json(
-      { success: false, error: { code: 'INVALID_INPUT', message: 'cardNumber, cardName, and generatedPrompt are required.' } },
+      {
+        success: false,
+        error: {
+          code: 'INVALID_INPUT',
+          message: 'cardNumber, cardName, and generatedPrompt are required.',
+        },
+      },
       { status: 422 },
     );
   }
@@ -73,32 +83,49 @@ export const POST: RequestHandler = async ({ request }) => {
       );
     }
 
-    // Images come back as base64 — store in Vercel Blob for persistent URLs.
-    // BLOB_READ_WRITE_TOKEN is read from dynamic env (optional; set it in Vercel dashboard
-    // after creating a Blob store under Storage > Create > Blob).
+    // Strategy 1: Store in Vercel Blob (private store compatible).
+    // Returns a private blob URL — browser access requires the store to be set to public
+    // in the Vercel dashboard, or a signed URL mechanism to be added here.
     const blobToken = env.BLOB_READ_WRITE_TOKEN;
     if (imageData.b64_json && blobToken) {
-      const imageBuffer = Buffer.from(imageData.b64_json, 'base64');
-      const paddedNum = String(cardNumber).padStart(2, '0');
-      const safeName = cardName.replace(/\s+/g, '_');
-      const blobFileName = `cards/${paddedNum}_${safeName}.png`;
+      try {
+        const imageBuffer = Buffer.from(imageData.b64_json, 'base64');
+        const paddedNum = String(cardNumber).padStart(2, '0');
+        const safeName = cardName.replace(/\s+/g, '_');
+        const blobFileName = `cards/${paddedNum}_${safeName}.png`;
 
-      const blob = await put(blobFileName, imageBuffer, {
-        access: 'public',
-        contentType: 'image/png',
-        token: blobToken,
-      });
+        const blob = await put(blobFileName, imageBuffer, {
+          access: 'private',
+          contentType: 'image/png',
+          token: blobToken,
+        });
 
-      return json({ success: true, data: { imageUrl: blob.url } });
+        return json({ success: true, data: { imageUrl: blob.url } });
+      } catch (blobErr) {
+        // Blob failed — fall through to next strategy
+        console.warn(
+          'Blob storage failed, using fallback:',
+          blobErr instanceof Error ? blobErr.message : blobErr,
+        );
+      }
     }
 
-    // Fallback: return URL directly if available (no Blob store configured)
+    // Strategy 2: Return xAI URL directly (if provided)
     if (imageData.url) {
       return json({ success: true, data: { imageUrl: imageData.url } });
     }
 
+    // Strategy 3: Return as data URL — works in browser img tags and for zip download
+    if (imageData.b64_json) {
+      const dataUrl = `data:image/png;base64,${imageData.b64_json}`;
+      return json({ success: true, data: { imageUrl: dataUrl } });
+    }
+
     return json(
-      { success: false, error: { code: 'NO_URL', message: 'Image generated but no URL could be produced.' } },
+      {
+        success: false,
+        error: { code: 'NO_URL', message: 'Image generated but no URL could be produced.' },
+      },
       { status: 502 },
     );
   } catch (err) {
