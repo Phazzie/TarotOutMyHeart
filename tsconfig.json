@@ -28,15 +28,12 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "isolatedModules": true,
+    "isolatedModules": true
 
-    // Path aliases
-    "baseUrl": ".",
-    "paths": {
-      "$lib/*": ["./src/lib/*"],
-      "$contracts/*": ["./contracts/*"],
-      "$services/*": ["./services/*"]
-    }
+    // Path aliases: defined in svelte.config.js kit.alias — do NOT redefine here.
+    // Redefining 'paths' here overrides SvelteKit's generated paths (including
+    // $env/dynamic/private, $env/static/private, etc.), breaking module resolution.
+    // SvelteKit propagates kit.alias into .svelte-kit/tsconfig.json automatically.
   },
   "include": [
     "src/**/*.ts",
