@@ -28,8 +28,9 @@
 <script lang="ts">
   import { appStore } from '$lib/stores/appStore.svelte'
   import { imageUploadService } from '$services/factory'
-  import type { ImageValidationError, ImageId } from '$contracts/index'
+  import type { ImageValidationError } from '$contracts/index'
   import { ImageUploadErrorCode } from '$contracts/index'
+  import { createImageId, toImageUploadErrorCode } from '$lib/utils/types'
 
   // ==========================================================================
   // SERVICE INITIALIZATION
@@ -121,9 +122,13 @@
   function handleDragLeave(event: DragEvent): void {
     event.preventDefault()
     // Only set to false if leaving the drop zone itself, not child elements
-    const target = event.target as HTMLElement
-    const currentTarget = event.currentTarget as HTMLElement
-    if (target === currentTarget) {
+    const target = event.target
+    const currentTarget = event.currentTarget
+    if (
+      target instanceof HTMLElement &&
+      currentTarget instanceof HTMLElement &&
+      target === currentTarget
+    ) {
       isDragOver = false
     }
   }
@@ -145,7 +150,8 @@
    * Handle file input change event
    */
   async function handleFileInputChange(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement
+    if (!(event.target instanceof HTMLInputElement)) return
+    const input = event.target
     const files = input.files
 
     if (files && files.length > 0) {
@@ -177,7 +183,7 @@
    */
   async function removeImage(imageId: string): Promise<void> {
     // Use the service to remove the image
-    const result = await uploadService.removeImage({ imageId: imageId as ImageId })
+    const result = await uploadService.removeImage({ imageId: createImageId(imageId) })
 
     if (result.success && result.data) {
       // Update store with remaining images
@@ -191,7 +197,7 @@
     } else if (result.error) {
       errors = [
         {
-          code: result.error.code as ImageUploadErrorCode,
+          code: toImageUploadErrorCode(result.error.code),
           message: result.error.message,
           fileName: '',
         },
@@ -272,7 +278,7 @@
         // Handle service error
         errors = [
           {
-            code: result.error.code as ImageUploadErrorCode,
+            code: toImageUploadErrorCode(result.error.code),
             message: result.error.message,
             fileName: '',
           },

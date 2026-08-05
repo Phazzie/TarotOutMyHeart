@@ -32,6 +32,7 @@
     StyleInputsValidation,
   } from '$contracts/index'
   import { CHAR_LIMITS } from '$contracts/index'
+  import { isPredefinedTheme, isPredefinedTone } from '$lib/utils/types'
 
   // ============================================================================
   // SERVICE INITIALIZATION
@@ -179,18 +180,18 @@
       formData = { ...loadResult.data.styleInputs }
 
       // Check if loaded values are custom (not in predefined lists)
-      if (!predefinedThemes.includes(formData.theme as PredefinedTheme)) {
+      if (isPredefinedTheme(formData.theme)) {
+        selectedTheme = formData.theme
+      } else {
         showCustomTheme = true
         selectedTheme = 'Custom'
-      } else {
-        selectedTheme = formData.theme as PredefinedTheme
       }
 
-      if (!predefinedTones.includes(formData.tone as PredefinedTone)) {
+      if (isPredefinedTone(formData.tone)) {
+        selectedTone = formData.tone
+      } else {
         showCustomTone = true
         selectedTone = 'Custom'
-      } else {
-        selectedTone = formData.tone as PredefinedTone
       }
     } else {
       // Load defaults if no draft found
@@ -258,10 +259,15 @@
    * Handle theme dropdown change
    */
   function handleThemeChange(event: Event) {
-    const target = event.target as HTMLSelectElement
-    const value = target.value as PredefinedTheme
+    if (!(event.target instanceof HTMLSelectElement)) return
+    const target = event.target
+    const value = target.value
 
-    selectedTheme = value
+    if (isPredefinedTheme(value)) {
+      selectedTheme = value
+    } else {
+      selectedTheme = 'Custom'
+    }
 
     if (value === 'Custom') {
       showCustomTheme = true
@@ -279,7 +285,8 @@
    * Handle custom theme input change
    */
   function handleCustomThemeChange(event: Event) {
-    const target = event.target as HTMLInputElement
+    if (!(event.target instanceof HTMLInputElement)) return
+    const target = event.target
     formData.theme = target.value
     validateForm()
     scheduleAutoSave()
@@ -289,10 +296,15 @@
    * Handle tone dropdown change
    */
   function handleToneChange(event: Event) {
-    const target = event.target as HTMLSelectElement
-    const value = target.value as PredefinedTone
+    if (!(event.target instanceof HTMLSelectElement)) return
+    const target = event.target
+    const value = target.value
 
-    selectedTone = value
+    if (isPredefinedTone(value)) {
+      selectedTone = value
+    } else {
+      selectedTone = 'Custom'
+    }
 
     if (value === 'Custom') {
       showCustomTone = true
@@ -310,7 +322,8 @@
    * Handle custom tone input change
    */
   function handleCustomToneChange(event: Event) {
-    const target = event.target as HTMLInputElement
+    if (!(event.target instanceof HTMLInputElement)) return
+    const target = event.target
     formData.tone = target.value
     validateForm()
     scheduleAutoSave()
@@ -320,7 +333,8 @@
    * Handle description textarea change
    */
   function handleDescriptionChange(event: Event) {
-    const target = event.target as HTMLTextAreaElement
+    if (!(event.target instanceof HTMLTextAreaElement)) return
+    const target = event.target
     formData.description = target.value
     validateForm()
     scheduleAutoSave()
@@ -330,7 +344,8 @@
    * Handle concept textarea change
    */
   function handleConceptChange(event: Event) {
-    const target = event.target as HTMLTextAreaElement
+    if (!(event.target instanceof HTMLTextAreaElement)) return
+    const target = event.target
     formData.concept = target.value
     validateForm()
     scheduleAutoSave()
@@ -340,7 +355,8 @@
    * Handle characters textarea change
    */
   function handleCharactersChange(event: Event) {
-    const target = event.target as HTMLTextAreaElement
+    if (!(event.target instanceof HTMLTextAreaElement)) return
+    const target = event.target
     formData.characters = target.value
     validateForm()
     scheduleAutoSave()

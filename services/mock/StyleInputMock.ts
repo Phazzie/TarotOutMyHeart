@@ -6,6 +6,7 @@
  */
 
 import type { ServiceResponse } from '$contracts/types/common'
+import { isStyleInputs, isKeyOfStyleInputs } from '$lib/utils/types'
 import type {
   IStyleInputService,
   ValidateStyleInputsInput,
@@ -31,7 +32,7 @@ import {
 
 const STORAGE_KEY = 'tarot-style-draft'
 
-type FieldError = { code: StyleInputErrorCode; message: string };
+type FieldError = { code: StyleInputErrorCode; message: string }
 
 /**
  * Mock implementation of IStyleInputService
@@ -48,47 +49,77 @@ export class StyleInputMockService implements IStyleInputService {
   /**
    * Validate a single field
    */
-  private validateField(fieldName: keyof StyleInputs, value: string | undefined): FieldValidation & { specificErrors: FieldError[] } {
-    const specificErrors: FieldError[] = [];
+  private validateField(
+    fieldName: keyof StyleInputs,
+    value: string | undefined
+  ): FieldValidation & { specificErrors: FieldError[] } {
+    const specificErrors: FieldError[] = []
 
     switch (fieldName) {
       case 'theme':
         if (!value || value.trim().length === 0) {
-          specificErrors.push({ code: StyleInputErrorCode.THEME_REQUIRED, message: 'Theme is required' });
+          specificErrors.push({
+            code: StyleInputErrorCode.THEME_REQUIRED,
+            message: 'Theme is required',
+          })
         } else if (value.length > CHAR_LIMITS.theme) {
-          specificErrors.push({ code: StyleInputErrorCode.THEME_TOO_LONG, message: `Theme must be ${CHAR_LIMITS.theme} characters or less` });
+          specificErrors.push({
+            code: StyleInputErrorCode.THEME_TOO_LONG,
+            message: `Theme must be ${CHAR_LIMITS.theme} characters or less`,
+          })
         }
-        break;
+        break
 
       case 'tone':
         if (!value || value.trim().length === 0) {
-          specificErrors.push({ code: StyleInputErrorCode.TONE_REQUIRED, message: 'Tone is required' });
+          specificErrors.push({
+            code: StyleInputErrorCode.TONE_REQUIRED,
+            message: 'Tone is required',
+          })
         } else if (value.length > CHAR_LIMITS.tone) {
-          specificErrors.push({ code: StyleInputErrorCode.TONE_TOO_LONG, message: `Tone must be ${CHAR_LIMITS.tone} characters or less` });
+          specificErrors.push({
+            code: StyleInputErrorCode.TONE_TOO_LONG,
+            message: `Tone must be ${CHAR_LIMITS.tone} characters or less`,
+          })
         }
-        break;
+        break
 
       case 'description':
         if (!value || value.trim().length === 0) {
-          specificErrors.push({ code: StyleInputErrorCode.DESCRIPTION_REQUIRED, message: 'Description is required' });
+          specificErrors.push({
+            code: StyleInputErrorCode.DESCRIPTION_REQUIRED,
+            message: 'Description is required',
+          })
         } else if (value.length < CHAR_LIMITS.description.min) {
-          specificErrors.push({ code: StyleInputErrorCode.DESCRIPTION_TOO_SHORT, message: `Description must be at least ${CHAR_LIMITS.description.min} characters` });
+          specificErrors.push({
+            code: StyleInputErrorCode.DESCRIPTION_TOO_SHORT,
+            message: `Description must be at least ${CHAR_LIMITS.description.min} characters`,
+          })
         } else if (value.length > CHAR_LIMITS.description.max) {
-          specificErrors.push({ code: StyleInputErrorCode.DESCRIPTION_TOO_LONG, message: `Description must be ${CHAR_LIMITS.description.max} characters or less` });
+          specificErrors.push({
+            code: StyleInputErrorCode.DESCRIPTION_TOO_LONG,
+            message: `Description must be ${CHAR_LIMITS.description.max} characters or less`,
+          })
         }
-        break;
+        break
 
       case 'concept':
         if (value && value.length > CHAR_LIMITS.concept) {
-          specificErrors.push({ code: StyleInputErrorCode.CONCEPT_TOO_LONG, message: `Concept must be ${CHAR_LIMITS.concept} characters or less` });
+          specificErrors.push({
+            code: StyleInputErrorCode.CONCEPT_TOO_LONG,
+            message: `Concept must be ${CHAR_LIMITS.concept} characters or less`,
+          })
         }
-        break;
+        break
 
       case 'characters':
         if (value && value.length > CHAR_LIMITS.characters) {
-          specificErrors.push({ code: StyleInputErrorCode.CHARACTERS_TOO_LONG, message: `Characters must be ${CHAR_LIMITS.characters} characters or less` });
+          specificErrors.push({
+            code: StyleInputErrorCode.CHARACTERS_TOO_LONG,
+            message: `Characters must be ${CHAR_LIMITS.characters} characters or less`,
+          })
         }
-        break;
+        break
     }
 
     return {
@@ -96,7 +127,7 @@ export class StyleInputMockService implements IStyleInputService {
       isValid: specificErrors.length === 0,
       errors: specificErrors.map(e => e.message),
       specificErrors,
-    };
+    }
   }
 
   async validateStyleInputs(
@@ -115,26 +146,25 @@ export class StyleInputMockService implements IStyleInputService {
     const errors: StyleInputValidationError[] = []
 
     for (const [field, validation] of Object.entries(fields)) {
-      if (!validation.isValid) {
+      if (!validation.isValid && isKeyOfStyleInputs(field)) {
         for (const err of validation.specificErrors) {
           errors.push({
             code: err.code,
-            field: field as keyof StyleInputs,
+            field,
             message: err.message,
-          });
+          })
         }
       }
     }
 
-    const isValid = errors.length === 0;
-    const canProceed =
-      fields.theme.isValid && fields.tone.isValid && fields.description.isValid;
+    const isValid = errors.length === 0
+    const canProceed = fields.theme.isValid && fields.tone.isValid && fields.description.isValid
 
     const validationState: StyleInputsValidation = {
       isValid,
       fields,
       canProceed,
-    };
+    }
 
     return {
       success: true,
@@ -143,7 +173,7 @@ export class StyleInputMockService implements IStyleInputService {
         errors,
         warnings: [],
       },
-    };
+    }
   }
 
   async saveStyleInputs(
@@ -199,14 +229,16 @@ export class StyleInputMockService implements IStyleInputService {
       try {
         const stored = localStorage.getItem(STORAGE_KEY)
         if (stored) {
-          const styleInputs = JSON.parse(stored) as StyleInputs
-          return {
-            success: true,
-            data: {
-              found: true,
-              styleInputs,
-              loadedFrom: 'draft',
-            },
+          const parsed: unknown = JSON.parse(stored)
+          if (isStyleInputs(parsed)) {
+            return {
+              success: true,
+              data: {
+                found: true,
+                styleInputs: parsed,
+                loadedFrom: 'draft',
+              },
+            }
           }
         }
       } catch {

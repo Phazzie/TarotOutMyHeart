@@ -4,7 +4,7 @@
  * Implements ICostCalculationService strictly without type escapes.
  */
 
-import type { ServiceResponse } from '$contracts/types/common';
+import type { ServiceResponse } from '$contracts/types/common'
 import type {
   ICostCalculationService,
   CalculateTotalCostInput,
@@ -18,7 +18,7 @@ import type {
   TextCostBreakdown,
   ImageCostBreakdown,
   VisionCostBreakdown,
-} from '$contracts/CostCalculation';
+} from '$contracts/CostCalculation'
 import {
   CostCalculationErrorCode,
   GROK_PRICING,
@@ -26,13 +26,13 @@ import {
   formatCurrency,
   getWarningLevel,
   getWarningMessage,
-} from '$contracts/CostCalculation';
+} from '$contracts/CostCalculation'
 
 export class CostCalculationService implements ICostCalculationService {
   async calculateTotalCost(
-    input: CalculateTotalCostInput,
+    input: CalculateTotalCostInput
   ): Promise<ServiceResponse<CalculateTotalCostOutput>> {
-    const { promptUsage, imageUsage } = input;
+    const { promptUsage, imageUsage } = input
 
     if (!promptUsage) {
       return {
@@ -42,7 +42,7 @@ export class CostCalculationService implements ICostCalculationService {
           message: 'Missing prompt usage data',
           retryable: false,
         },
-      };
+      }
     }
 
     if (!imageUsage) {
@@ -53,7 +53,7 @@ export class CostCalculationService implements ICostCalculationService {
           message: 'Missing image usage data',
           retryable: false,
         },
-      };
+      }
     }
 
     const textCost: TextCostBreakdown = {
@@ -64,7 +64,7 @@ export class CostCalculationService implements ICostCalculationService {
       totalCost:
         promptUsage.promptTokens * GROK_PRICING.textInputTokens +
         promptUsage.completionTokens * GROK_PRICING.textOutputTokens,
-    };
+    }
 
     const imageCost: ImageCostBreakdown = {
       imagesGenerated: imageUsage.successfulImages,
@@ -72,17 +72,17 @@ export class CostCalculationService implements ICostCalculationService {
       imagesRetried: 0,
       generationCost: GROK_PRICING.imageGeneration,
       totalCost: imageUsage.successfulImages * GROK_PRICING.imageGeneration,
-    };
+    }
 
     const visionCost: VisionCostBreakdown = {
       requestCount: 1,
       requestCost: GROK_PRICING.visionRequest,
       totalCost: GROK_PRICING.visionRequest,
-    };
+    }
 
-    const totalCost = textCost.totalCost + imageCost.totalCost + visionCost.totalCost;
-    const warningLevel = getWarningLevel(totalCost);
-    const formattedCost = formatCurrency(totalCost);
+    const totalCost = textCost.totalCost + imageCost.totalCost + visionCost.totalCost
+    const warningLevel = getWarningLevel(totalCost)
+    const formattedCost = formatCurrency(totalCost)
 
     const summary: CostSummary = {
       textCost,
@@ -91,10 +91,10 @@ export class CostCalculationService implements ICostCalculationService {
       totalCost,
       warningLevel,
       formattedCost,
-    };
+    }
 
-    const exceeded = warningLevel === 'maximum';
-    const canProceed = !exceeded;
+    const exceeded = warningLevel === 'maximum'
+    const canProceed = !exceeded
 
     return {
       success: true,
@@ -103,11 +103,11 @@ export class CostCalculationService implements ICostCalculationService {
         exceeded,
         canProceed,
       },
-    };
+    }
   }
 
   async estimateCost(input: EstimateCostInput): Promise<ServiceResponse<EstimateCostOutput>> {
-    const { imageCount, referenceImageCount, estimatedPromptLength = 1000 } = input;
+    const { imageCount, referenceImageCount, estimatedPromptLength = 1000 } = input
 
     if (imageCount < 0 || referenceImageCount < 0) {
       return {
@@ -117,14 +117,14 @@ export class CostCalculationService implements ICostCalculationService {
           message: 'Image counts cannot be negative',
           retryable: false,
         },
-      };
+      }
     }
 
     const promptGenCost =
       referenceImageCount * GROK_PRICING.visionRequest +
-      estimatedPromptLength * GROK_PRICING.textOutputTokens;
-    const imageGenCost = imageCount * GROK_PRICING.imageGeneration;
-    const estimatedCost = promptGenCost + imageGenCost;
+      estimatedPromptLength * GROK_PRICING.textOutputTokens
+    const imageGenCost = imageCount * GROK_PRICING.imageGeneration
+    const estimatedCost = promptGenCost + imageGenCost
 
     const estimate: CostEstimate = {
       estimatedCost,
@@ -137,11 +137,11 @@ export class CostCalculationService implements ICostCalculationService {
         `Text Generation: ~${estimatedPromptLength} tokens per prompt`,
         `Image Generation: ${imageCount} images at $${GROK_PRICING.imageGeneration} each`,
       ],
-    };
+    }
 
-    const canAfford = estimatedCost <= COST_THRESHOLDS.maximum;
-    const warningLevel = getWarningLevel(estimatedCost);
-    const warningMessage = getWarningMessage(warningLevel, estimatedCost);
+    const canAfford = estimatedCost <= COST_THRESHOLDS.maximum
+    const warningLevel = getWarningLevel(estimatedCost)
+    const warningMessage = getWarningMessage(warningLevel, estimatedCost)
 
     return {
       success: true,
@@ -150,15 +150,15 @@ export class CostCalculationService implements ICostCalculationService {
         canAfford,
         warningMessage: warningMessage || undefined,
       },
-    };
+    }
   }
 
   async formatCost(input: FormatCostInput): Promise<ServiceResponse<FormatCostOutput>> {
-    const { cost, includeWarning = true } = input;
+    const { cost, includeWarning = true } = input
 
-    const formatted = formatCurrency(cost);
-    const warningLevel = getWarningLevel(cost);
-    const warningMessage = includeWarning ? getWarningMessage(warningLevel, cost) : undefined;
+    const formatted = formatCurrency(cost)
+    const warningLevel = getWarningLevel(cost)
+    const warningMessage = includeWarning ? getWarningMessage(warningLevel, cost) : undefined
 
     return {
       success: true,
@@ -167,6 +167,6 @@ export class CostCalculationService implements ICostCalculationService {
         warningLevel,
         warningMessage: warningMessage || undefined,
       },
-    };
+    }
   }
 }

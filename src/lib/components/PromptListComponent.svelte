@@ -118,17 +118,20 @@
     appStore.setLoading('generatingPrompts', true)
     appStore.clearError()
 
+    if (!appStore.styleInputs) {
+      appStore.setError('Style inputs are missing')
+      return
+    }
+
+    const styleInputs = appStore.styleInputs
+
     try {
       // Get reference image URLs (in real implementation, these would be uploaded to blob storage)
       const referenceImageUrls = appStore.uploadedImages.map(img => img.previewUrl)
 
       const response = await promptService.generatePrompts({
         referenceImageUrls,
-        styleInputs: appStore.styleInputs!,
-        onProgress: progress => {
-          // Progress updates could be shown in UI
-          console.log(`Progress: ${progress.status} (${progress.progress}%)`)
-        },
+        styleInputs,
       })
 
       if (response.success && response.data) {
@@ -160,10 +163,12 @@
    * Regenerate a single card prompt
    */
   async function regeneratePrompt(cardNumber: CardNumber): Promise<void> {
-    if (!canGenerate) {
+    if (!canGenerate || !appStore.styleInputs) {
       appStore.setError('Cannot regenerate without reference images and style inputs')
       return
     }
+
+    const styleInputs = appStore.styleInputs
 
     regeneratingCard = cardNumber
     appStore.clearError()
@@ -175,7 +180,7 @@
       const response = await promptService.regeneratePrompt({
         cardNumber,
         referenceImageUrls,
-        styleInputs: appStore.styleInputs!,
+        styleInputs,
         previousPrompt: currentPrompt?.generatedPrompt,
         feedback: 'User requested regeneration',
       })

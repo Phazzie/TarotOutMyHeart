@@ -254,8 +254,10 @@
 
       // Focus lightbox for keyboard navigation
       setTimeout(() => {
-        const lightboxElement = document.querySelector('.lightbox') as HTMLElement
-        lightboxElement?.focus()
+        const lightboxElement = document.querySelector('.lightbox')
+        if (lightboxElement instanceof HTMLElement) {
+          lightboxElement.focus()
+        }
       }, 100)
     }
   }

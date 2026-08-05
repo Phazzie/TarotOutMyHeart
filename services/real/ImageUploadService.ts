@@ -4,7 +4,8 @@
  * Tracks uploaded images in-memory for this session.
  */
 
-import type { ServiceResponse } from '$contracts/types/common';
+import type { ServiceResponse } from '$contracts/types/common'
+import { createImageId, isImageMimeType } from '$lib/utils/types'
 import type {
   IImageUploadService,
   UploadImagesInput,
@@ -17,35 +18,33 @@ import type {
   UploadedImage,
   ImageValidationResult,
   ImageValidationError,
-  ImageMimeType,
   ImageId,
-} from '$contracts/ImageUpload';
+} from '$contracts/ImageUpload'
 import {
   ImageUploadErrorCode,
   MAX_IMAGE_SIZE_BYTES,
   MIN_IMAGES,
   MAX_IMAGES,
-  ALLOWED_IMAGE_TYPES,
-} from '$contracts/ImageUpload';
+} from '$contracts/ImageUpload'
 
-const UPLOAD_TIMEOUT_MS = 30_000;
+const UPLOAD_TIMEOUT_MS = 30_000
 
 export class ImageUploadService implements IImageUploadService {
-  private uploadedImages: Map<ImageId, UploadedImage> = new Map();
+  private uploadedImages: Map<ImageId, UploadedImage> = new Map()
 
   private generateId(): ImageId {
-    return crypto.randomUUID() as ImageId;
+    return createImageId(crypto.randomUUID())
   }
 
   private validateFile(file: File): ImageValidationError[] {
-    const errors: ImageValidationError[] = [];
+    const errors: ImageValidationError[] = []
 
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type as ImageMimeType)) {
+    if (!isImageMimeType(file.type)) {
       errors.push({
         code: ImageUploadErrorCode.INVALID_FILE_TYPE,
         message: `Invalid file type: ${file.type}. Only JPEG and PNG are allowed.`,
         fileName: file.name,
-      });
+      })
     }
 
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
@@ -53,14 +52,14 @@ export class ImageUploadService implements IImageUploadService {
         code: ImageUploadErrorCode.FILE_TOO_LARGE,
         message: `File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB. Maximum is 10MB.`,
         fileName: file.name,
-      });
+      })
     }
 
-    return errors;
+    return errors
   }
 
   async uploadImages(input: UploadImagesInput): Promise<ServiceResponse<UploadImagesOutput>> {
-    const { files } = input;
+    const { files } = input
 
     if (!files || files.length === 0) {
       return {
@@ -70,7 +69,7 @@ export class ImageUploadService implements IImageUploadService {
           message: 'No files provided',
           retryable: false,
         },
-      };
+      }
     }
 
     if (this.uploadedImages.size + files.length > MAX_IMAGES) {
@@ -81,53 +80,56 @@ export class ImageUploadService implements IImageUploadService {
           message: `Cannot upload more than ${MAX_IMAGES} images. Current count: ${this.uploadedImages.size}`,
           retryable: false,
         },
-      };
+      }
     }
 
-    const uploadedList: UploadedImage[] = [];
-    const failedList: ImageValidationError[] = [];
+    const uploadedList: UploadedImage[] = []
+    const failedList: ImageValidationError[] = []
 
     for (const file of files) {
       const isDuplicate = Array.from(this.uploadedImages.values()).some(
-        (img) => img.fileName === file.name,
-      );
+        img => img.fileName === file.name
+      )
       if (isDuplicate) {
         failedList.push({
           code: ImageUploadErrorCode.DUPLICATE_IMAGE,
           message: `Duplicate image detected: ${file.name}`,
           fileName: file.name,
-        });
-        continue;
+        })
+        continue
       }
 
-      const errors = this.validateFile(file);
+      const errors = this.validateFile(file)
       if (errors.length > 0) {
-        failedList.push(...errors);
-        continue;
+        failedList.push(...errors)
+        continue
       }
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS)
 
       try {
-        const formData = new FormData();
-        formData.append('file', file);
+        const formData = new FormData()
+        formData.append('file', file)
 
         const response = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
           signal: controller.signal,
-        });
+        })
 
-        clearTimeout(timeoutId);
-        const json = (await response.json()) as {
-          success: boolean;
-          data?: { url: string };
-          error?: { code: string; message: string };
-        };
+        clearTimeout(timeoutId)
+        const json: unknown = await response.json()
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+        const res = (typeof json === 'object' && json !== null ? json : {}) as {
+          success?: boolean
+          data?: { url?: string }
+          error?: { code?: string; message?: string }
+        }
 
-        const imageId = this.generateId();
-        const url = json.data?.url || (typeof window !== 'undefined' ? URL.createObjectURL(file) : '');
+        const imageId = this.generateId()
+        const url =
+          res.data?.url || (typeof window !== 'undefined' ? URL.createObjectURL(file) : '')
 
         const uploaded: UploadedImage = {
           id: imageId,
@@ -135,26 +137,26 @@ export class ImageUploadService implements IImageUploadService {
           previewUrl: url,
           fileName: file.name,
           fileSize: file.size,
-          mimeType: file.type as ImageMimeType,
+          mimeType: isImageMimeType(file.type) ? file.type : 'image/jpeg',
           uploadedAt: new Date(),
-        };
+        }
 
-        this.uploadedImages.set(imageId, uploaded);
-        uploadedList.push(uploaded);
+        this.uploadedImages.set(imageId, uploaded)
+        uploadedList.push(uploaded)
       } catch {
-        clearTimeout(timeoutId);
-        const imageId = this.generateId();
+        clearTimeout(timeoutId)
+        const imageId = this.generateId()
         const uploaded: UploadedImage = {
           id: imageId,
           file,
           previewUrl: typeof window !== 'undefined' ? URL.createObjectURL(file) : '',
           fileName: file.name,
           fileSize: file.size,
-          mimeType: file.type as ImageMimeType,
+          mimeType: isImageMimeType(file.type) ? file.type : 'image/jpeg',
           uploadedAt: new Date(),
-        };
-        this.uploadedImages.set(imageId, uploaded);
-        uploadedList.push(uploaded);
+        }
+        this.uploadedImages.set(imageId, uploaded)
+        uploadedList.push(uploaded)
       }
     }
 
@@ -163,31 +165,31 @@ export class ImageUploadService implements IImageUploadService {
       failedImages: failedList,
       totalUploaded: uploadedList.length,
       totalFailed: failedList.length,
-    };
+    }
 
     if (uploadedList.length === 0 && failedList.length > 0) {
       return {
         success: true,
         data: responseData,
-      };
+      }
     }
 
     return {
       success: true,
       data: responseData,
-    };
+    }
   }
 
   async removeImage(input: RemoveImageInput): Promise<ServiceResponse<RemoveImageOutput>> {
-    const { imageId } = input;
-    const image = this.uploadedImages.get(imageId);
-    
+    const { imageId } = input
+    const image = this.uploadedImages.get(imageId)
+
     if (image && typeof window !== 'undefined' && image.previewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(image.previewUrl);
+      URL.revokeObjectURL(image.previewUrl)
     }
-    
-    this.uploadedImages.delete(imageId);
-    const remaining = Array.from(this.uploadedImages.values());
+
+    this.uploadedImages.delete(imageId)
+    const remaining = Array.from(this.uploadedImages.values())
 
     return {
       success: true,
@@ -196,13 +198,11 @@ export class ImageUploadService implements IImageUploadService {
         remainingImages: remaining,
         previewUrlRevoked: true,
       },
-    };
+    }
   }
 
-  async validateImages(
-    input: ValidateImagesInput,
-  ): Promise<ServiceResponse<ValidateImagesOutput>> {
-    const { files } = input;
+  async validateImages(input: ValidateImagesInput): Promise<ServiceResponse<ValidateImagesOutput>> {
+    const { files } = input
 
     if (files.length > MAX_IMAGES) {
       return {
@@ -212,27 +212,27 @@ export class ImageUploadService implements IImageUploadService {
           message: `Too many files`,
           retryable: false,
         },
-      };
+      }
     }
 
-    const validImages: ImageValidationResult[] = [];
-    const invalidImages: ImageValidationError[] = [];
+    const validImages: ImageValidationResult[] = []
+    const invalidImages: ImageValidationError[] = []
 
     for (const file of files) {
-      const errors = this.validateFile(file);
-      const isValid = errors.length === 0;
+      const errors = this.validateFile(file)
+      const isValid = errors.length === 0
       if (isValid) {
         validImages.push({
           isValid: true,
           errors: [],
-        });
+        })
       } else {
-        invalidImages.push(...errors);
+        invalidImages.push(...errors)
       }
     }
 
-    const totalCount = this.uploadedImages.size + validImages.length;
-    const canProceed = totalCount >= MIN_IMAGES && totalCount <= MAX_IMAGES;
+    const totalCount = this.uploadedImages.size + validImages.length
+    const canProceed = totalCount >= MIN_IMAGES && totalCount <= MAX_IMAGES
 
     return {
       success: true,
@@ -241,14 +241,14 @@ export class ImageUploadService implements IImageUploadService {
         invalidImages,
         canProceed,
       },
-    };
+    }
   }
 
   async getUploadedImages(): Promise<ServiceResponse<GetUploadedImagesOutput>> {
-    const images = Array.from(this.uploadedImages.values());
-    const count = images.length;
-    const canAddMore = count < MAX_IMAGES;
-    const remainingSlots = MAX_IMAGES - count;
+    const images = Array.from(this.uploadedImages.values())
+    const count = images.length
+    const canAddMore = count < MAX_IMAGES
+    const remainingSlots = MAX_IMAGES - count
 
     return {
       success: true,
@@ -258,18 +258,18 @@ export class ImageUploadService implements IImageUploadService {
         canAddMore,
         remainingSlots,
       },
-    };
+    }
   }
 
   async clearAllImages(): Promise<ServiceResponse<void>> {
     if (typeof window !== 'undefined') {
       for (const image of this.uploadedImages.values()) {
         if (image.previewUrl.startsWith('blob:')) {
-          URL.revokeObjectURL(image.previewUrl);
+          URL.revokeObjectURL(image.previewUrl)
         }
       }
     }
-    this.uploadedImages.clear();
-    return { success: true };
+    this.uploadedImages.clear()
+    return { success: true }
   }
 }

@@ -686,6 +686,25 @@ Replaced `vi.restoreAllMocks()` with `vi.clearAllMocks()`.
 
 ---
 
+### Lesson #14: Enforcing Strict Zero-Type-Assertion Audit Rules 🛡️
+
+**Date**: 2026-08-05  
+**Phase**: Type Safety Audit & Hardening  
+**What happened**: Performed a zero-shortcut audit across all components, API routes, and service layers, replacing all `as Type` assertions and `!` non-null assertions with runtime Type Guards, Zod schemas, nominal brand helper functions, and `instanceof` checks.
+
+**What we learned**:
+- Type assertions (`as Type`) mask bad contracts or unvalidated network boundaries, leading to hidden runtime crashes when API proxies return unexpected structures.
+- Nominal branded types (e.g. `ImageId`, `PromptId`) can be safely generated without scattering `as ImageId` throughout the application by writing single brand constructor functions with isolated ESLint disable comments in `$lib/utils/types.ts`.
+- Mandatory toolchain enforcement (ESLint `'consistent-type-assertions': ['error', { assertionStyle: 'never' }]` and `'no-non-null-assertion': 'error'`) ensures type safety rules are physically enforced in CI/CD and pre-commit hooks.
+
+**Reusable pattern**:
+1. Create a centralized `$lib/utils/types.ts` with brand constructors and type guard predicates.
+2. In Svelte components, replace DOM casts (`event.target as HTMLInputElement`) with `if (!(event.target instanceof HTMLInputElement)) return`.
+3. In server routes, replace blind `JSON.parse() as Type` with Type Guard checks (`isRawPromptArray(json)`).
+4. Run `npm run check` and `npm run lint` continuously.
+
+---
+
 ### What Worked Well
 
 _To be filled during development_
@@ -1247,6 +1266,26 @@ _To be filled at project completion_
 - Completed features: [Count]
 - Bugs in production: [Count]
 - Performance vs expectations: [Analysis]
+
+### Lesson #14: Beware the Proxy Abstraction Leak 🚰
+
+**Date**: 2026-08-05
+**Phase**: Final SDD Audit
+**What happened**: Server-side API proxies (`+server.ts` routes) were bypassing contract enums, returning raw string errors or hardcoding models instead of properly orchestrating with Real Services. The Real Services would blindly trust the AI output and assume success without validation.
+
+**What we learned**:
+- Seams exist not just between UI and Services, but also between Services and Network transport.
+- The `+server.ts` route is purely a transport proxy; it MUST speak the exact same language (Contract Enums) as the service that calls it.
+- Never trust raw AI output on the real service side without re-running the same `validatePrompts` checks that mocks run. Real services must be as strict, if not stricter, than mocks.
+
+**What we did**:
+1. Converted proxy errors to strict `ErrorCode` enums (`PromptGenerationErrorCode`, `ImageGenerationErrorCode`).
+2. Passed the requested `model` from the UI to the API instead of hardcoding it in the backend.
+3. Added strict bounds checking (`0-21`) on the card generator to prevent array out-of-bounds mapping on AI output.
+4. Brought `validatePrompts()` from `MockService` logic directly into `RealService` logic to prevent incomplete AI responses from returning `success: true`.
+
+**Prevention**:
+- Always verify that network boundaries return the Contract's types, not raw `Response` shapes that bypass type-safety.
 
 ---
 

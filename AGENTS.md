@@ -40,13 +40,14 @@ Major Arcana tarot deck generator built with SvelteKit and TypeScript. Users upl
 
 This project follows Seam-Driven Development methodology. **Read `/seam-driven-development.md` FIRST before writing ANY code.**
 
-### SDD Rules for AI Agents
+### Seam-Driven Development Rules for AI Agents
 
-1. **NEVER** write code before contracts are defined in `/contracts`
-2. **NEVER** modify contracts once implementation starts (create v2 instead)
-3. **ALWAYS** build mock services before real services
-4. **ALWAYS** validate contracts pass tests before integration
-5. **CHECK** `/SEAMSLIST.md` for all defined seams before adding new ones
+1. **TERMINOLOGY RULE**: ALWAYS say "Seam-Driven Development" in your responses and NEVER use the acronym "SDD". You are forbidden from outputting the acronym "SDD".
+2. **NEVER** write code before contracts are defined in `/contracts`
+3. **NEVER** modify contracts once implementation starts (create v2 instead)
+4. **ALWAYS** build mock services before real services
+5. **ALWAYS** validate contracts pass tests before integration
+6. **CHECK** `/SEAMSLIST.md` for all defined seams before adding new ones
 
 ### SDD Enforcement
 
@@ -342,6 +343,56 @@ function processData(data: any): ValidData {
 function isUser(value: unknown): value is UserSeam {
   return typeof value === 'object' && value !== null && 'id' in value && 'name' in value
 }
+```
+
+### Strict Type Validation (No Coercion or Non-Null Assertions)
+
+```typescript
+// ❌ WRONG: Blind JSON Parsing
+const data = JSON.parse(raw) as UserSeam // FORBIDDEN: Bypasses validation
+
+// ✅ CORRECT: Zod Schema or Type Guard validation
+const data = UserSeamSchema.parse(JSON.parse(raw))
+// or
+const parsed = JSON.parse(raw)
+if (!isUserSeam(parsed)) throw new Error("Invalid format")
+
+// ❌ WRONG: Non-null assertions (!)
+const card = response.data!.card // FORBIDDEN: Crashes if undefined
+
+// ✅ CORRECT: Safe truthiness checks
+if (!response.data) throw new Error("Missing data payload")
+const card = response.data.card
+
+// ❌ WRONG: DOM Event Target Laziness
+const input = event.target as HTMLInputElement // FORBIDDEN
+
+// ✅ CORRECT: instanceof runtime check
+if (!(event.target instanceof HTMLInputElement)) return
+const input = event.target
+
+// ❌ WRONG: Forcing Enums / Sloppy Coercion
+const theme = formData.theme as PredefinedTheme // FORBIDDEN
+
+// ✅ CORRECT: Type guard predicate
+if (!isPredefinedTheme(formData.theme)) throw new Error("Invalid theme")
+const theme = formData.theme
+
+// ❌ WRONG: Loop Index Coercion
+for (let i = 0; i < 22; i++) {
+  const cardNum = i as CardNumber // FORBIDDEN
+}
+
+// ✅ CORRECT: Runtime bounds checking
+function isCardNumber(num: number): num is CardNumber {
+  return num >= 0 && num <= 21;
+}
+
+// ❌ WRONG: Forcing Service Errors in UI
+const errorCode = result.error.code as ImageUploadErrorCode // FORBIDDEN: Patches a broken contract
+
+// ✅ CORRECT: Fix the Service Contract
+// Ensure the actual service interface guarantees `error: { code: ImageUploadErrorCode }` so the UI doesn't have to cast it.
 ```
 
 ### SvelteKit Conventions

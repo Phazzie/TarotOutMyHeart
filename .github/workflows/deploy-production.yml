@@ -33,7 +33,7 @@ jobs:
 
       - name: Run contract tests
         run: npm run test:contracts
-        continue-on-error: true  # pre-existing mock-contract mismatches; tracked separately
+        continue-on-error: true # pre-existing mock-contract mismatches; tracked separately
 
       - name: Run type checking
         run: npx svelte-check --tsconfig ./tsconfig.json

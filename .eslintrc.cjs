@@ -26,10 +26,20 @@ module.exports = {
         parser: '@typescript-eslint/parser',
       },
     },
+    {
+      files: ['tests/**/*.ts', 'coordination-server/**/*.ts'],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'warn',
+        '@typescript-eslint/consistent-type-assertions': 'off',
+        '@typescript-eslint/no-non-null-assertion': 'off',
+      },
+    },
   ],
   rules: {
     // TypeScript specific rules
-    '@typescript-eslint/no-explicit-any': 'warn', // Downgraded from 'error' — existing TypeScript debt tracked separately
+    '@typescript-eslint/no-explicit-any': 'error', // Enforce SDD zero type escapes policy
+    '@typescript-eslint/consistent-type-assertions': ['error', { assertionStyle: 'never' }], // Ban 'as Type'
+    '@typescript-eslint/no-non-null-assertion': 'error', // Ban '!' non-null assertions
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-unused-vars': [

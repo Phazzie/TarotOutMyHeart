@@ -4,8 +4,8 @@
  * Resolves $contracts and $services path aliases so tests import the same
  * paths that SvelteKit builds use.
  */
-import { defineConfig } from 'vitest/config';
-import { resolve } from 'path';
+import { defineConfig } from 'vitest/config'
+import { resolve } from 'path'
 
 export default defineConfig({
   test: {
@@ -30,4 +30,4 @@ export default defineConfig({
       $lib: resolve(__dirname, './src/lib'),
     },
   },
-});
+})

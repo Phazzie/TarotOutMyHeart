@@ -6,6 +6,7 @@
  */
 
 import type { ServiceResponse } from '$contracts/types/common'
+import { createImageId, isImageMimeType } from '$lib/utils/types'
 import type {
   IImageUploadService,
   UploadImagesInput,
@@ -18,7 +19,6 @@ import type {
   UploadedImage,
   ImageValidationResult,
   ImageValidationError,
-  ImageMimeType,
   ImageId,
 } from '$contracts/ImageUpload'
 import {
@@ -26,7 +26,6 @@ import {
   MAX_IMAGE_SIZE_BYTES,
   MIN_IMAGES,
   MAX_IMAGES,
-  ALLOWED_IMAGE_TYPES,
 } from '$contracts/ImageUpload'
 
 /**
@@ -40,7 +39,7 @@ export class ImageUploadMockService implements IImageUploadService {
    * Generate a unique ImageId
    */
   private generateId(): ImageId {
-    return crypto.randomUUID() as ImageId
+    return createImageId(crypto.randomUUID())
   }
 
   /**
@@ -57,7 +56,7 @@ export class ImageUploadMockService implements IImageUploadService {
     const errors: ImageValidationError[] = []
 
     // Check MIME type
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type as ImageMimeType)) {
+    if (!isImageMimeType(file.type)) {
       errors.push({
         code: ImageUploadErrorCode.INVALID_FILE_TYPE,
         message: `Invalid file type: ${file.type}. Only JPEG and PNG are allowed.`,
@@ -123,7 +122,9 @@ export class ImageUploadMockService implements IImageUploadService {
 
     for (const file of files) {
       // Check for duplicate names (simplistic duplicate check)
-      const isDuplicate = Array.from(this.uploadedImages.values()).some(img => img.fileName === file.name)
+      const isDuplicate = Array.from(this.uploadedImages.values()).some(
+        img => img.fileName === file.name
+      )
       if (isDuplicate) {
         failedImages.push({
           code: ImageUploadErrorCode.DUPLICATE_IMAGE,
@@ -147,7 +148,7 @@ export class ImageUploadMockService implements IImageUploadService {
           previewUrl,
           fileName: file.name,
           fileSize: file.size,
-          mimeType: file.type as ImageMimeType,
+          mimeType: isImageMimeType(file.type) ? file.type : 'image/jpeg',
           uploadedAt: new Date(),
         }
 

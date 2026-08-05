@@ -6,6 +6,7 @@
  */
 
 import type { ServiceResponse } from '$contracts/types/common'
+import { createPromptId, isCardNumber } from '$lib/utils/types'
 import type {
   IPromptGenerationService,
   GeneratePromptsInput,
@@ -42,7 +43,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
    * Generate a unique PromptId
    */
   private generateId(): PromptId {
-    return crypto.randomUUID() as PromptId
+    return createPromptId(crypto.randomUUID())
   }
 
   /**
@@ -101,18 +102,18 @@ export class PromptGenerationMockService implements IPromptGenerationService {
           code: PromptGenerationErrorCode.INVALID_REFERENCE_URL,
           message: 'Invalid reference image URL',
           retryable: false,
-        }
+        },
       }
     }
 
-    if (input.model && (input.model as string) === 'invalid-model') {
+    if (input.model && String(input.model) === 'invalid-model') {
       return {
         success: false,
         error: {
           code: PromptGenerationErrorCode.INVALID_MODEL,
           message: 'Unsupported model',
           retryable: false,
-        }
+        },
       }
     }
 
@@ -131,12 +132,13 @@ export class PromptGenerationMockService implements IPromptGenerationService {
 
     // Simulate progressive generation
     for (let i = 0; i < MAJOR_ARCANA_COUNT; i++) {
+      if (!isCardNumber(i)) continue
       // Update progress
       if (onProgress) {
         const progress: GenerationProgress = {
           status: `Generating prompt for ${MAJOR_ARCANA_NAMES[i]}...`,
-          progress: Math.round((i / MAJOR_ARCANA_COUNT) * 100),
-          currentStep: i < MAJOR_ARCANA_COUNT - 1 ? 'generating' : 'validating',
+          progress: Math.round(((i + 1) / MAJOR_ARCANA_COUNT) * 100),
+          currentStep: 'generating',
         }
         onProgress(progress)
       }
@@ -144,7 +146,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       await this.delay(5) // Simulate per-card delay
 
       const prompt = this.generateCardPrompt(
-        i as CardNumber,
+        i,
         styleInputs.theme,
         styleInputs.tone,
         styleInputs.description
@@ -203,11 +205,12 @@ export class PromptGenerationMockService implements IPromptGenerationService {
     // Check for all card numbers present
     const cardNumbers = new Set(prompts.map(p => p.cardNumber))
     for (let i = 0; i < MAJOR_ARCANA_COUNT; i++) {
-      if (!cardNumbers.has(i as CardNumber)) {
+      if (!isCardNumber(i)) continue
+      if (!cardNumbers.has(i)) {
         errors.push({
           code: PromptGenerationErrorCode.MISSING_CARD_NUMBER,
           message: `Missing card number ${i}`,
-          cardNumber: i as CardNumber,
+          cardNumber: i,
         })
       }
     }
@@ -365,8 +368,8 @@ export class PromptGenerationMockService implements IPromptGenerationService {
   ): Promise<ServiceResponse<ApiUsage>> {
     await this.delay(50)
 
-    const { referenceImageUrls, styleInputs, model = GROK_MODELS.vision } = input;
-    
+    const { referenceImageUrls, styleInputs, model = GROK_MODELS.vision } = input
+
     if (!referenceImageUrls || referenceImageUrls.length === 0) {
       return {
         success: false,
@@ -375,7 +378,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
           message: 'No reference images provided',
           retryable: false,
         },
-      };
+      }
     }
 
     if (!styleInputs?.theme || !styleInputs?.tone || !styleInputs?.description) {
@@ -386,11 +389,11 @@ export class PromptGenerationMockService implements IPromptGenerationService {
           message: 'Invalid style inputs provided',
           retryable: false,
         },
-      };
+      }
     }
 
-    const numImages = referenceImageUrls.length;
-    const descLength = styleInputs.description.length;
+    const numImages = referenceImageUrls.length
+    const descLength = styleInputs.description.length
 
     // Simulate token calculation
     const promptTokens = 500 * numImages + descLength * 2
