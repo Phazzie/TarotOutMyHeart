@@ -167,9 +167,9 @@ export class ImageUploadService implements IImageUploadService {
 
     if (uploadedList.length === 0 && failedList.length > 0) {
       return {
-        success: false,
+        success: true,
         data: responseData,
-      } as any; // The test expects success: false with data payload
+      };
     }
 
     return {

@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Final SDD Audit & Type Safety Enforcement** (2026-08-05):
+  - **Identified and removed all remaining `as any` type escapes** across `src/`, `services/`, and `contracts/` following a rigorous SDD compliance audit.
+  - **Changes**:
+    - `PromptGenerationMock.ts`: Removed `as any` from model validation and confidence validation checks, aligning with `PromptGenerationErrorCode.INVALID_RESPONSE_FORMAT`.
+    - `ImageUploadMock.ts` & `ImageUploadService.ts`: Aligned returns to use `{ success: true, data: { failedImages: [...] } }` for validation failures where operation succeeds, fixing invalid `success: false` payload type casting.
+    - `ImageGenerationService.ts`: Removed `card: null as any` on failures by updating internal return signature of `generateSingleCardWithRetry`. Replaced `crypto.randomUUID() as any` with `as PromptId`.
+    - `ImageUpload.test.ts`: Updated test expectations from `success: false` to `success: true` to align with the true structural expectations of `UploadImagesOutput` for partial/full image validation rejections.
+  - **Result**: Zero `as any` escapes exist outside of test files. `npm run test:all` and `npm run check` continue to pass with 0 errors.
+
 - **Test Suite Stabilization & Mock Corrections** (2026-08-05):
   - **Identified and fixed test suite failures blocking progress.**
   - **Changes**:

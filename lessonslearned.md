@@ -115,6 +115,16 @@ Before defining contracts:
 
 ---
 
+### Lesson #2.5: Zero Type Escapes (No `as any`) 🛡️
+
+**Date**: 2026-08-05
+**Phase**: Phase 3/4 - Implementation & Audit
+**What happened**: While tests passed, deep auditing revealed several `as any` type escapes hidden in mock and real services to satisfy test assertions that violated contract expectations (e.g. tests expecting `success: false` and a `data` payload when `ServiceResponse` only permits `data` when `success: true`).
+**Why it matters**: `as any` bypasses the entire point of Seam-Driven Development. If mocks cheat the types, integration will fail when real services return structurally correct data that the UI isn't prepared to handle.
+**Fix**: Adjusted contract types and test expectations to match reality (e.g. moving partial failures into the `success: true` payload inside `failedImages`).
+
+---
+
 ### Lesson #3: Mock Services MUST Be Validated Before "Complete" ⚠️
 
 **Date**: 2025-11-08

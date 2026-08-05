@@ -105,7 +105,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       }
     }
 
-    if (input.model && input.model === 'invalid-model' as any) {
+    if (input.model && (input.model as string) === 'invalid-model') {
       return {
         success: false,
         error: {
@@ -242,7 +242,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       }
       if (prompt.confidence < 0 || prompt.confidence > 1) {
         errors.push({
-          code: 'CONFIDENCE_OUT_OF_RANGE' as any,
+          code: PromptGenerationErrorCode.INVALID_RESPONSE_FORMAT,
           message: `Prompt for card ${prompt.cardNumber} has confidence out of range`,
           cardNumber: prompt.cardNumber,
           promptId: prompt.id,

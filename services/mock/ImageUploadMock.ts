@@ -165,9 +165,9 @@ export class ImageUploadMockService implements IImageUploadService {
 
     if (uploadedImages.length === 0 && failedImages.length > 0) {
       return {
-        success: false,
+        success: true,
         data: responseData,
-      } as any // The test requires success: false but with data
+      }
     }
 
     return {

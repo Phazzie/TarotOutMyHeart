@@ -24,7 +24,7 @@ import type {
   GeneratedCardId,
 } from '$contracts/ImageGeneration';
 import { ImageGenerationErrorCode, GROK_IMAGE_MODEL } from '$contracts/ImageGeneration';
-import type { CardPrompt } from '$contracts/PromptGeneration';
+import type { CardPrompt, PromptId } from '$contracts/PromptGeneration';
 
 const CARD_TIMEOUT_MS = 55_000;
 const MAX_RETRIES = 2;
@@ -183,12 +183,12 @@ export class ImageGenerationService implements IImageGenerationService {
 
   private async generateSingleCardWithRetry(
     promptObj: CardPrompt,
-  ): Promise<{ success: boolean; card: GeneratedCard; error?: string }> {
+  ): Promise<{ success: true; card: GeneratedCard } | { success: false; error: string }> {
     let lastError = '';
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       if (this.cancelRequested) {
-        return { success: false, card: null as any, error: 'Canceled' };
+        return { success: false, error: 'Canceled' };
       }
 
       if (attempt > 0) {
@@ -244,7 +244,7 @@ export class ImageGenerationService implements IImageGenerationService {
       }
     }
 
-    return { success: false, card: null as any, error: lastError };
+    return { success: false, error: lastError };
   }
 
   async regenerateImage(
@@ -254,7 +254,7 @@ export class ImageGenerationService implements IImageGenerationService {
     const cardName = `Card ${cardNumber}`;
 
     const fakePromptObj: CardPrompt = {
-      id: crypto.randomUUID() as any,
+      id: crypto.randomUUID() as PromptId,
       cardNumber,
       cardName,
       traditionalMeaning: '',
