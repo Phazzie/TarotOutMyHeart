@@ -1,0 +1,82 @@
+```````# SvelteKit
+.svelte-kit/
+build/
+.vercel/
+.output/
+.vercel_build_output/
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+test-results/
+playwright-report/
+
+# Build Outputs
+dist/
+build/
+.output/
+*.tsbuildinfo
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+
+# Package Manager
+# NOTE: package-lock.json is REQUIRED for CI (npm ci requires it)
+# DO NOT add package-lock.json to .gitignore
+yarn.lock
+pnpm-lock.yaml
+
+# AI/MCP Server
+.claude/
+*.mcp-server.log
+
+# Session/Development Notes
+SESSION-NOTES.md
+.notes/
+scratch/

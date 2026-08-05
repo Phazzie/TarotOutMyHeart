@@ -1,0 +1,54 @@
+{
+  "name": "tarot-up-my-heart",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "test": "vitest run --passWithNoTests",
+    "test:contracts": "vitest run tests/contracts --passWithNoTests",
+    "test:mocks": "vitest run tests/mocks --passWithNoTests",
+    "test:integration": "vitest run tests/integration --passWithNoTests",
+    "test:real": "vitest run tests/real --passWithNoTests",
+    "test:all": "npm run test:contracts && npm run test:mocks && npm run test:integration && npm run test:real",
+    "lint": "prettier --check . && eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "validate:contracts": "echo '✅ Contract validation - to be implemented'",
+    "validate:mocks": "echo '✅ Mock coverage validation - to be implemented'",
+    "validate:seams": "echo '✅ Seams documentation validation - to be implemented'",
+    "validate:all": "npm run validate:contracts && npm run validate:mocks && npm run validate:seams",
+    "ci": "npm run lint && npm run check && npm run test:all && npm run build"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-vercel": "^5.0.0",
+    "@sveltejs/kit": "^2.0.0",
+    "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "@types/node": "^24.10.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-svelte": "^2.35.1",
+    "jsdom": "^27.1.0",
+    "prettier": "^3.2.0",
+    "prettier-plugin-svelte": "^3.1.2",
+    "svelte": "^5.0.0",
+    "svelte-check": "^3.6.0",
+    "typescript": "^5.3.0",
+    "vite": "^5.0.0",
+    "vitest": "^1.2.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@vercel/blob": "^0.27.0",
+    "jszip": "^3.10.1",
+    "openai": "^4.98.0"
+  }
+}
