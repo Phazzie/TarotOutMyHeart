@@ -31,6 +31,18 @@ const CARD_TIMEOUT_MS = 55_000
 const MAX_RETRIES = 2
 const RETRY_DELAY_MS = 3_000
 
+interface ImageProxyResponse {
+  success: boolean
+  data?: { imageUrl: string; imageDataUrl?: string }
+  error?: { code: ImageGenerationErrorCode; message: string }
+}
+
+function isImageProxyResponse(obj: unknown): obj is ImageProxyResponse {
+  if (typeof obj !== 'object' || obj === null) return false
+  if (!('success' in obj) || typeof obj.success !== 'boolean') return false
+  return true
+}
+
 interface SessionState {
   id: string
   progress: ImageGenerationProgress
@@ -226,12 +238,7 @@ export class ImageGenerationService implements IImageGenerationService {
         clearTimeout(timeoutId)
 
         const json: unknown = await response.json()
-        if (
-          typeof json !== 'object' ||
-          json === null ||
-          !('success' in json) ||
-          typeof (json as Record<string, unknown>)['success'] !== 'boolean' // eslint-disable-line @typescript-eslint/consistent-type-assertions
-        ) {
+        if (!isImageProxyResponse(json)) {
           lastError = {
             code: ImageGenerationErrorCode.API_ERROR,
             message: 'Invalid JSON structure from image proxy.',
@@ -239,12 +246,7 @@ export class ImageGenerationService implements IImageGenerationService {
           continue
         }
 
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-        const res = json as {
-          success: boolean
-          data?: { imageUrl: string; imageDataUrl?: string }
-          error?: { code: ImageGenerationErrorCode; message: string }
-        }
+        const res = json
 
         if (res.success && (res.data?.imageUrl || res.data?.imageDataUrl)) {
           const card: GeneratedCard = {

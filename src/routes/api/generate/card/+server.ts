@@ -13,7 +13,7 @@ export const config = { maxDuration: 60 }
 
 export const POST: RequestHandler = async ({ request }) => {
   const XAI_API_KEY = process.env['XAI_API_KEY']
-  if (!XAI_API_KEY) {
+  if (!XAI_API_KEY || XAI_API_KEY.includes('your_xai')) {
     return json(
       {
         success: false,

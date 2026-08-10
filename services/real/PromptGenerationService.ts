@@ -32,6 +32,18 @@ import {
 
 const PROMPT_TIMEOUT_MS = 90_000
 
+interface PromptProxyResponse {
+  success: boolean
+  data?: { prompts: CardPrompt[]; usage?: ApiUsage; requestId?: string }
+  error?: { code: string; message: string; retryable?: boolean }
+}
+
+function isPromptProxyResponse(obj: unknown): obj is PromptProxyResponse {
+  if (typeof obj !== 'object' || obj === null) return false
+  if (!('success' in obj) || typeof obj.success !== 'boolean') return false
+  return true
+}
+
 export class PromptGenerationService implements IPromptGenerationService {
   private abortController: AbortController | null = null
   private promptStore: Map<PromptId, CardPrompt> = new Map()
@@ -93,12 +105,7 @@ export class PromptGenerationService implements IPromptGenerationService {
       })
 
       const json: unknown = await response.json()
-      if (
-        typeof json !== 'object' ||
-        json === null ||
-        !('success' in json) ||
-        typeof (json as Record<string, unknown>)['success'] !== 'boolean' // eslint-disable-line @typescript-eslint/consistent-type-assertions
-      ) {
+      if (!isPromptProxyResponse(json)) {
         return {
           success: false,
           error: {
@@ -109,12 +116,7 @@ export class PromptGenerationService implements IPromptGenerationService {
         }
       }
 
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      const res = json as {
-        success: boolean
-        data?: { prompts: CardPrompt[]; usage?: ApiUsage; requestId?: string }
-        error?: { code: string; message: string; retryable?: boolean }
-      }
+      const res = json
 
       if (!res.success || !res.data?.prompts) {
         return {

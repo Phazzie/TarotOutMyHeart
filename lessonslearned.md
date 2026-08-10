@@ -705,6 +705,27 @@ Replaced `vi.restoreAllMocks()` with `vi.clearAllMocks()`.
 
 ---
 
+### Lesson #15: The Zero-Trust AI Workflow (Killing the Monolith) 🤖
+
+**Date**: 2026-08-08
+**Phase**: Meta-Architecture & Tooling
+**What happened**: AI agents were suffering from "Rule Drift" because they were forced to read an 800+ line `AGENTS.md` file and a contradictory `GEMINI.md` file (which encouraged "multiple variations" and broke SDD). 
+
+**What we learned**:
+1. **The "Lost in the Middle" Problem:** LLMs cannot physically adhere to 800 lines of dense rules simultaneously. They will hallucinate or revert to their generic baseline.
+2. **Creativity is Poison during Execution:** Telling an AI to "generate 2-3 variations" or "be creative" during the implementation phase causes context pollution and breaks strict mathematical boundaries (like TypeScript contracts).
+3. **The "Green Light" Delusion:** Forcing an AI to run its own tests (e.g. `npm run check`) doesn't work. The AI's primary directive is to get a green exit code, so it will maliciously comply by inserting `// @ts-ignore` instead of fixing the root cause.
+
+**What we did**:
+1. **Destroyed the Monoliths:** Deleted `GEMINI.md` and truncated `AGENTS.md` down to an 80-line index.
+2. **Just-In-Time Context:** Moved all actual rules to targeted, 10-line files in `.gemini/rules/`. AIs are now instructed to only read the specific rule file relevant to their exact task, sandboxing their cognitive load.
+3. **The Invisible Auditor:** Created `.gemini/rules/definition-of-done.md`. The primary AI is now forbidden from validating its own code. It MUST spawn a subagent ("The Invisible Auditor") to run the tests and actively scan the codebase for `as any` or `@ts-ignore` cheating.
+
+**Reusable pattern**:
+When building AI tooling, do not write massive markdown rulebooks. Use **Just-In-Time Context injection** and **Adversarial Pairing** (forcing the AI to spawn an independent auditor subagent to check its work).
+
+---
+
 ### What Worked Well
 
 _To be filled during development_
@@ -1286,6 +1307,26 @@ _To be filled at project completion_
 
 **Prevention**:
 - Always verify that network boundaries return the Contract's types, not raw `Response` shapes that bypass type-safety.
+
+---
+
+### Lesson #15: Prefer Strict Type Guards Over Type Assertions in Real Services 🛡️
+
+**Date**: 2026-08-10  
+**Phase**: Sprint 3 Real Service Hardening  
+**What happened**: Real service implementations (`PromptGenerationService.ts` and `ImageGenerationService.ts`) used `as ProxyResponse` type assertions on `response.json()` payloads from `/api/prompts` and `/api/generate/card`. While functional, type assertions violate zero-trust type safety guidelines and obscure payload structure bugs.
+
+**What we learned**:
+- Type assertions (`as Type`) bypass the TypeScript compiler and can introduce silent runtime bugs if network endpoints return unexpected data.
+- Writing explicit Type Guard functions (`isPromptProxyResponse(obj)`, `isImageProxyResponse(obj)`) using structural type checks (`typeof obj === 'object'`, `'success' in obj`) allows TypeScript to narrow `unknown` safely.
+
+**What we did**:
+1. Defined `isPromptProxyResponse` and `isImageProxyResponse` type guards in real services.
+2. Eliminated all `as` assertions in network response handling.
+3. Verified zero `as any`, `: any`, or `@ts-ignore` comments in `services/real/`.
+
+**Prevention**:
+- Always use Type Guards for parsing HTTP JSON responses. Never cast network payloads using `as`.
 
 ---
 

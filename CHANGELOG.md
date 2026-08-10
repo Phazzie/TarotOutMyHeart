@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Grok API Key Configuration & Strict Type Guard Auditing** (2026-08-10):
+  - **Configured real `XAI_API_KEY`** in `.env` for Grok API integration.
+  - **Fixed `PromptGenerationService.ts`**: Restored `PROMPT_TIMEOUT_MS` constant. Replaced type assertions (`as ProxyResponse`) with strict type guard function (`isPromptProxyResponse(json)`).
+  - **Fixed `ImageGenerationService.ts`**: Replaced type assertions in `generateSingleCardWithRetry` with strict type guard function (`isImageProxyResponse(json)`).
+  - **Result**: `npm run check` (0 errors, 0 warnings), `npm run test:real` (24/24 passing across 7 service test suites).
+
+
 - **Strict Type Audit & Seam-Driven Work Scoping Skill** (2026-08-05):
   - **Identified and refactored all `as Type` assertions and `!` non-null assertions** across `src/`, `services/`, and `contracts/` to establish 100% runtime type validation.
   - **Changes**:

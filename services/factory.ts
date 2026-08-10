@@ -41,7 +41,10 @@ import { DownloadService } from './real/DownloadService'
 
 // Vite inlines this at build time — resolves to literal true/false in the bundle.
 // Default: true (mocks) so development never accidentally bills the xAI API.
-const USE_MOCKS = import.meta.env['VITE_USE_MOCKS'] !== 'false'
+const USE_MOCKS =
+  import.meta.env['VITE_USE_MOCKS'] === 'false' || import.meta.env['USE_MOCKS'] === 'false'
+    ? false
+    : true
 
 // ── Mock singletons ──────────────────────────────────────────────────────────
 const imageUploadMockService = new ImageUploadMockService()
