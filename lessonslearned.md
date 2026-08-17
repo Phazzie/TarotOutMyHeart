@@ -115,6 +115,16 @@ Before defining contracts:
 
 ---
 
+### Lesson #2.5: Zero Type Escapes (No `as any`) 🛡️
+
+**Date**: 2026-08-05
+**Phase**: Phase 3/4 - Implementation & Audit
+**What happened**: While tests passed, deep auditing revealed several `as any` type escapes hidden in mock and real services to satisfy test assertions that violated contract expectations (e.g. tests expecting `success: false` and a `data` payload when `ServiceResponse` only permits `data` when `success: true`).
+**Why it matters**: `as any` bypasses the entire point of Seam-Driven Development. If mocks cheat the types, integration will fail when real services return structurally correct data that the UI isn't prepared to handle.
+**Fix**: Adjusted contract types and test expectations to match reality (e.g. moving partial failures into the `success: true` payload inside `failedImages`).
+
+---
+
 ### Lesson #3: Mock Services MUST Be Validated Before "Complete" ⚠️
 
 **Date**: 2025-11-08
@@ -651,6 +661,68 @@ errors.push({ code: StyleInputErrorCode.THEME_INVALID }) // ✅
 > 4. Validate after each small chunk
 >
 > **Don't waste time trying to understand and fix fundamentally wrong code.**
+
+---
+
+### Lesson #8: Beware vi.restoreAllMocks() with Global Mocks 🧪
+
+**Date**: 2026-08-05
+**Phase**: Test Stabilization
+**What happened**: While resolving test failures, `DownloadService.test.ts` was consistently failing with `TypeError: zip.file is not a function`. The test suite used `vi.mock('jszip')` to stub out the library, and then `beforeEach` called `vi.restoreAllMocks()`. 
+
+**What went wrong**:
+1. `vi.mock('jszip', () => { return { default: vi.fn().mockImplementation(...) } })` creates a mocked instance.
+2. `vi.restoreAllMocks()` restores mocks to their original un-mocked implementations (or empty functions). It stripped the `mockImplementation` away from the `JSZip` default export!
+3. Because the mock behavior was destroyed between tests, calls to the mock object failed as the mocked properties/functions no longer existed or were reset.
+
+**The Fix**:
+Replaced `vi.restoreAllMocks()` with `vi.clearAllMocks()`. 
+- `clearAllMocks()`: Clears the call history/counts of all mocks but preserves their actual implementations and return values.
+- `restoreAllMocks()`: Removes the mock implementations entirely, replacing them with empty/original implementations depending on how they were created.
+
+**Prevention**:
+- Default to `vi.clearAllMocks()` in `beforeEach` blocks when you want to reset mock state (call counts) without destroying the implementations configured via `vi.mock()`.
+- Only use `vi.restoreAllMocks()` if you intend to tear down spy implementations created via `vi.spyOn()`.
+
+---
+
+### Lesson #14: Enforcing Strict Zero-Type-Assertion Audit Rules 🛡️
+
+**Date**: 2026-08-05  
+**Phase**: Type Safety Audit & Hardening  
+**What happened**: Performed a zero-shortcut audit across all components, API routes, and service layers, replacing all `as Type` assertions and `!` non-null assertions with runtime Type Guards, Zod schemas, nominal brand helper functions, and `instanceof` checks.
+
+**What we learned**:
+- Type assertions (`as Type`) mask bad contracts or unvalidated network boundaries, leading to hidden runtime crashes when API proxies return unexpected structures.
+- Nominal branded types (e.g. `ImageId`, `PromptId`) can be safely generated without scattering `as ImageId` throughout the application by writing single brand constructor functions with isolated ESLint disable comments in `$lib/utils/types.ts`.
+- Mandatory toolchain enforcement (ESLint `'consistent-type-assertions': ['error', { assertionStyle: 'never' }]` and `'no-non-null-assertion': 'error'`) ensures type safety rules are physically enforced in CI/CD and pre-commit hooks.
+
+**Reusable pattern**:
+1. Create a centralized `$lib/utils/types.ts` with brand constructors and type guard predicates.
+2. In Svelte components, replace DOM casts (`event.target as HTMLInputElement`) with `if (!(event.target instanceof HTMLInputElement)) return`.
+3. In server routes, replace blind `JSON.parse() as Type` with Type Guard checks (`isRawPromptArray(json)`).
+4. Run `npm run check` and `npm run lint` continuously.
+
+---
+
+### Lesson #15: The Zero-Trust AI Workflow (Killing the Monolith) 🤖
+
+**Date**: 2026-08-08
+**Phase**: Meta-Architecture & Tooling
+**What happened**: AI agents were suffering from "Rule Drift" because they were forced to read an 800+ line `AGENTS.md` file and a contradictory `GEMINI.md` file (which encouraged "multiple variations" and broke SDD). 
+
+**What we learned**:
+1. **The "Lost in the Middle" Problem:** LLMs cannot physically adhere to 800 lines of dense rules simultaneously. They will hallucinate or revert to their generic baseline.
+2. **Creativity is Poison during Execution:** Telling an AI to "generate 2-3 variations" or "be creative" during the implementation phase causes context pollution and breaks strict mathematical boundaries (like TypeScript contracts).
+3. **The "Green Light" Delusion:** Forcing an AI to run its own tests (e.g. `npm run check`) doesn't work. The AI's primary directive is to get a green exit code, so it will maliciously comply by inserting `// @ts-ignore` instead of fixing the root cause.
+
+**What we did**:
+1. **Destroyed the Monoliths:** Deleted `GEMINI.md` and truncated `AGENTS.md` down to an 80-line index.
+2. **Just-In-Time Context:** Moved all actual rules to targeted, 10-line files in `.gemini/rules/`. AIs are now instructed to only read the specific rule file relevant to their exact task, sandboxing their cognitive load.
+3. **The Invisible Auditor:** Created `.gemini/rules/definition-of-done.md`. The primary AI is now forbidden from validating its own code. It MUST spawn a subagent ("The Invisible Auditor") to run the tests and actively scan the codebase for `as any` or `@ts-ignore` cheating.
+
+**Reusable pattern**:
+When building AI tooling, do not write massive markdown rulebooks. Use **Just-In-Time Context injection** and **Adversarial Pairing** (forcing the AI to spawn an independent auditor subagent to check its work).
 
 ---
 
@@ -1215,6 +1287,46 @@ _To be filled at project completion_
 - Completed features: [Count]
 - Bugs in production: [Count]
 - Performance vs expectations: [Analysis]
+
+### Lesson #14: Beware the Proxy Abstraction Leak 🚰
+
+**Date**: 2026-08-05
+**Phase**: Final SDD Audit
+**What happened**: Server-side API proxies (`+server.ts` routes) were bypassing contract enums, returning raw string errors or hardcoding models instead of properly orchestrating with Real Services. The Real Services would blindly trust the AI output and assume success without validation.
+
+**What we learned**:
+- Seams exist not just between UI and Services, but also between Services and Network transport.
+- The `+server.ts` route is purely a transport proxy; it MUST speak the exact same language (Contract Enums) as the service that calls it.
+- Never trust raw AI output on the real service side without re-running the same `validatePrompts` checks that mocks run. Real services must be as strict, if not stricter, than mocks.
+
+**What we did**:
+1. Converted proxy errors to strict `ErrorCode` enums (`PromptGenerationErrorCode`, `ImageGenerationErrorCode`).
+2. Passed the requested `model` from the UI to the API instead of hardcoding it in the backend.
+3. Added strict bounds checking (`0-21`) on the card generator to prevent array out-of-bounds mapping on AI output.
+4. Brought `validatePrompts()` from `MockService` logic directly into `RealService` logic to prevent incomplete AI responses from returning `success: true`.
+
+**Prevention**:
+- Always verify that network boundaries return the Contract's types, not raw `Response` shapes that bypass type-safety.
+
+---
+
+### Lesson #15: Prefer Strict Type Guards Over Type Assertions in Real Services 🛡️
+
+**Date**: 2026-08-10  
+**Phase**: Sprint 3 Real Service Hardening  
+**What happened**: Real service implementations (`PromptGenerationService.ts` and `ImageGenerationService.ts`) used `as ProxyResponse` type assertions on `response.json()` payloads from `/api/prompts` and `/api/generate/card`. While functional, type assertions violate zero-trust type safety guidelines and obscure payload structure bugs.
+
+**What we learned**:
+- Type assertions (`as Type`) bypass the TypeScript compiler and can introduce silent runtime bugs if network endpoints return unexpected data.
+- Writing explicit Type Guard functions (`isPromptProxyResponse(obj)`, `isImageProxyResponse(obj)`) using structural type checks (`typeof obj === 'object'`, `'success' in obj`) allows TypeScript to narrow `unknown` safely.
+
+**What we did**:
+1. Defined `isPromptProxyResponse` and `isImageProxyResponse` type guards in real services.
+2. Eliminated all `as` assertions in network response handling.
+3. Verified zero `as any`, `: any`, or `@ts-ignore` comments in `services/real/`.
+
+**Prevention**:
+- Always use Type Guards for parsing HTTP JSON responses. Never cast network payloads using `as`.
 
 ---
 

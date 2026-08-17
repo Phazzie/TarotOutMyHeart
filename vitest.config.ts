@@ -4,14 +4,15 @@
  * Resolves $contracts and $services path aliases so tests import the same
  * paths that SvelteKit builds use.
  */
-import { defineConfig } from 'vitest/config';
-import { resolve } from 'path';
+import { defineConfig } from 'vitest/config'
+import { resolve } from 'path'
 
 export default defineConfig({
   test: {
     // jsdom gives us localStorage, window, document, etc.
     environment: 'jsdom',
     globals: false,
+    setupFiles: ['./tests/setup.ts'],
     include: ['tests/**/*.test.ts'],
     exclude: ['node_modules', '.svelte-kit'],
     // Each test file gets a fresh module registry
@@ -29,4 +30,4 @@ export default defineConfig({
       $lib: resolve(__dirname, './src/lib'),
     },
   },
-});
+})

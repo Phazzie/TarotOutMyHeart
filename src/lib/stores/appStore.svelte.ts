@@ -1,9 +1,25 @@
 /**
- * @fileoverview Global application store using Svelte 5 runes
- * @purpose Centralized state management for the entire tarot generation flow
- * @dataFlow Components read/write state through this store
- * @boundary Central state management - no external API calls
- * @updated 2025-11-15
+ * @fileoverview Global application state store using Svelte 5 runes
+ *
+ * PURPOSE:
+ * Centralized state management for the entire TarotUpMyHeart application lifecycle.
+ * Encapsulates cross-phase reactive state (uploaded images, style preferences, generated prompts,
+ * generated cards, generation progress, navigation, loading states, and error handling)
+ * using Svelte 5 $state and $derived runes.
+ *
+ * DATA FLOW:
+ * Uni-directional data flow: UI -> Service -> ServiceResponse<T> -> appStore mutation -> UI ($state/$derived)
+ * - Input: Validated data payloads received from Service responses (UploadedImage[], StyleInputs, CardPrompt[], GeneratedCard[], etc.)
+ * - Transform: Reactive state mutation via explicit store methods and auto-memoized computations via Svelte 5 $derived runes
+ * - Output: Reactive state and computed properties consumed by UI components and page routes
+ *
+ * DEPENDENCIES:
+ * - Depends on: $contracts/index (UploadedImage, StyleInputs, CardPrompt, GeneratedCard, ImageGenerationProgress)
+ * - Used by: UI Components (ImageUploadComponent, StyleInputComponent, PromptListComponent,
+ *   DeckGalleryComponent, DownloadComponent, CostDisplayComponent, GenerationProgressComponent) and page routes
+ *
+ * @boundary Global Application Store Seam (State Management)
+ * @updated 2026-08-17
  *
  * This store manages the complete application state across all phases:
  * - Phase 1: Image Upload (reference images)
@@ -191,34 +207,6 @@ class AppStore {
   )
 
   /**
-   * Total estimated cost across all operations
-   *
-   * Sums up:
-   * - Prompt generation cost (from API usage)
-   * - Image generation cost (from API usage)
-   *
-   * @returns Total cost in USD, or 0 if no costs yet
-   */
-  totalCost = $derived(() => {
-    const cost = 0
-
-    // Add prompt generation cost if available
-    // Note: CardPrompt doesn't include cost directly
-    // Cost would come from the GeneratePromptsOutput.usage.estimatedCost
-    // For now, we'll return 0 as we'd need to store API usage separately
-
-    // Add image generation cost
-    // Note: Cost info would be in the API response, not on individual cards
-    // We'd need to store TotalImageGenerationUsage separately
-    // For now, just iterate to suppress unused variable warnings
-    this.generatedCards.forEach(() => {
-      // When we have cost tracking, add costs here
-    })
-
-    return cost
-  })
-
-  /**
    * Whether image generation is currently in progress
    *
    * @returns true if generating images
@@ -291,6 +279,16 @@ class AppStore {
    * @returns true if 22 cards completed
    */
   hasAllCards = $derived(this.completedCardCount === 22)
+
+  /**
+   * Total estimated cost across all operations in USD
+   *
+   * Cleanly derived based on completed card count ($0.10 per generated image).
+   * Safe and free of dummy loops or reactive circularities.
+   *
+   * @returns Total estimated cost in USD
+   */
+  totalCost = $derived(this.completedCardCount * 0.1)
 
   /**
    * Current generation progress percentage

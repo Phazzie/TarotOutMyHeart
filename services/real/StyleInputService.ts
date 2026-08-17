@@ -1,79 +1,283 @@
 /**
- * StyleInputService — real implementation.
+ * @fileoverview StyleInputService — real implementation.
  * PreMortem #8: Must NOT crash when localStorage is undefined (SSR/Node.js).
  * Design: SSR guard on every localStorage access, returns DEFAULT_STYLE_INPUTS on server.
  */
-import { DEFAULT_STYLE_INPUTS } from '../../contracts/StyleInput';
-import type { StyleInputs } from '../../contracts/StyleInput';
 
-export const STORAGE_KEY = 'tarot_style_inputs';
-const DESCRIPTION_MAX_LENGTH = 500;
+import type { ServiceResponse } from '$contracts/types/common'
+import { isStyleInputs, isKeyOfStyleInputs } from '$lib/utils/types'
+import type {
+  IStyleInputService,
+  ValidateStyleInputsInput,
+  ValidateStyleInputsOutput,
+  SaveStyleInputsInput,
+  SaveStyleInputsOutput,
+  LoadStyleInputsInput,
+  LoadStyleInputsOutput,
+  GetDefaultsOutput,
+  GetPredefinedOptionsOutput,
+  StyleInputs,
+  StyleInputsValidation,
+  FieldValidation,
+  StyleInputValidationError,
+} from '$contracts/StyleInput'
+import {
+  StyleInputErrorCode,
+  CHAR_LIMITS,
+  PREDEFINED_THEMES,
+  PREDEFINED_TONES,
+  DEFAULT_STYLE_INPUTS,
+} from '$contracts/StyleInput'
 
-type ServiceResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: { code: string; message: string } };
+export const STORAGE_KEY = 'tarot_style_inputs'
 
-export class StyleInputService {
-  /** True when running in Node.js / SSR (no localStorage). */
+type FieldError = { code: StyleInputErrorCode; message: string }
+
+export class StyleInputService implements IStyleInputService {
   private isSSR(): boolean {
-    return typeof localStorage === 'undefined';
+    return typeof localStorage === 'undefined'
   }
 
-  async saveStyleInputs(inputs: StyleInputs): Promise<ServiceResult<StyleInputs>> {
-    // Validate: theme required and not just whitespace
-    if (!inputs.theme || !inputs.theme.trim()) {
-      return {
-        success: false,
-        error: { code: 'THEME_REQUIRED', message: 'Theme is required.' },
-      };
+  private validateField(
+    fieldName: keyof StyleInputs,
+    value: string | undefined
+  ): FieldValidation & { specificErrors: FieldError[] } {
+    const specificErrors: FieldError[] = []
+
+    switch (fieldName) {
+      case 'theme':
+        if (!value || value.trim().length === 0) {
+          specificErrors.push({
+            code: StyleInputErrorCode.THEME_REQUIRED,
+            message: 'Theme is required',
+          })
+        } else if (value.length > CHAR_LIMITS.theme) {
+          specificErrors.push({
+            code: StyleInputErrorCode.THEME_TOO_LONG,
+            message: `Theme must be ${CHAR_LIMITS.theme} characters or less`,
+          })
+        }
+        break
+
+      case 'tone':
+        if (!value || value.trim().length === 0) {
+          specificErrors.push({
+            code: StyleInputErrorCode.TONE_REQUIRED,
+            message: 'Tone is required',
+          })
+        } else if (value.length > CHAR_LIMITS.tone) {
+          specificErrors.push({
+            code: StyleInputErrorCode.TONE_TOO_LONG,
+            message: `Tone must be ${CHAR_LIMITS.tone} characters or less`,
+          })
+        }
+        break
+
+      case 'description':
+        if (!value || value.trim().length === 0) {
+          specificErrors.push({
+            code: StyleInputErrorCode.DESCRIPTION_REQUIRED,
+            message: 'Description is required',
+          })
+        } else if (value.length < CHAR_LIMITS.description.min) {
+          specificErrors.push({
+            code: StyleInputErrorCode.DESCRIPTION_TOO_SHORT,
+            message: `Description must be at least ${CHAR_LIMITS.description.min} characters`,
+          })
+        } else if (value.length > CHAR_LIMITS.description.max) {
+          specificErrors.push({
+            code: StyleInputErrorCode.DESCRIPTION_TOO_LONG,
+            message: `Description must be ${CHAR_LIMITS.description.max} characters or less`,
+          })
+        }
+        break
+
+      case 'concept':
+        if (value && value.length > CHAR_LIMITS.concept) {
+          specificErrors.push({
+            code: StyleInputErrorCode.CONCEPT_TOO_LONG,
+            message: `Concept must be ${CHAR_LIMITS.concept} characters or less`,
+          })
+        }
+        break
+
+      case 'characters':
+        if (value && value.length > CHAR_LIMITS.characters) {
+          specificErrors.push({
+            code: StyleInputErrorCode.CHARACTERS_TOO_LONG,
+            message: `Characters must be ${CHAR_LIMITS.characters} characters or less`,
+          })
+        }
+        break
     }
 
-    // Validate: description length
-    if (inputs.description && inputs.description.length > DESCRIPTION_MAX_LENGTH) {
+    return {
+      fieldName,
+      isValid: specificErrors.length === 0,
+      errors: specificErrors.map(e => e.message),
+      specificErrors,
+    }
+  }
+
+  async validateStyleInputs(
+    input: ValidateStyleInputsInput
+  ): Promise<ServiceResponse<ValidateStyleInputsOutput>> {
+    const fields = {
+      theme: this.validateField('theme', input.theme),
+      tone: this.validateField('tone', input.tone),
+      description: this.validateField('description', input.description),
+      concept: this.validateField('concept', input.concept),
+      characters: this.validateField('characters', input.characters),
+    }
+
+    const errors: StyleInputValidationError[] = []
+
+    for (const [field, validation] of Object.entries(fields)) {
+      if (!validation.isValid && isKeyOfStyleInputs(field)) {
+        for (const err of validation.specificErrors) {
+          errors.push({
+            code: err.code,
+            field,
+            message: err.message,
+          })
+        }
+      }
+    }
+
+    const isValid = errors.length === 0
+    const canProceed = fields.theme.isValid && fields.tone.isValid && fields.description.isValid
+
+    const validationState: StyleInputsValidation = {
+      isValid,
+      fields,
+      canProceed,
+    }
+
+    return {
+      success: true,
+      data: {
+        validation: validationState,
+        errors,
+        warnings: [],
+      },
+    }
+  }
+
+  async saveStyleInputs(
+    input: SaveStyleInputsInput
+  ): Promise<ServiceResponse<SaveStyleInputsOutput>> {
+    const { styleInputs, saveAsDraft } = input
+
+    const validationRes = await this.validateStyleInputs(styleInputs)
+    if (!validationRes.data?.validation.canProceed) {
       return {
         success: false,
         error: {
-          code: 'DESCRIPTION_TOO_LONG',
-          message: `Description must be ${DESCRIPTION_MAX_LENGTH} characters or fewer.`,
+          code: StyleInputErrorCode.SAVE_FAILED,
+          message: 'Invalid style inputs',
+          retryable: false,
         },
-      };
-    }
-
-    if (!this.isSSR()) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(inputs));
-      } catch {
-        // Storage quota exceeded or private browsing — non-fatal, proceed
       }
     }
 
-    return { success: true, data: inputs };
+    if (saveAsDraft && !this.isSSR()) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(styleInputs))
+      } catch {
+        // Ignored non-fatal
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        saved: true,
+        styleInputs,
+        savedAt: new Date(),
+        savedToDraft: saveAsDraft,
+      },
+    }
   }
 
-  async loadStyleInputs(): Promise<ServiceResult<StyleInputs>> {
-    if (this.isSSR()) {
-      return { success: true, data: DEFAULT_STYLE_INPUTS };
+  async loadStyleInputs(
+    input: LoadStyleInputsInput
+  ): Promise<ServiceResponse<LoadStyleInputsOutput>> {
+    if (!input.loadFromDraft || this.isSSR()) {
+      return {
+        success: true,
+        data: {
+          found: false,
+          styleInputs: DEFAULT_STYLE_INPUTS,
+          loadedFrom: 'default',
+        },
+      }
     }
 
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { success: true, data: DEFAULT_STYLE_INPUTS };
-      const parsed = JSON.parse(raw) as StyleInputs;
-      return { success: true, data: parsed };
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (!raw) {
+        return {
+          success: true,
+          data: {
+            found: false,
+            styleInputs: DEFAULT_STYLE_INPUTS,
+            loadedFrom: 'default',
+          },
+        }
+      }
+
+      const parsed: unknown = JSON.parse(raw)
+      if (isStyleInputs(parsed)) {
+        return {
+          success: true,
+          data: {
+            found: true,
+            styleInputs: parsed,
+            loadedFrom: 'draft',
+          },
+        }
+      }
     } catch {
-      // Corrupt JSON or other storage error — fall back to defaults
-      return { success: true, data: DEFAULT_STYLE_INPUTS };
+      // Ignore parse errors and return fallback below
+    }
+
+    return {
+      success: true,
+      data: {
+        found: false,
+        styleInputs: DEFAULT_STYLE_INPUTS,
+        loadedFrom: 'default',
+      },
     }
   }
 
-  async clearStyleInputs(): Promise<ServiceResult<void>> {
+  async getDefaults(): Promise<ServiceResponse<GetDefaultsOutput>> {
+    return {
+      success: true,
+      data: {
+        defaults: DEFAULT_STYLE_INPUTS,
+      },
+    }
+  }
+
+  async getPredefinedOptions(): Promise<ServiceResponse<GetPredefinedOptionsOutput>> {
+    return {
+      success: true,
+      data: {
+        themes: PREDEFINED_THEMES,
+        tones: PREDEFINED_TONES,
+      },
+    }
+  }
+
+  async clearDraft(): Promise<ServiceResponse<void>> {
     if (!this.isSSR()) {
       try {
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(STORAGE_KEY)
       } catch {
-        // Non-fatal
+        // Ignored
       }
     }
-    return { success: true, data: undefined };
+    return { success: true }
   }
 }

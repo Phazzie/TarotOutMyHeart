@@ -2,69 +2,93 @@
  * POST /api/prompts
  * Sends reference images to xAI Grok (vision) and returns 22 card prompts.
  * Keeps XAI_API_KEY secret — never exposed to client.
- *
- * PreMortem protections:
- *   - UNAUTHORIZED:   No XAI_API_KEY
- *   - INVALID_INPUT:  Missing/empty referenceImageUrls or styleInputs
- *   - API_ERROR:      xAI returns non-200 or malformed JSON
- *   - TIMEOUT:        xAI reasoning model is slow; 90s function timeout via vercel.json
- *
- * Note: This route uses Vercel `maxDuration: 90` — set in vercel.json.
  */
-import { json } from '@sveltejs/kit';
-import OpenAI from 'openai';
-import { env } from '$env/dynamic/private';
-import { MAJOR_ARCANA_NAMES, MAJOR_ARCANA_MEANINGS } from '$contracts/PromptGeneration';
-import type { RequestHandler } from './$types';
+import { json } from '@sveltejs/kit'
+import OpenAI from 'openai'
+import {
+  MAJOR_ARCANA_NAMES,
+  MAJOR_ARCANA_MEANINGS,
+  PromptGenerationErrorCode,
+  GROK_MODELS,
+} from '$contracts/PromptGeneration'
+import { isRawPromptArray, createPromptId, isCardNumber } from '$lib/utils/types'
+import type { RequestHandler } from './$types'
 
-export const config = { maxDuration: 90 }; // Vercel Pro: up to 300s
+export const config = { maxDuration: 90 }
 
 export const POST: RequestHandler = async ({ request }) => {
-  if (!env.XAI_API_KEY) {
+  const apiKey = process.env['XAI_API_KEY']
+  if (!apiKey || apiKey.includes('your_xai')) {
     return json(
-      { success: false, error: { code: 'UNAUTHORIZED', message: 'API key not configured.' } },
-      { status: 500 },
-    );
+      {
+        success: false,
+        error: {
+          code: PromptGenerationErrorCode.API_KEY_MISSING,
+          message: 'API key not configured.',
+        },
+      },
+      { status: 500 }
+    )
   }
 
-  let body: { referenceImageUrls: string[]; styleInputs: { theme: string; tone: string; description: string } };
+  let body: {
+    referenceImageUrls: string[]
+    styleInputs: { theme: string; tone: string; description: string }
+  }
   try {
-    body = await request.json();
+    body = await request.json()
   } catch {
     return json(
-      { success: false, error: { code: 'INVALID_REQUEST', message: 'Expected JSON body.' } },
-      { status: 400 },
-    );
+      {
+        success: false,
+        error: {
+          code: PromptGenerationErrorCode.INVALID_RESPONSE_FORMAT,
+          message: 'Expected JSON body.',
+        },
+      },
+      { status: 400 }
+    )
   }
 
-  const { referenceImageUrls, styleInputs } = body;
+  const { referenceImageUrls, styleInputs } = body
+  const rawModel =
+    typeof body === 'object' && body !== null && 'model' in body ? body.model : undefined
+  const modelToUse =
+    typeof rawModel === 'string' && rawModel
+      ? rawModel
+      : process.env['GROK_TEXT_MODEL'] || GROK_MODELS.vision
 
   if (!referenceImageUrls?.length || !styleInputs?.theme) {
     return json(
-      { success: false, error: { code: 'INVALID_INPUT', message: 'referenceImageUrls and styleInputs.theme are required.' } },
-      { status: 422 },
-    );
+      {
+        success: false,
+        error: {
+          code: PromptGenerationErrorCode.INVALID_STYLE_INPUTS,
+          message: 'referenceImageUrls and styleInputs.theme are required.',
+        },
+      },
+      { status: 422 }
+    )
   }
 
-  const client = new OpenAI({ baseURL: 'https://api.x.ai/v1', apiKey: env.XAI_API_KEY });
+  const client = new OpenAI({ baseURL: 'https://api.x.ai/v1', apiKey })
 
-  // Build the vision prompt — describe the style once, then ask for all 22 card prompts
   const styleDescription = [
     `Theme: ${styleInputs.theme}`,
     `Tone: ${styleInputs.tone}`,
     styleInputs.description ? `Style notes: ${styleInputs.description}` : '',
   ]
     .filter(Boolean)
-    .join('\n');
+    .join('\n')
 
   const systemPrompt = `You are an expert tarot deck artist and prompt engineer.
 Generate image generation prompts for a custom tarot deck based on reference images provided.
 The style should be: ${styleDescription}
-For each card, output a detailed image generation prompt in JSON format.`;
+For each card, output a detailed image generation prompt in JSON format.`
 
   const userContent: OpenAI.Chat.ChatCompletionContentPart[] = [
     { type: 'text', text: systemPrompt },
-    ...referenceImageUrls.map((url) => ({
+    ...referenceImageUrls.map(url => ({
       type: 'image_url' as const,
       image_url: { url },
     })),
@@ -81,44 +105,82 @@ Return ONLY a JSON array with this exact structure (no markdown, no explanation)
 ]
 Cards to generate (0–21): ${MAJOR_ARCANA_NAMES.join(', ')}`,
     },
-  ];
+  ]
 
   try {
     const response = await client.chat.completions.create({
-      model: 'grok-4-fast-reasoning',
+      model: modelToUse,
       messages: [{ role: 'user', content: userContent }],
       temperature: 0.7,
-    });
+    })
 
-    const rawContent = response.choices[0]?.message?.content ?? '';
+    const rawContent = response.choices[0]?.message?.content ?? ''
 
-    // Parse the JSON array from the response
-    const jsonMatch = rawContent.match(/\[[\s\S]*\]/);
+    const jsonMatch = rawContent.match(/\[[\s\S]*\]/)
     if (!jsonMatch) {
       return json(
-        { success: false, error: { code: 'PARSE_ERROR', message: 'Could not extract JSON from model response.' } },
-        { status: 502 },
-      );
+        {
+          success: false,
+          error: {
+            code: PromptGenerationErrorCode.INVALID_RESPONSE_FORMAT,
+            message: 'Could not extract JSON from model response.',
+          },
+        },
+        { status: 502 }
+      )
     }
 
-    const rawPrompts = JSON.parse(jsonMatch[0]) as Array<{ cardNumber: number; cardName: string; generatedPrompt: string }>;
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(jsonMatch[0])
+    } catch {
+      return json(
+        {
+          success: false,
+          error: {
+            code: PromptGenerationErrorCode.INVALID_RESPONSE_FORMAT,
+            message: 'Failed to parse JSON from model response.',
+          },
+        },
+        { status: 502 }
+      )
+    }
 
-    const prompts = rawPrompts.map((p) => ({
-      id: crypto.randomUUID(),
-      cardNumber: p.cardNumber,
-      cardName: p.cardName,
-      traditionalMeaning: MAJOR_ARCANA_MEANINGS[p.cardNumber as keyof typeof MAJOR_ARCANA_MEANINGS] ?? '',
-      generatedPrompt: p.generatedPrompt,
-      confidence: 0.9,
-      generatedAt: new Date().toISOString(),
-    }));
+    if (!isRawPromptArray(parsed)) {
+      return json(
+        {
+          success: false,
+          error: {
+            code: PromptGenerationErrorCode.INVALID_RESPONSE_FORMAT,
+            message: 'Model response JSON structure does not match expected prompt format.',
+          },
+        },
+        { status: 502 }
+      )
+    }
 
-    return json({ success: true, data: { prompts } });
+    const prompts = []
+    for (const p of parsed) {
+      const cardIndex = p.cardNumber
+      const traditionalMeaning = isCardNumber(cardIndex) ? MAJOR_ARCANA_MEANINGS[cardIndex] : ''
+
+      prompts.push({
+        id: createPromptId(crypto.randomUUID()),
+        cardNumber: p.cardNumber,
+        cardName: p.cardName,
+        traditionalMeaning,
+        generatedPrompt: p.generatedPrompt,
+        confidence: 0.9,
+        generatedAt: new Date().toISOString(),
+      })
+    }
+
+    return json({ success: true, data: { prompts } })
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'xAI API call failed.';
+    const message = err instanceof Error ? err.message : 'xAI API call failed.'
     return json(
-      { success: false, error: { code: 'API_ERROR', message } },
-      { status: 502 },
-    );
+      { success: false, error: { code: PromptGenerationErrorCode.API_ERROR, message } },
+      { status: 502 }
+    )
   }
-};
+}

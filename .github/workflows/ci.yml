@@ -32,11 +32,11 @@ jobs:
 
       - name: Run type checking
         run: npx svelte-check --tsconfig ./tsconfig.json
-        continue-on-error: true  # pre-existing TypeScript debt in services/tests/real; tracked separately
+        continue-on-error: true # pre-existing TypeScript debt in services/tests/real; tracked separately
 
       - name: Check formatting
         run: npm run format:check
-        continue-on-error: true  # formatting debt tracked separately; don't block merges
+        continue-on-error: true # formatting debt tracked separately; don't block merges
 
   # Contract tests - validates mocks match contracts
   contract-tests:

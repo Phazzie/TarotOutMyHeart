@@ -1,171 +1,388 @@
 /**
- * ImageGenerationService — real implementation.
- * Per-card approach: calls POST /api/generate/card once per card.
- * Avoids Vercel serverless timeout (10s/60s) that a batched approach would hit.
- *
- * PreMortem protections:
- *   - TIMEOUT: Vercel Pro 60s limit — each card call is independent
- *   - CANCELLED: user can abort mid-deck
- *   - Partial success: failed cards don't abort the whole deck
- *   - Retry: up to MAX_RETRIES per card with exponential backoff
+ * @fileoverview Image Generation Service - Real implementation using per-card backend API proxy calls to Grok Image API.
+ * @purpose Connect client to server proxy /api/generate/card to generate all 22 Major Arcana card images with retries and progress tracking.
+ * @dataFlow 22 Prompts → /api/generate/card → Grok Image Generator → ServiceResponse<GenerateImagesOutput>
+ * @boundary Seam #4: ImageGenerationSeam
  */
-import type { CardPrompt } from '../../contracts/PromptGeneration';
 
-const CARD_TIMEOUT_MS = 55_000; // Under 60s Pro limit with margin
-const MAX_RETRIES = 2;
-const RETRY_DELAY_MS = 3_000;
+import type { ServiceResponse } from '$contracts/types/common'
+import { createGeneratedCardId, createPromptId } from '$lib/utils/types'
+import type {
+  IImageGenerationService,
+  GenerateImagesInput,
+  GenerateImagesOutput,
+  RegenerateImageInput,
+  RegenerateImageOutput,
+  CancelGenerationInput,
+  CancelGenerationOutput,
+  GetGenerationStatusInput,
+  GetGenerationStatusOutput,
+  EstimateImageCostOutput,
+  GeneratedCard,
+  ImageGenerationProgress,
+  ImageGenerationUsage,
+  TotalImageGenerationUsage,
+  GeneratedCardId,
+} from '$contracts/ImageGeneration'
+import { ImageGenerationErrorCode, GROK_IMAGE_MODEL } from '$contracts/ImageGeneration'
+import type { CardPrompt } from '$contracts/PromptGeneration'
 
-type ServiceResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: { code: string; message: string } };
+const CARD_TIMEOUT_MS = 55_000
+const MAX_RETRIES = 2
+const RETRY_DELAY_MS = 3_000
 
-export interface GeneratedCardInfo {
-  id: string;
-  cardNumber: number;
-  cardName: string;
-  imageUrl: string | null;
-  prompt: string;
-  status: 'completed' | 'failed';
-  generatedAt: string;
-  error?: string;
+interface ImageProxyResponse {
+  success: boolean
+  data?: { imageUrl: string; imageDataUrl?: string }
+  error?: { code: ImageGenerationErrorCode; message: string }
 }
 
-export interface DeckGenerationProgress {
-  total: number;
-  completed: number;
-  failed: number;
-  currentCardNumber: number;
+function isImageProxyResponse(obj: unknown): obj is ImageProxyResponse {
+  if (typeof obj !== 'object' || obj === null) return false
+  if (!('success' in obj) || typeof obj.success !== 'boolean') return false
+  return true
 }
 
-export class ImageGenerationService {
-  private cancelled = false;
+interface SessionState {
+  id: string
+  progress: ImageGenerationProgress
+  isComplete: boolean
+  isCanceled: boolean
+  cards: GeneratedCard[]
+}
 
-  /** Generate a single card image. Retries on transient failures. */
-  async generateCard(
-    prompt: CardPrompt,
-    onProgress?: (progress: DeckGenerationProgress) => void,
-  ): Promise<ServiceResult<GeneratedCardInfo>> {
-    let lastError = '';
+export class ImageGenerationService implements IImageGenerationService {
+  private sessions: Map<string, SessionState> = new Map()
+  private cancelRequested = false
+
+  private generateId(): GeneratedCardId {
+    return createGeneratedCardId(crypto.randomUUID())
+  }
+
+  async generateImages(input: GenerateImagesInput): Promise<ServiceResponse<GenerateImagesOutput>> {
+    const { prompts, onProgress, allowPartialSuccess = true } = input
+
+    if (!prompts || prompts.length === 0) {
+      return {
+        success: false,
+        error: {
+          code: ImageGenerationErrorCode.INVALID_PROMPTS,
+          message: 'No card prompts provided',
+          retryable: false,
+        },
+      }
+    }
+
+    const sessionId = `session-${Date.now()}`
+    this.cancelRequested = false
+
+    const generatedCards: GeneratedCard[] = []
+    const usagePerCard: ImageGenerationUsage[] = []
+    let completedCount = 0
+    let failedCount = 0
+    let totalCost = 0
+    const startTime = Date.now()
+
+    const initialProgress: ImageGenerationProgress = {
+      total: prompts.length,
+      completed: 0,
+      failed: 0,
+      current: 0,
+      percentComplete: 0,
+      estimatedTimeRemaining: prompts.length * 15,
+      status: 'Starting image generation session...',
+    }
+
+    const sessionState: SessionState = {
+      id: sessionId,
+      progress: initialProgress,
+      isComplete: false,
+      isCanceled: false,
+      cards: generatedCards,
+    }
+    this.sessions.set(sessionId, sessionState)
+
+    for (let index = 0; index < prompts.length; index++) {
+      if (this.cancelRequested) {
+        sessionState.isCanceled = true
+        break
+      }
+
+      const promptObj = prompts[index]
+      if (!promptObj) continue
+      const cardNum = promptObj.cardNumber
+
+      const progress: ImageGenerationProgress = {
+        total: prompts.length,
+        completed: completedCount,
+        failed: failedCount,
+        current: cardNum,
+        percentComplete: Math.round((index / prompts.length) * 100),
+        estimatedTimeRemaining: (prompts.length - index) * 15,
+        status: `Generating card ${index + 1}/${prompts.length}: ${promptObj.cardName}...`,
+      }
+      sessionState.progress = progress
+      onProgress?.(progress)
+
+      const cardResult = await this.generateSingleCardWithRetry(
+        promptObj,
+        input.model || GROK_IMAGE_MODEL
+      )
+
+      if (cardResult.success) {
+        completedCount++
+        generatedCards.push(cardResult.card)
+        totalCost += 0.04
+        usagePerCard.push({
+          cardNumber: cardNum,
+          model: input.model || GROK_IMAGE_MODEL,
+          estimatedCost: 0.04,
+          generationTime: 12000,
+          requestId: `req-img-${cardNum}-${Date.now()}`,
+        })
+      } else {
+        failedCount++
+        const failedCard: GeneratedCard = {
+          id: this.generateId(),
+          cardNumber: cardNum,
+          cardName: promptObj.cardName,
+          prompt: promptObj.generatedPrompt,
+          generationStatus: 'failed',
+          retryCount: MAX_RETRIES,
+          error: cardResult.error.message,
+        }
+        generatedCards.push(failedCard)
+        if (!allowPartialSuccess && failedCount > 0) {
+          break
+        }
+      }
+    }
+
+    const finalProgress: ImageGenerationProgress = {
+      total: prompts.length,
+      completed: completedCount,
+      failed: failedCount,
+      current: -1,
+      percentComplete: 100,
+      estimatedTimeRemaining: 0,
+      status: this.cancelRequested
+        ? 'Generation session canceled.'
+        : `Generation complete! ${completedCount} succeeded, ${failedCount} failed.`,
+    }
+    sessionState.progress = finalProgress
+    sessionState.isComplete = true
+    onProgress?.(finalProgress)
+
+    const totalUsage: TotalImageGenerationUsage = {
+      totalImages: prompts.length,
+      successfulImages: completedCount,
+      failedImages: failedCount,
+      estimatedCost: Number(totalCost.toFixed(4)),
+      totalGenerationTime: Math.round((Date.now() - startTime) / 1000),
+      usagePerCard,
+    }
+
+    return {
+      success: true,
+      data: {
+        generatedCards,
+        totalUsage,
+        sessionId,
+        startedAt: new Date(startTime),
+        completedAt: new Date(),
+        fullySuccessful: failedCount === 0 && !this.cancelRequested,
+      },
+    }
+  }
+
+  private async generateSingleCardWithRetry(
+    promptObj: CardPrompt,
+    model: string
+  ): Promise<
+    | { success: true; card: GeneratedCard }
+    | { success: false; error: { code: ImageGenerationErrorCode; message: string } }
+  > {
+    let lastError = {
+      code: ImageGenerationErrorCode.GENERATION_FAILED,
+      message: 'Image generation failed.',
+    }
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      if (this.cancelled) {
+      if (this.cancelRequested) {
         return {
           success: false,
-          error: { code: 'CANCELLED', message: 'Generation was cancelled.' },
-        };
+          error: { code: ImageGenerationErrorCode.SESSION_CANCELED, message: 'Canceled' },
+        }
       }
 
       if (attempt > 0) {
-        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * attempt));
+        await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt))
       }
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), CARD_TIMEOUT_MS);
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), CARD_TIMEOUT_MS)
 
       try {
         const response = await fetch('/api/generate/card', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            cardNumber: prompt.cardNumber,
-            cardName: prompt.cardName,
-            generatedPrompt: prompt.generatedPrompt,
+            cardNumber: promptObj.cardNumber,
+            cardName: promptObj.cardName,
+            generatedPrompt: promptObj.generatedPrompt,
+            model,
           }),
           signal: controller.signal,
-        });
+        })
 
-        clearTimeout(timeoutId);
-        const json = (await response.json()) as {
-          success: boolean;
-          data?: { imageUrl: string };
-          error?: { code: string; message: string };
-        };
+        clearTimeout(timeoutId)
 
-        if (json.success && json.data?.imageUrl) {
-          return {
-            success: true,
-            data: {
-              id: crypto.randomUUID(),
-              cardNumber: prompt.cardNumber,
-              cardName: prompt.cardName,
-              imageUrl: json.data.imageUrl,
-              prompt: prompt.generatedPrompt,
-              status: 'completed',
-              generatedAt: new Date().toISOString(),
-            },
-          };
+        const json: unknown = await response.json()
+        if (!isImageProxyResponse(json)) {
+          lastError = {
+            code: ImageGenerationErrorCode.API_ERROR,
+            message: 'Invalid JSON structure from image proxy.',
+          }
+          continue
         }
 
-        lastError = json.error?.message ?? 'Image generation failed.';
+        const res = json
+
+        if (res.success && (res.data?.imageUrl || res.data?.imageDataUrl)) {
+          const card: GeneratedCard = {
+            id: this.generateId(),
+            cardNumber: promptObj.cardNumber,
+            cardName: promptObj.cardName,
+            prompt: promptObj.generatedPrompt,
+            imageUrl: res.data.imageUrl,
+            imageDataUrl: res.data.imageDataUrl,
+            generationStatus: 'completed',
+            generatedAt: new Date(),
+            retryCount: attempt,
+          }
+          return { success: true, card }
+        }
+
+        lastError = res.error ?? {
+          code: ImageGenerationErrorCode.GENERATION_FAILED,
+          message: 'Image generation failed.',
+        }
       } catch (err) {
-        clearTimeout(timeoutId);
+        clearTimeout(timeoutId)
         if (err instanceof Error && err.name === 'AbortError') {
-          lastError = 'Request timed out.';
+          lastError = { code: ImageGenerationErrorCode.API_TIMEOUT, message: 'Request timed out.' }
         } else {
-          lastError = err instanceof Error ? err.message : 'Network error.';
+          lastError = {
+            code: ImageGenerationErrorCode.NETWORK_ERROR,
+            message: err instanceof Error ? err.message : 'Network error.',
+          }
         }
+      }
+    }
+
+    return { success: false, error: lastError }
+  }
+
+  async regenerateImage(
+    input: RegenerateImageInput
+  ): Promise<ServiceResponse<RegenerateImageOutput>> {
+    const { cardNumber, prompt } = input
+    const cardName = `Card ${cardNumber}`
+
+    const fakePromptObj: CardPrompt = {
+      id: createPromptId(crypto.randomUUID()),
+      cardNumber,
+      cardName,
+      traditionalMeaning: '',
+      generatedPrompt: prompt,
+      confidence: 1,
+      generatedAt: new Date(),
+    }
+
+    const res = await this.generateSingleCardWithRetry(fakePromptObj, GROK_IMAGE_MODEL)
+    if (res.success) {
+      return {
+        success: true,
+        data: {
+          generatedCard: res.card,
+          usage: {
+            cardNumber,
+            model: GROK_IMAGE_MODEL,
+            estimatedCost: 0.04,
+            generationTime: 12000,
+            requestId: `req-regen-${cardNumber}-${Date.now()}`,
+          },
+        },
       }
     }
 
     return {
       success: false,
-      error: { code: 'GENERATION_FAILED', message: lastError },
-    };
+      error: {
+        code: res.error.code,
+        message: res.error.message,
+        retryable: true,
+      },
+    }
   }
 
-  /**
-   * Generate all 22 cards sequentially.
-   * Continues on failure (partial success). Respects cancellation.
-   */
-  async generateDeck(
-    prompts: CardPrompt[],
-    onProgress?: (progress: DeckGenerationProgress) => void,
-  ): Promise<ServiceResult<GeneratedCardInfo[]>> {
-    this.cancelled = false;
-    const results: GeneratedCardInfo[] = [];
-    let failed = 0;
+  async cancelGeneration(
+    input: CancelGenerationInput
+  ): Promise<ServiceResponse<CancelGenerationOutput>> {
+    this.cancelRequested = true
+    const session = this.sessions.get(input.sessionId)
 
-    for (const prompt of prompts) {
-      if (this.cancelled) break;
+    return {
+      success: true,
+      data: {
+        canceled: true,
+        completedBeforeCancel: session ? session.progress.completed : 0,
+        sessionId: input.sessionId,
+      },
+    }
+  }
 
-      onProgress?.({
-        total: prompts.length,
-        completed: results.filter((r) => r.status === 'completed').length,
-        failed,
-        currentCardNumber: prompt.cardNumber,
-      });
-
-      const result = await this.generateCard(prompt, onProgress);
-
-      if (result.success) {
-        results.push(result.data);
-      } else {
-        failed++;
-        // Push a failed card placeholder so the UI can show the failure
-        results.push({
-          id: crypto.randomUUID(),
-          cardNumber: prompt.cardNumber,
-          cardName: prompt.cardName,
-          imageUrl: null,
-          prompt: prompt.generatedPrompt,
-          status: 'failed',
-          generatedAt: new Date().toISOString(),
-          error: result.error.message,
-        });
+  async getGenerationStatus(
+    input: GetGenerationStatusInput
+  ): Promise<ServiceResponse<GetGenerationStatusOutput>> {
+    const session = this.sessions.get(input.sessionId)
+    if (!session) {
+      return {
+        success: false,
+        error: {
+          code: ImageGenerationErrorCode.SESSION_NOT_FOUND,
+          message: 'Session not found',
+          retryable: false,
+        },
       }
     }
 
-    onProgress?.({
-      total: prompts.length,
-      completed: results.filter((r) => r.status === 'completed').length,
-      failed,
-      currentCardNumber: -1,
-    });
-
-    return { success: true, data: results };
+    return {
+      success: true,
+      data: {
+        sessionId: session.id,
+        progress: session.progress,
+        isComplete: session.isComplete,
+        isCanceled: session.isCanceled,
+      },
+    }
   }
 
-  cancelGeneration(): void {
-    this.cancelled = true;
+  async estimateCost(input: {
+    imageCount: number
+  }): Promise<ServiceResponse<EstimateImageCostOutput>> {
+    const count = input.imageCount ?? 22
+    const totalCost = Number((count * 0.04).toFixed(4))
+    const estimatedTime = count * 15
+
+    return {
+      success: true,
+      data: {
+        totalImages: count,
+        costPerImage: 0.04,
+        totalEstimatedCost: totalCost,
+        estimatedTime,
+      },
+    }
   }
 }

@@ -6,6 +6,7 @@
  */
 
 import type { ServiceResponse } from '$contracts/types/common'
+import { createGeneratedCardId } from '$lib/utils/types'
 import type {
   IImageGenerationService,
   GenerateImagesInput,
@@ -50,7 +51,7 @@ export class ImageGenerationMockService implements IImageGenerationService {
    * Generate a unique GeneratedCardId
    */
   private generateId(): GeneratedCardId {
-    return crypto.randomUUID() as GeneratedCardId
+    return createGeneratedCardId(crypto.randomUUID())
   }
 
   /**
@@ -85,7 +86,8 @@ export class ImageGenerationMockService implements IImageGenerationService {
       cardNumber,
       cardName,
       prompt,
-      imageUrl: status === 'completed' ? this.generatePlaceholderImageUrl(cardNumber, cardName) : undefined,
+      imageUrl:
+        status === 'completed' ? this.generatePlaceholderImageUrl(cardNumber, cardName) : undefined,
       imageDataUrl: undefined,
       generationStatus: status,
       generatedAt: status === 'completed' ? new Date() : undefined,
@@ -95,9 +97,7 @@ export class ImageGenerationMockService implements IImageGenerationService {
     return card
   }
 
-  async generateImages(
-    input: GenerateImagesInput
-  ): Promise<ServiceResponse<GenerateImagesOutput>> {
+  async generateImages(input: GenerateImagesInput): Promise<ServiceResponse<GenerateImagesOutput>> {
     const { prompts, onProgress, allowPartialSuccess = true } = input
 
     // Validate prompts
@@ -105,7 +105,7 @@ export class ImageGenerationMockService implements IImageGenerationService {
       return {
         success: false,
         error: {
-          code: ImageGenerationErrorCode.INVALID_PROMPTS,
+          code: ImageGenerationErrorCode.WRONG_PROMPT_COUNT,
           message: 'No prompts provided',
           retryable: false,
         },
@@ -141,7 +141,8 @@ export class ImageGenerationMockService implements IImageGenerationService {
         break
       }
 
-      const prompt = prompts[i]!
+      const prompt = prompts[i]
+      if (!prompt) continue
 
       // Update progress
       if (onProgress) {
@@ -157,10 +158,11 @@ export class ImageGenerationMockService implements IImageGenerationService {
         onProgress(progress)
       }
 
-      await this.delay(300) // Simulate generation time
+      await this.delay(5) // Simulate generation time
 
-      // Simulate occasional failures (10% chance)
-      const shouldFail = Math.random() < 0.1
+      // Make failures deterministic: we can simulate failure on specific card numbers if needed by tests,
+      // but for standard tests, we should just succeed unless testing failures.
+      const shouldFail = false
 
       const card = this.generateSingleCard(
         prompt.cardNumber,
@@ -168,6 +170,10 @@ export class ImageGenerationMockService implements IImageGenerationService {
         prompt.generatedPrompt,
         shouldFail ? 'failed' : 'completed'
       )
+
+      if (input.saveToStorage === false) {
+        card.imageDataUrl = `data:image/png;base64,mock-base64-data-${prompt.cardNumber}`
+      }
 
       if (shouldFail) {
         failed++
@@ -275,13 +281,41 @@ export class ImageGenerationMockService implements IImageGenerationService {
 
     const { cardNumber, prompt, previousAttempts = 0 } = input
 
+    if (cardNumber < 0 || cardNumber > 21) {
+      return {
+        success: false,
+        error: {
+          code: ImageGenerationErrorCode.INVALID_PROMPTS,
+          message: 'Invalid card number',
+          retryable: false,
+        },
+      }
+    }
+
     // Get card name from number
     const cardNames = [
-      'The Fool', 'The Magician', 'The High Priestess', 'The Empress', 'The Emperor',
-      'The Hierophant', 'The Lovers', 'The Chariot', 'Strength', 'The Hermit',
-      'Wheel of Fortune', 'Justice', 'The Hanged Man', 'Death', 'Temperance',
-      'The Devil', 'The Tower', 'The Star', 'The Moon', 'The Sun',
-      'Judgement', 'The World'
+      'The Fool',
+      'The Magician',
+      'The High Priestess',
+      'The Empress',
+      'The Emperor',
+      'The Hierophant',
+      'The Lovers',
+      'The Chariot',
+      'Strength',
+      'The Hermit',
+      'Wheel of Fortune',
+      'Justice',
+      'The Hanged Man',
+      'Death',
+      'Temperance',
+      'The Devil',
+      'The Tower',
+      'The Star',
+      'The Moon',
+      'The Sun',
+      'Judgement',
+      'The World',
     ]
 
     const cardName = cardNames[cardNumber] || `Card ${cardNumber}`
@@ -394,9 +428,9 @@ export class ImageGenerationMockService implements IImageGenerationService {
     }
   }
 
-  async estimateCost(
-    input: { imageCount: number }
-  ): Promise<ServiceResponse<EstimateImageCostOutput>> {
+  async estimateCost(input: {
+    imageCount: number
+  }): Promise<ServiceResponse<EstimateImageCostOutput>> {
     await this.delay(50)
 
     const { imageCount } = input

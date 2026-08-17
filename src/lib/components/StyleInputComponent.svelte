@@ -32,6 +32,7 @@
     StyleInputsValidation,
   } from '$contracts/index'
   import { CHAR_LIMITS } from '$contracts/index'
+  import { isPredefinedTheme, isPredefinedTone } from '$lib/utils/types'
 
   // ============================================================================
   // SERVICE INITIALIZATION
@@ -179,18 +180,18 @@
       formData = { ...loadResult.data.styleInputs }
 
       // Check if loaded values are custom (not in predefined lists)
-      if (!predefinedThemes.includes(formData.theme as PredefinedTheme)) {
+      if (isPredefinedTheme(formData.theme)) {
+        selectedTheme = formData.theme
+      } else {
         showCustomTheme = true
         selectedTheme = 'Custom'
-      } else {
-        selectedTheme = formData.theme as PredefinedTheme
       }
 
-      if (!predefinedTones.includes(formData.tone as PredefinedTone)) {
+      if (isPredefinedTone(formData.tone)) {
+        selectedTone = formData.tone
+      } else {
         showCustomTone = true
         selectedTone = 'Custom'
-      } else {
-        selectedTone = formData.tone as PredefinedTone
       }
     } else {
       // Load defaults if no draft found
@@ -258,10 +259,15 @@
    * Handle theme dropdown change
    */
   function handleThemeChange(event: Event) {
-    const target = event.target as HTMLSelectElement
-    const value = target.value as PredefinedTheme
+    if (!(event.target instanceof HTMLSelectElement)) return
+    const target = event.target
+    const value = target.value
 
-    selectedTheme = value
+    if (isPredefinedTheme(value)) {
+      selectedTheme = value
+    } else {
+      selectedTheme = 'Custom'
+    }
 
     if (value === 'Custom') {
       showCustomTheme = true
@@ -279,7 +285,8 @@
    * Handle custom theme input change
    */
   function handleCustomThemeChange(event: Event) {
-    const target = event.target as HTMLInputElement
+    if (!(event.target instanceof HTMLInputElement)) return
+    const target = event.target
     formData.theme = target.value
     validateForm()
     scheduleAutoSave()
@@ -289,10 +296,15 @@
    * Handle tone dropdown change
    */
   function handleToneChange(event: Event) {
-    const target = event.target as HTMLSelectElement
-    const value = target.value as PredefinedTone
+    if (!(event.target instanceof HTMLSelectElement)) return
+    const target = event.target
+    const value = target.value
 
-    selectedTone = value
+    if (isPredefinedTone(value)) {
+      selectedTone = value
+    } else {
+      selectedTone = 'Custom'
+    }
 
     if (value === 'Custom') {
       showCustomTone = true
@@ -310,7 +322,8 @@
    * Handle custom tone input change
    */
   function handleCustomToneChange(event: Event) {
-    const target = event.target as HTMLInputElement
+    if (!(event.target instanceof HTMLInputElement)) return
+    const target = event.target
     formData.tone = target.value
     validateForm()
     scheduleAutoSave()
@@ -320,7 +333,8 @@
    * Handle description textarea change
    */
   function handleDescriptionChange(event: Event) {
-    const target = event.target as HTMLTextAreaElement
+    if (!(event.target instanceof HTMLTextAreaElement)) return
+    const target = event.target
     formData.description = target.value
     validateForm()
     scheduleAutoSave()
@@ -330,7 +344,8 @@
    * Handle concept textarea change
    */
   function handleConceptChange(event: Event) {
-    const target = event.target as HTMLTextAreaElement
+    if (!(event.target instanceof HTMLTextAreaElement)) return
+    const target = event.target
     formData.concept = target.value
     validateForm()
     scheduleAutoSave()
@@ -340,7 +355,8 @@
    * Handle characters textarea change
    */
   function handleCharactersChange(event: Event) {
-    const target = event.target as HTMLTextAreaElement
+    if (!(event.target instanceof HTMLTextAreaElement)) return
+    const target = event.target
     formData.characters = target.value
     validateForm()
     scheduleAutoSave()
@@ -429,6 +445,103 @@
     successMessage = null
     errorMessage = null
   }
+
+  // ============================================================================
+  // ECLECTIC AESTHETIC PRESETS
+  // ============================================================================
+
+  interface StylePreset {
+    id: string
+    label: string
+    theme: string
+    tone: string
+    concept: string
+    description: string
+  }
+
+  const PRESETS: readonly StylePreset[] = [
+    {
+      id: 'cyberpunk-neon',
+      label: '🌌 Cyberpunk Neon',
+      theme: 'Cyberpunk',
+      tone: 'Mystical',
+      concept:
+        'High-tech neo-tokyo tarot with chrome foil, holographic neon lines, and dark obsidian alleyways.',
+      description:
+        'Electric cyan, violet luminescence, metallic gold circuits, hyper-detailed cyberpunk tarot art.',
+    },
+    {
+      id: 'botanical-gothic',
+      label: '🌿 Botanical Gothic',
+      theme: 'Art Nouveau',
+      tone: 'Dark',
+      concept:
+        'Enchanted Victorian greenhouse with poisonous herbs, gold-trimmed vines, and gothic moth iconography.',
+      description:
+        'Deep forest emerald, rose gold filigree, dried herbs, velvet shadows, dark botanical realism.',
+    },
+    {
+      id: 'alchemical-gold',
+      label: '📜 Alchemical Gold',
+      theme: 'Classic Rider-Waite',
+      tone: 'Light',
+      concept:
+        '16th century Renaissance alchemy manuscript with celestial orbits, solar gold leaf, and parchment texture.',
+      description:
+        'Aged parchment, 24k gold leaf gilding, lapis lazuli blue, sacred geometry, woodcut linework.',
+    },
+    {
+      id: 'cosmic-void',
+      label: '🪐 Cosmic Void',
+      theme: 'Minimalist',
+      tone: 'Surreal',
+      concept:
+        'Esoteric deep space cosmic journey with nebulae, glowing stardust, and celestial geometry.',
+      description:
+        'Deep space obsidian black, stardust gold particles, translucent opal glass, ethereal cosmic glow.',
+    },
+  ]
+
+  /**
+   * Check if a preset is currently active
+   */
+  function isPresetActive(preset: StylePreset): boolean {
+    return (
+      formData.theme === preset.theme &&
+      formData.tone === preset.tone &&
+      formData.concept === preset.concept &&
+      formData.description === preset.description
+    )
+  }
+
+  /**
+   * Handle 1-click preset application
+   */
+  function handleApplyPreset(preset: StylePreset) {
+    formData.theme = preset.theme
+    formData.tone = preset.tone
+    formData.concept = preset.concept
+    formData.description = preset.description
+
+    if (isPredefinedTheme(preset.theme)) {
+      selectedTheme = preset.theme
+      showCustomTheme = false
+    } else {
+      selectedTheme = 'Custom'
+      showCustomTheme = true
+    }
+
+    if (isPredefinedTone(preset.tone)) {
+      selectedTone = preset.tone
+      showCustomTone = false
+    } else {
+      selectedTone = 'Custom'
+      showCustomTone = true
+    }
+
+    validateForm()
+    scheduleAutoSave()
+  }
 </script>
 
 <div class="style-input-container">
@@ -441,8 +554,29 @@
   </header>
 
   <form class="style-form" onsubmit={handleSubmit} novalidate>
+    <!-- Eclectic Aesthetic Presets -->
+    <div class="preset-section glass-panel">
+      <div class="preset-header">
+        <span class="preset-title">✨ Eclectic Aesthetic Presets</span>
+        <span class="preset-subtitle">Select a preset chip to auto-populate style parameters</span>
+      </div>
+      <div class="preset-chips" role="group" aria-label="Eclectic Aesthetic Presets">
+        {#each PRESETS as preset}
+          <button
+            type="button"
+            class="preset-chip"
+            class:active={isPresetActive(preset)}
+            onclick={() => handleApplyPreset(preset)}
+            aria-label={`Apply ${preset.label} preset`}
+          >
+            {preset.label}
+          </button>
+        {/each}
+      </div>
+    </div>
+
     <!-- Theme Field -->
-    <div class="form-section">
+    <div class="form-section glass-panel">
       <div class="field-group">
         <label for="theme-select" class="field-label">
           Theme <span class="required">*</span>
@@ -490,7 +624,7 @@
     </div>
 
     <!-- Tone Field -->
-    <div class="form-section">
+    <div class="form-section glass-panel">
       <div class="field-group">
         <label for="tone-select" class="field-label">
           Tone <span class="required">*</span>
@@ -538,7 +672,7 @@
     </div>
 
     <!-- Description Field -->
-    <div class="form-section">
+    <div class="form-section glass-panel">
       <div class="field-group">
         <label for="description" class="field-label">
           Description <span class="required">*</span>
@@ -586,7 +720,7 @@
     </div>
 
     <!-- Concept Field (Optional) -->
-    <div class="form-section">
+    <div class="form-section glass-panel">
       <div class="field-group">
         <label for="concept" class="field-label">
           Concept <span class="optional">(optional)</span>
@@ -621,7 +755,7 @@
     </div>
 
     <!-- Characters Field (Optional) -->
-    <div class="form-section">
+    <div class="form-section glass-panel">
       <div class="field-group">
         <label for="characters" class="field-label">
           Characters <span class="optional">(optional)</span>
@@ -826,12 +960,74 @@
       box-shadow var(--transition-fast);
   }
 
+  /* ===============================================
+	   PRESET CHIPS
+	   =============================================== */
+  .preset-section {
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .preset-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .preset-title {
+    font-family: var(--font-heading, inherit);
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--color-gold-leaf, #dfa845);
+  }
+
+  .preset-subtitle {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .preset-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+  }
+
+  .preset-chip {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-text);
+    background: rgba(20, 22, 29, 0.6);
+    border: 1px solid rgba(223, 168, 69, 0.3);
+    border-radius: var(--radius-full, 9999px);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    backdrop-filter: blur(8px);
+  }
+
+  .preset-chip:hover {
+    background: rgba(223, 168, 69, 0.15);
+    border-color: #dfa845;
+    box-shadow: 0 0 10px rgba(223, 168, 69, 0.3);
+    transform: translateY(-1px);
+  }
+
+  .preset-chip.active {
+    background: rgba(223, 168, 69, 0.25);
+    border-color: #dfa845;
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 0 12px rgba(223, 168, 69, 0.4);
+  }
+
   .select-input:focus,
   .text-input:focus,
   .textarea-input:focus {
     outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(107, 70, 193, 0.2);
+    border-color: var(--color-gold-leaf, #dfa845);
+    box-shadow: 0 0 12px rgba(223, 168, 69, 0.4), 0 0 0 2px rgba(223, 168, 69, 0.2);
   }
 
   .select-input.error,

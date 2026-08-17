@@ -6,6 +6,7 @@
  */
 
 import type { ServiceResponse } from '$contracts/types/common'
+import { isStyleInputs, isKeyOfStyleInputs } from '$lib/utils/types'
 import type {
   IStyleInputService,
   ValidateStyleInputsInput,
@@ -31,6 +32,8 @@ import {
 
 const STORAGE_KEY = 'tarot-style-draft'
 
+type FieldError = { code: StyleInputErrorCode; message: string }
+
 /**
  * Mock implementation of IStyleInputService
  * Validates inputs and persists drafts to localStorage
@@ -46,53 +49,84 @@ export class StyleInputMockService implements IStyleInputService {
   /**
    * Validate a single field
    */
-  private validateField(fieldName: keyof StyleInputs, value: string | undefined): FieldValidation {
-    const errors: string[] = []
+  private validateField(
+    fieldName: keyof StyleInputs,
+    value: string | undefined
+  ): FieldValidation & { specificErrors: FieldError[] } {
+    const specificErrors: FieldError[] = []
 
     switch (fieldName) {
       case 'theme':
         if (!value || value.trim().length === 0) {
-          errors.push('Theme is required')
+          specificErrors.push({
+            code: StyleInputErrorCode.THEME_REQUIRED,
+            message: 'Theme is required',
+          })
         } else if (value.length > CHAR_LIMITS.theme) {
-          errors.push(`Theme must be ${CHAR_LIMITS.theme} characters or less`)
+          specificErrors.push({
+            code: StyleInputErrorCode.THEME_TOO_LONG,
+            message: `Theme must be ${CHAR_LIMITS.theme} characters or less`,
+          })
         }
         break
 
       case 'tone':
         if (!value || value.trim().length === 0) {
-          errors.push('Tone is required')
+          specificErrors.push({
+            code: StyleInputErrorCode.TONE_REQUIRED,
+            message: 'Tone is required',
+          })
         } else if (value.length > CHAR_LIMITS.tone) {
-          errors.push(`Tone must be ${CHAR_LIMITS.tone} characters or less`)
+          specificErrors.push({
+            code: StyleInputErrorCode.TONE_TOO_LONG,
+            message: `Tone must be ${CHAR_LIMITS.tone} characters or less`,
+          })
         }
         break
 
       case 'description':
         if (!value || value.trim().length === 0) {
-          errors.push('Description is required')
+          specificErrors.push({
+            code: StyleInputErrorCode.DESCRIPTION_REQUIRED,
+            message: 'Description is required',
+          })
         } else if (value.length < CHAR_LIMITS.description.min) {
-          errors.push(`Description must be at least ${CHAR_LIMITS.description.min} characters`)
+          specificErrors.push({
+            code: StyleInputErrorCode.DESCRIPTION_TOO_SHORT,
+            message: `Description must be at least ${CHAR_LIMITS.description.min} characters`,
+          })
         } else if (value.length > CHAR_LIMITS.description.max) {
-          errors.push(`Description must be ${CHAR_LIMITS.description.max} characters or less`)
+          specificErrors.push({
+            code: StyleInputErrorCode.DESCRIPTION_TOO_LONG,
+            message: `Description must be ${CHAR_LIMITS.description.max} characters or less`,
+          })
         }
         break
 
       case 'concept':
         if (value && value.length > CHAR_LIMITS.concept) {
-          errors.push(`Concept must be ${CHAR_LIMITS.concept} characters or less`)
+          specificErrors.push({
+            code: StyleInputErrorCode.CONCEPT_TOO_LONG,
+            message: `Concept must be ${CHAR_LIMITS.concept} characters or less`,
+          })
         }
         break
 
       case 'characters':
         if (value && value.length > CHAR_LIMITS.characters) {
-          errors.push(`Characters must be ${CHAR_LIMITS.characters} characters or less`)
+          specificErrors.push({
+            code: StyleInputErrorCode.CHARACTERS_TOO_LONG,
+            message: `Characters must be ${CHAR_LIMITS.characters} characters or less`,
+          })
         }
         break
     }
 
     return {
       fieldName,
-      isValid: errors.length === 0,
-      errors,
+      isValid: specificErrors.length === 0,
+      errors: specificErrors.map(e => e.message),
+      specificErrors,
     }
   }
 
@@ -101,7 +135,7 @@ export class StyleInputMockService implements IStyleInputService {
   ): Promise<ServiceResponse<ValidateStyleInputsOutput>> {
     await this.delay(50)
 
-    const fields: Record<keyof StyleInputs, FieldValidation> = {
+    const fields = {
       theme: this.validateField('theme', input.theme),
       tone: this.validateField('tone', input.tone),
       description: this.validateField('description', input.description),
@@ -109,57 +143,36 @@ export class StyleInputMockService implements IStyleInputService {
       characters: this.validateField('characters', input.characters),
     }
 
-    const allErrors: StyleInputValidationError[] = []
-    let isValid = true
+    const errors: StyleInputValidationError[] = []
 
-    for (const [fieldName, validation] of Object.entries(fields)) {
-      if (!validation.isValid) {
-        isValid = false
-        for (const errorMsg of validation.errors) {
-          allErrors.push({
-            code: this.getErrorCodeForField(fieldName as keyof StyleInputs),
-            field: fieldName as keyof StyleInputs,
-            message: errorMsg,
-            currentValue: input[fieldName as keyof StyleInputs],
+    for (const [field, validation] of Object.entries(fields)) {
+      if (!validation.isValid && isKeyOfStyleInputs(field)) {
+        for (const err of validation.specificErrors) {
+          errors.push({
+            code: err.code,
+            field,
+            message: err.message,
           })
         }
       }
     }
 
-    // Required fields check for canProceed
-    const hasRequiredFields =
-      fields.theme.isValid && fields.tone.isValid && fields.description.isValid
+    const isValid = errors.length === 0
+    const canProceed = fields.theme.isValid && fields.tone.isValid && fields.description.isValid
 
-    const validation: StyleInputsValidation = {
+    const validationState: StyleInputsValidation = {
       isValid,
       fields,
-      canProceed: hasRequiredFields,
+      canProceed,
     }
 
     return {
       success: true,
       data: {
-        validation,
-        errors: allErrors,
+        validation: validationState,
+        errors,
         warnings: [],
       },
-    }
-  }
-
-  private getErrorCodeForField(field: keyof StyleInputs): StyleInputErrorCode {
-    switch (field) {
-      case 'theme':
-        return StyleInputErrorCode.THEME_REQUIRED
-      case 'tone':
-        return StyleInputErrorCode.TONE_REQUIRED
-      case 'description':
-        return StyleInputErrorCode.DESCRIPTION_REQUIRED
-      case 'concept':
-        return StyleInputErrorCode.CONCEPT_TOO_LONG
-      case 'characters':
-        return StyleInputErrorCode.CHARACTERS_TOO_LONG
-      default:
-        return StyleInputErrorCode.SAVE_FAILED
     }
   }
 
@@ -216,14 +229,16 @@ export class StyleInputMockService implements IStyleInputService {
       try {
         const stored = localStorage.getItem(STORAGE_KEY)
         if (stored) {
-          const styleInputs = JSON.parse(stored) as StyleInputs
-          return {
-            success: true,
-            data: {
-              found: true,
-              styleInputs,
-              loadedFrom: 'draft',
-            },
+          const parsed: unknown = JSON.parse(stored)
+          if (isStyleInputs(parsed)) {
+            return {
+              success: true,
+              data: {
+                found: true,
+                styleInputs: parsed,
+                loadedFrom: 'draft',
+              },
+            }
           }
         }
       } catch {
@@ -236,8 +251,8 @@ export class StyleInputMockService implements IStyleInputService {
       success: true,
       data: {
         found: false,
-        styleInputs: null,
-        loadedFrom: 'none',
+        styleInputs: DEFAULT_STYLE_INPUTS,
+        loadedFrom: 'default',
       },
     }
   }

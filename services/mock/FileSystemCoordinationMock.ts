@@ -189,10 +189,12 @@ export class FileSystemCoordinationMock implements IFileSystemCoordination {
 
     const fileChanges = new Map<string, FileChange[]>()
     for (const change of recentChanges) {
-      if (!fileChanges.has(change.filePath)) {
-        fileChanges.set(change.filePath, [])
+      let list = fileChanges.get(change.filePath)
+      if (!list) {
+        list = []
+        fileChanges.set(change.filePath, list)
       }
-      fileChanges.get(change.filePath)!.push(change)
+      list.push(change)
     }
 
     // Check for conflicts

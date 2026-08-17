@@ -15,11 +15,7 @@ import type {
   PrepareDownloadInput,
   PrepareDownloadOutput,
 } from '$contracts/Download'
-import {
-  DownloadErrorCode,
-  generateCardFilename,
-  generateDeckFilename,
-} from '$contracts/Download'
+import { DownloadErrorCode, generateCardFilename, generateDeckFilename } from '$contracts/Download'
 
 /**
  * Mock implementation of IDownloadService
@@ -57,6 +53,17 @@ export class DownloadMockService implements IDownloadService {
     } = input
 
     // Validate input
+    if (input.format && !['zip', 'json', 'pdf'].includes(input.format)) {
+      return {
+        success: false,
+        error: {
+          code: DownloadErrorCode.INVALID_FORMAT,
+          message: 'Invalid download format',
+          retryable: false,
+        },
+      }
+    }
+
     if (!generatedCards || generatedCards.length === 0) {
       return {
         success: false,
@@ -70,12 +77,12 @@ export class DownloadMockService implements IDownloadService {
 
     // Check for completed cards
     const completedCards = generatedCards.filter(c => c.generationStatus === 'completed')
-    if (completedCards.length === 0) {
+    if (completedCards.length < 22) {
       return {
         success: false,
         error: {
           code: DownloadErrorCode.INCOMPLETE_CARDS,
-          message: 'No completed cards to download',
+          message: 'Not all cards are completed',
           retryable: false,
         },
       }
@@ -83,12 +90,12 @@ export class DownloadMockService implements IDownloadService {
 
     // Check for missing images
     const cardsWithImages = completedCards.filter(c => c.imageUrl || c.imageDataUrl)
-    if (cardsWithImages.length === 0) {
+    if (cardsWithImages.length < completedCards.length) {
       return {
         success: false,
         error: {
           code: DownloadErrorCode.MISSING_IMAGES,
-          message: 'No cards have images to download',
+          message: 'Some cards have missing images',
           retryable: false,
         },
       }
@@ -134,13 +141,15 @@ export class DownloadMockService implements IDownloadService {
         name: c.cardName,
         filename: generateCardFilename(c.cardNumber, c.cardName),
       })),
-      metadata: includeMetadata ? {
-        generatedAt: new Date().toISOString(),
-        deckName,
-        styleInputs,
-        cardCount: cardsWithImages.length,
-        version: '1.0.0',
-      } : null,
+      metadata: includeMetadata
+        ? {
+            generatedAt: new Date().toISOString(),
+            deckName,
+            styleInputs,
+            cardCount: cardsWithImages.length,
+            version: '1.0.0',
+          }
+        : null,
     })
 
     const mockBlob = new Blob([mockZipContent], { type: 'application/zip' })
@@ -235,12 +244,24 @@ export class DownloadMockService implements IDownloadService {
 
     const completedCards = generatedCards.filter(c => c.generationStatus === 'completed')
 
-    if (completedCards.length === 0) {
+    if (completedCards.length < 22) {
       return {
         success: false,
         error: {
           code: DownloadErrorCode.INCOMPLETE_CARDS,
           message: 'No completed cards',
+          retryable: false,
+        },
+      }
+    }
+
+    const cardsWithImages = completedCards.filter(c => c.imageUrl || c.imageDataUrl)
+    if (cardsWithImages.length < completedCards.length) {
+      return {
+        success: false,
+        error: {
+          code: DownloadErrorCode.MISSING_IMAGES,
+          message: 'Some cards have missing images',
           retryable: false,
         },
       }

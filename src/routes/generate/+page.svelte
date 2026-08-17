@@ -42,7 +42,7 @@
   import { appStore } from '$lib/stores/appStore.svelte'
   import { goto } from '$app/navigation'
   import { imageGenerationService } from '$services/factory'
-  import type { CardNumber } from '$contracts/index'
+  import { isCardNumber } from '$lib/utils/types'
 
   // ============================================================================
   // SERVICE INITIALIZATION
@@ -149,6 +149,11 @@
    * @param cardNumber - Card number (0-21) to retry
    */
   async function handleRetryFailed(cardNumber: number): Promise<void> {
+    if (!isCardNumber(cardNumber)) {
+      appStore.setError(`Invalid card number: ${cardNumber}`)
+      return
+    }
+
     const prompt = appStore.generatedPrompts.find(p => p.cardNumber === cardNumber)
 
     if (!prompt) {
@@ -158,15 +163,16 @@
 
     try {
       const response = await generationService.regenerateImage({
-        cardNumber: cardNumber as CardNumber,
+        cardNumber,
         prompt: prompt.generatedPrompt,
         previousAttempts: 1,
       })
 
-      if (response.success && response.data) {
+      if (response.success && response.data?.generatedCard) {
+        const generatedCard = response.data.generatedCard
         // Update the specific card in the store
         const newCards = appStore.generatedCards.map(card =>
-          card.cardNumber === cardNumber ? response.data!.generatedCard : card
+          card.cardNumber === cardNumber ? generatedCard : card
         )
         appStore.setGeneratedCards(newCards)
       } else {
