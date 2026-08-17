@@ -10,6 +10,7 @@ import {
   MAJOR_ARCANA_MEANINGS,
   PromptGenerationErrorCode,
   GROK_MODELS,
+  type CardNumber,
 } from '$contracts/PromptGeneration'
 import { isRawPromptArray, createPromptId, isCardNumber } from '$lib/utils/types'
 import type { RequestHandler } from './$types'
@@ -32,8 +33,12 @@ export const POST: RequestHandler = async ({ request }) => {
   }
 
   let body: {
-    referenceImageUrls: string[]
+    referenceImageUrls?: string[]
     styleInputs: { theme: string; tone: string; description: string }
+    cardNumber?: number
+    previousPrompt?: string
+    feedback?: string
+    model?: string
   }
   try {
     body = await request.json()
@@ -50,7 +55,7 @@ export const POST: RequestHandler = async ({ request }) => {
     )
   }
 
-  const { referenceImageUrls, styleInputs } = body
+  const { referenceImageUrls = [], styleInputs, cardNumber, previousPrompt, feedback } = body
   const rawModel =
     typeof body === 'object' && body !== null && 'model' in body ? body.model : undefined
   const modelToUse =
@@ -58,33 +63,177 @@ export const POST: RequestHandler = async ({ request }) => {
       ? rawModel
       : process.env['GROK_TEXT_MODEL'] || GROK_MODELS.vision
 
-  if (!referenceImageUrls?.length || !styleInputs?.theme) {
-    return json(
-      {
-        success: false,
-        error: {
-          code: PromptGenerationErrorCode.INVALID_STYLE_INPUTS,
-          message: 'referenceImageUrls and styleInputs.theme are required.',
+  const isSingleCard = typeof cardNumber === 'number' && isCardNumber(cardNumber)
+
+  if (isSingleCard) {
+    if (!styleInputs?.theme) {
+      return json(
+        {
+          success: false,
+          error: {
+            code: PromptGenerationErrorCode.INVALID_STYLE_INPUTS,
+            message: 'styleInputs.theme is required.',
+          },
         },
-      },
-      { status: 422 }
-    )
+        { status: 422 }
+      )
+    }
+  } else {
+    if (!referenceImageUrls?.length || !styleInputs?.theme) {
+      return json(
+        {
+          success: false,
+          error: {
+            code: PromptGenerationErrorCode.INVALID_STYLE_INPUTS,
+            message: 'referenceImageUrls and styleInputs.theme are required.',
+          },
+        },
+        { status: 422 }
+      )
+    }
   }
 
   const client = new OpenAI({ baseURL: 'https://api.x.ai/v1', apiKey })
 
   const styleDescription = [
     `Theme: ${styleInputs.theme}`,
-    `Tone: ${styleInputs.tone}`,
+    `Tone: ${styleInputs.tone || 'Neutral'}`,
     styleInputs.description ? `Style notes: ${styleInputs.description}` : '',
   ]
     .filter(Boolean)
     .join('\n')
 
   const systemPrompt = `You are an expert tarot deck artist and prompt engineer.
-Generate image generation prompts for a custom tarot deck based on reference images provided.
+Generate image generation prompts for a custom tarot deck based on reference images and style provided.
 The style should be: ${styleDescription}
-For each card, output a detailed image generation prompt in JSON format.`
+Output a detailed image generation prompt in JSON format.`
+
+  if (isSingleCard) {
+    const targetCardNumber = cardNumber as CardNumber
+    const cardName = MAJOR_ARCANA_NAMES[targetCardNumber]
+    const meaning = MAJOR_ARCANA_MEANINGS[targetCardNumber]
+
+    const userContent: OpenAI.Chat.ChatCompletionContentPart[] = [
+      { type: 'text', text: systemPrompt },
+      ...referenceImageUrls.map(url => ({
+        type: 'image_url' as const,
+        image_url: { url },
+      })),
+      {
+        type: 'text',
+        text: `Generate one improved image prompt for Tarot Card ${targetCardNumber}: "${cardName}" (${meaning}).
+${previousPrompt ? `Previous prompt: ${previousPrompt}\n` : ''}${feedback ? `User feedback / adjustments requested: ${feedback}\n` : ''}
+Return ONLY a JSON object with this exact structure (no markdown, no explanation):
+{
+  "cardNumber": ${targetCardNumber},
+  "cardName": "${cardName}",
+  "generatedPrompt": "detailed image prompt here"
+}`,
+      },
+    ]
+
+    try {
+      const response = await client.chat.completions.create({
+        model: modelToUse,
+        messages: [{ role: 'user', content: userContent }],
+        temperature: 0.7,
+      })
+
+      const rawContent = response.choices[0]?.message?.content ?? ''
+
+      const jsonMatch = rawContent.match(/\{[\s\S]*\}/) || rawContent.match(/\[[\s\S]*\]/)
+      if (!jsonMatch) {
+        return json(
+          {
+            success: false,
+            error: {
+              code: PromptGenerationErrorCode.INVALID_RESPONSE_FORMAT,
+              message: 'Could not extract JSON from model response.',
+            },
+          },
+          { status: 502 }
+        )
+      }
+
+      let parsed: unknown
+      try {
+        parsed = JSON.parse(jsonMatch[0])
+      } catch {
+        return json(
+          {
+            success: false,
+            error: {
+              code: PromptGenerationErrorCode.INVALID_RESPONSE_FORMAT,
+              message: 'Failed to parse JSON from model response.',
+            },
+          },
+          { status: 502 }
+        )
+      }
+
+      let promptText = ''
+      if (
+        typeof parsed === 'object' &&
+        parsed !== null &&
+        !Array.isArray(parsed) &&
+        'generatedPrompt' in parsed &&
+        typeof (parsed as Record<string, unknown>)['generatedPrompt'] === 'string'
+      ) {
+        promptText = (parsed as Record<string, unknown>)['generatedPrompt'] as string
+      } else if (
+        Array.isArray(parsed) &&
+        parsed[0] &&
+        typeof parsed[0] === 'object' &&
+        'generatedPrompt' in parsed[0] &&
+        typeof (parsed[0] as Record<string, unknown>)['generatedPrompt'] === 'string'
+      ) {
+        promptText = (parsed[0] as Record<string, unknown>)['generatedPrompt'] as string
+      } else {
+        return json(
+          {
+            success: false,
+            error: {
+              code: PromptGenerationErrorCode.INVALID_RESPONSE_FORMAT,
+              message: 'Model response JSON structure does not match expected prompt format.',
+            },
+          },
+          { status: 502 }
+        )
+      }
+
+      const singlePrompt = {
+        id: createPromptId(crypto.randomUUID()),
+        cardNumber: targetCardNumber,
+        cardName,
+        traditionalMeaning: meaning,
+        generatedPrompt: promptText,
+        confidence: 0.9,
+        generatedAt: new Date().toISOString(),
+      }
+
+      return json({
+        success: true,
+        data: {
+          prompt: singlePrompt,
+          prompts: [singlePrompt],
+          usage: {
+            promptTokens: response.usage?.prompt_tokens ?? 200,
+            completionTokens: response.usage?.completion_tokens ?? 150,
+            totalTokens: response.usage?.total_tokens ?? 350,
+            estimatedCost: 0.002,
+            model: modelToUse,
+          },
+          requestId: response.id || `req-regen-${Date.now()}`,
+        },
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'xAI API call failed.'
+      return json(
+        { success: false, error: { code: PromptGenerationErrorCode.API_ERROR, message } },
+        { status: 502 }
+      )
+    }
+  }
 
   const userContent: OpenAI.Chat.ChatCompletionContentPart[] = [
     { type: 'text', text: systemPrompt },
@@ -175,7 +324,20 @@ Cards to generate (0–21): ${MAJOR_ARCANA_NAMES.join(', ')}`,
       })
     }
 
-    return json({ success: true, data: { prompts } })
+    return json({
+      success: true,
+      data: {
+        prompts,
+        usage: {
+          promptTokens: response.usage?.prompt_tokens ?? 1500,
+          completionTokens: response.usage?.completion_tokens ?? 2500,
+          totalTokens: response.usage?.total_tokens ?? 4000,
+          estimatedCost: 0.04,
+          model: modelToUse,
+        },
+        requestId: response.id || `req-${Date.now()}`,
+      },
+    })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'xAI API call failed.'
     return json(

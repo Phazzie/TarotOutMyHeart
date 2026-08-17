@@ -15,7 +15,12 @@ import type {
   PrepareDownloadInput,
   PrepareDownloadOutput,
 } from '$contracts/Download'
-import { DownloadErrorCode, generateCardFilename, generateDeckFilename } from '$contracts/Download'
+import {
+  DownloadErrorCode,
+  generateCardFilename,
+  generateDeckFilename,
+  DOWNLOAD_FORMATS,
+} from '$contracts/Download'
 
 /**
  * Mock implementation of IDownloadService
@@ -48,12 +53,13 @@ export class DownloadMockService implements IDownloadService {
       generatedCards,
       styleInputs,
       deckName = 'tarot-deck',
+      format = 'zip',
       includeMetadata = true,
       onProgress,
     } = input
 
-    // Validate input
-    if (input.format && !['zip', 'json', 'pdf'].includes(input.format)) {
+    // Validate input format
+    if (input.format && !DOWNLOAD_FORMATS.includes(input.format)) {
       return {
         success: false,
         error: {
@@ -133,6 +139,52 @@ export class DownloadMockService implements IDownloadService {
     }
 
     await this.delay(300)
+
+    if (format === 'individual') {
+      for (const card of cardsWithImages) {
+        const cardFilename = generateCardFilename(card.cardNumber, card.cardName)
+        const mockSingleBlob = new Blob(['mock single card image'], { type: 'image/png' })
+        this.triggerDownload(mockSingleBlob, cardFilename)
+      }
+      if (includeMetadata) {
+        const metaBlob = new Blob(
+          [
+            JSON.stringify(
+              {
+                generatedAt: new Date().toISOString(),
+                deckName,
+                styleInputs,
+                cardCount: cardsWithImages.length,
+                version: '1.0.0',
+              },
+              null,
+              2
+            ),
+          ],
+          { type: 'application/json' }
+        )
+        this.triggerDownload(metaBlob, 'deck-metadata.json')
+      }
+
+      if (onProgress) {
+        onProgress({
+          status: 'Download complete!',
+          progress: 100,
+          currentStep: 'complete',
+        })
+      }
+
+      return {
+        success: true,
+        data: {
+          downloaded: true,
+          filename: `${deckName.toLowerCase().replace(/\s+/g, '-')}-individual`,
+          fileSize: cardsWithImages.length * 1000,
+          cardCount: cardsWithImages.length,
+          includedMetadata: includeMetadata,
+        },
+      }
+    }
 
     // Create mock ZIP content
     const mockZipContent = JSON.stringify({

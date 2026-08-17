@@ -1,7 +1,7 @@
 /**
  * @fileoverview Image Generation Contract - Grok image API integration for card images
  * @purpose Define the seam between prompt data and Grok image generation API
- * @dataFlow 22 Card Prompts → Grok grok-2-image-alpha API → 22 Generated Card Images
+ * @dataFlow 22 Card Prompts → Grok grok-imagine-image-2.0 API → 22 Generated Card Images
  * @boundary Seam #4: ImageGenerationSeam - Generate 22 tarot card images from prompts
  * @requirement PRD Section: "User Flow Step 5 - Generate Card Images"
  * @updated 2025-11-07
@@ -30,7 +30,7 @@ import type { CardPrompt, CardNumber } from './PromptGeneration'
 /**
  * Grok image generation model
  */
-export const GROK_IMAGE_MODEL = 'grok-2-image-alpha' as const
+export const GROK_IMAGE_MODEL = 'grok-imagine-image-2.0' as const
 
 /**
  * Image generation settings
@@ -145,7 +145,7 @@ export interface TotalImageGenerationUsage {
  * Input for generating all 22 card images
  *
  * @property prompts - 22 card prompts to generate images from
- * @property model - Grok model to use (defaults to grok-2-image-alpha)
+ * @property model - Grok model to use (defaults to grok-imagine-image-2.0)
  * @property saveToStorage - Whether to upload to permanent storage (Vercel Blob)
  * @property onProgress - Callback for progress updates
  * @property allowPartialSuccess - Continue if some images fail (default true)
@@ -536,5 +536,5 @@ export const IMAGE_GENERATION_CONTRACT_METADATA = {
   requirement: 'PRD: User Flow Step 5',
   lastUpdated: '2025-11-07',
   dependencies: ['PromptGeneration'],
-  externalAPIs: ['Grok grok-2-image-alpha', 'Vercel Blob'],
+  externalAPIs: ['Grok grok-imagine-image-2.0', 'Vercel Blob'],
 } as const

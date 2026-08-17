@@ -34,8 +34,19 @@ export const STORAGE_KEY = 'tarot_style_inputs'
 type FieldError = { code: StyleInputErrorCode; message: string }
 
 export class StyleInputService implements IStyleInputService {
-  private isSSR(): boolean {
-    return typeof localStorage === 'undefined'
+  private getStorage(): Storage | null {
+    try {
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        return null
+      }
+      return window.localStorage ?? localStorage
+    } catch {
+      return null
+    }
+  }
+
+  isSSR(): boolean {
+    return this.getStorage() === null
   }
 
   private validateField(
@@ -180,11 +191,14 @@ export class StyleInputService implements IStyleInputService {
       }
     }
 
-    if (saveAsDraft && !this.isSSR()) {
+    if (saveAsDraft) {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(styleInputs))
+        const storage = this.getStorage()
+        if (storage) {
+          storage.setItem(STORAGE_KEY, JSON.stringify(styleInputs))
+        }
       } catch {
-        // Ignored non-fatal
+        // Ignored non-fatal: SecurityError, DOMException, or QuotaExceededError
       }
     }
 
@@ -202,7 +216,7 @@ export class StyleInputService implements IStyleInputService {
   async loadStyleInputs(
     input: LoadStyleInputsInput
   ): Promise<ServiceResponse<LoadStyleInputsOutput>> {
-    if (!input.loadFromDraft || this.isSSR()) {
+    if (!input.loadFromDraft) {
       return {
         success: true,
         data: {
@@ -214,7 +228,19 @@ export class StyleInputService implements IStyleInputService {
     }
 
     try {
-      const raw = localStorage.getItem(STORAGE_KEY)
+      const storage = this.getStorage()
+      if (!storage) {
+        return {
+          success: true,
+          data: {
+            found: false,
+            styleInputs: DEFAULT_STYLE_INPUTS,
+            loadedFrom: 'default',
+          },
+        }
+      }
+
+      const raw = storage.getItem(STORAGE_KEY)
       if (!raw) {
         return {
           success: true,
@@ -238,7 +264,7 @@ export class StyleInputService implements IStyleInputService {
         }
       }
     } catch {
-      // Ignore parse errors and return fallback below
+      // Ignore parse/storage errors and return fallback below
     }
 
     return {
@@ -271,12 +297,13 @@ export class StyleInputService implements IStyleInputService {
   }
 
   async clearDraft(): Promise<ServiceResponse<void>> {
-    if (!this.isSSR()) {
-      try {
-        localStorage.removeItem(STORAGE_KEY)
-      } catch {
-        // Ignored
+    try {
+      const storage = this.getStorage()
+      if (storage) {
+        storage.removeItem(STORAGE_KEY)
       }
+    } catch {
+      // Ignored non-fatal
     }
     return { success: true }
   }

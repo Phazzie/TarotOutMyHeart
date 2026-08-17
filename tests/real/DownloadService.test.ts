@@ -80,10 +80,40 @@ describe('DownloadService', () => {
 
     it('returns success with correct counts for completed cards', async () => {
       const cards = [makeCompletedCard(0), makeCompletedCard(1)]
-      const result = await svc.downloadDeck({ generatedCards: cards, styleInputs })
+      const result = await svc.downloadDeck({ generatedCards: cards, styleInputs, includeMetadata: true })
       expect(result.success).toBe(true)
       if (result.success && result.data) {
         expect(result.data.cardCount).toBe(2)
+        expect(result.data.includedMetadata).toBe(true)
+      }
+    })
+
+    it('rejects invalid format with INVALID_FORMAT error code', async () => {
+      const cards = [makeCompletedCard(0)]
+      const result = await svc.downloadDeck({
+        generatedCards: cards,
+        styleInputs,
+        format: 'invalid_format' as any,
+      })
+      expect(result.success).toBe(false)
+      if (!result.success && result.error) {
+        expect(result.error.code).toBe('INVALID_FORMAT')
+      }
+    })
+
+    it('supports individual download format', async () => {
+      const cards = [makeCompletedCard(0), makeCompletedCard(1)]
+      const result = await svc.downloadDeck({
+        generatedCards: cards,
+        styleInputs,
+        format: 'individual',
+        includeMetadata: true,
+      })
+      expect(result.success).toBe(true)
+      if (result.success && result.data) {
+        expect(result.data.cardCount).toBe(2)
+        expect(result.data.filename).toContain('-individual')
+        expect(result.data.includedMetadata).toBe(true)
       }
     })
 

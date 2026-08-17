@@ -26,7 +26,13 @@ export const POST: RequestHandler = async ({ request }) => {
     )
   }
 
-  let body: { cardNumber: number; cardName: string; generatedPrompt: string }
+  let body: {
+    cardNumber: number
+    cardName: string
+    generatedPrompt: string
+    model?: string
+    saveToStorage?: boolean
+  }
   try {
     body = await request.json()
   } catch {
@@ -39,7 +45,7 @@ export const POST: RequestHandler = async ({ request }) => {
     )
   }
 
-  const { cardNumber, cardName, generatedPrompt } = body
+  const { cardNumber, cardName, generatedPrompt, saveToStorage } = body
 
   if (cardNumber === undefined || !cardName || !generatedPrompt) {
     return json(
@@ -54,8 +60,7 @@ export const POST: RequestHandler = async ({ request }) => {
     )
   }
 
-  const rawModel =
-    typeof body === 'object' && body !== null && 'model' in body ? body.model : undefined
+  const rawModel = body.model
   const modelToUse =
     typeof rawModel === 'string' && rawModel
       ? rawModel
@@ -91,7 +96,7 @@ export const POST: RequestHandler = async ({ request }) => {
     }
 
     const blobToken = process.env['BLOB_READ_WRITE_TOKEN']
-    if (imageData.b64_json && blobToken) {
+    if (saveToStorage !== false && blobToken && imageData.b64_json) {
       try {
         const imageBuffer = Buffer.from(imageData.b64_json, 'base64')
         const paddedNum = String(cardNumber).padStart(2, '0')
@@ -119,7 +124,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
     if (imageData.b64_json) {
       const dataUrl = `data:image/png;base64,${imageData.b64_json}`
-      return json({ success: true, data: { imageUrl: dataUrl } })
+      return json({ success: true, data: { imageUrl: dataUrl, imageDataUrl: dataUrl } })
     }
 
     return json(

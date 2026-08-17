@@ -217,9 +217,26 @@ export class ImageUploadService implements IImageUploadService {
     const failedList: ImageValidationError[] = []
 
     for (const file of files) {
-      const isDuplicate = Array.from(this.uploadedImages.values()).some(
-        img => img.fileName === file.name
-      )
+      const isDuplicate =
+        Array.from(this.uploadedImages.values()).some(img => {
+          const sameName = img.fileName === file.name
+          const sameSize = img.fileSize === file.size
+          const sameModified =
+            typeof img.file?.lastModified === 'number' && typeof file.lastModified === 'number'
+              ? img.file.lastModified === file.lastModified
+              : true
+          return sameName && sameSize && sameModified
+        }) ||
+        uploadedList.some(img => {
+          const sameName = img.fileName === file.name
+          const sameSize = img.fileSize === file.size
+          const sameModified =
+            typeof img.file?.lastModified === 'number' && typeof file.lastModified === 'number'
+              ? img.file.lastModified === file.lastModified
+              : true
+          return sameName && sameSize && sameModified
+        })
+
       if (isDuplicate) {
         failedList.push({
           code: ImageUploadErrorCode.DUPLICATE_IMAGE,

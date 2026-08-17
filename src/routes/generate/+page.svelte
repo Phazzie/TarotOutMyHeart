@@ -37,6 +37,7 @@
 -->
 
 <script lang="ts">
+  import { onDestroy } from 'svelte'
   import PromptListComponent from '$lib/components/PromptListComponent.svelte'
   import GenerationProgressComponent from '$lib/components/GenerationProgressComponent.svelte'
   import { appStore } from '$lib/stores/appStore.svelte'
@@ -49,6 +50,18 @@
   // ============================================================================
 
   const generationService = imageGenerationService
+  let navigationTimeout: ReturnType<typeof setTimeout> | null = null
+
+  onDestroy(() => {
+    if (navigationTimeout) {
+      clearTimeout(navigationTimeout)
+      navigationTimeout = null
+    }
+    if (appStore.isGenerating) {
+      generationService.cancelGeneration({ sessionId: 'active' })
+      appStore.setLoading('generatingImages', false)
+    }
+  })
 
   // ============================================================================
   // DERIVED STATE
@@ -111,7 +124,7 @@
 
         if (failedCount === 0) {
           // All succeeded - show success message briefly then go to gallery
-          setTimeout(() => {
+          navigationTimeout = setTimeout(() => {
             goto('/gallery')
           }, 2000)
         }
@@ -136,9 +149,8 @@
    * Stops the current generation session.
    * Cards completed before cancellation are preserved.
    */
-  function handleCancel(): void {
-    // In a real implementation, we'd call generationService.cancelGeneration()
-    // For now, just stop the loading state
+  async function handleCancel(): Promise<void> {
+    await generationService.cancelGeneration({ sessionId: 'active' })
     appStore.setLoading('generatingImages', false)
     appStore.setError('Generation canceled by user')
   }

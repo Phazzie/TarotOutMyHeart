@@ -53,4 +53,30 @@ describe('CostCalculationService', () => {
       }
     })
   })
+
+  describe('formatCost', () => {
+    it('formats cost with summary format by default', async () => {
+      const result = await svc.formatCost({ cost: 2.34 })
+      expect(result.success).toBe(true)
+      if (result.success && result.data) {
+        expect(result.data.formatted).toBe('$2.34')
+      }
+    })
+
+    it('formats cost with detailed format', async () => {
+      const result = await svc.formatCost({ cost: 2.34, format: 'detailed' })
+      expect(result.success).toBe(true)
+      if (result.success && result.data) {
+        expect(result.data.formatted).toBe('Total: $2.34')
+      }
+    })
+
+    it('formats cost with minimal format', async () => {
+      const result = await svc.formatCost({ cost: 2.34, format: 'minimal' })
+      expect(result.success).toBe(true)
+      if (result.success && result.data) {
+        expect(result.data.formatted).toBe('~$2')
+      }
+    })
+  })
 })

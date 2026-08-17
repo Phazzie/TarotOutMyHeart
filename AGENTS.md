@@ -33,6 +33,7 @@ Before starting any task, read the rule file that applies to your domain:
 - **If building Contracts or Mocks:** Read `.gemini/rules/sdd-enforcement.md`
 - **If building Svelte UI:** Read `.gemini/rules/svelte-conventions.md`
 - **If writing logic/parsing data:** Read `.gemini/rules/strict-types.md`
+- **If planning or delegating implementation:** Read `.agents/rules/subagent-ticketing.md` (MUST format as Work Tickets)
 
 ### Definition of Done
 You are forbidden from running your own validation tests to declare a task complete. 

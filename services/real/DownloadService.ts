@@ -15,7 +15,7 @@ import type {
   PrepareDownloadOutput,
   DeckMetadata,
 } from '$contracts/Download'
-import { DownloadErrorCode } from '$contracts/Download'
+import { DownloadErrorCode, DOWNLOAD_FORMATS } from '$contracts/Download'
 import JSZip from 'jszip'
 
 export class DownloadService implements IDownloadService {
@@ -29,7 +29,7 @@ export class DownloadService implements IDownloadService {
         success: false,
         error: {
           code: DownloadErrorCode.DOWNLOAD_BLOCKED,
-          message: 'ZIP download is only available in the browser.',
+          message: 'Download is only available in the browser.',
           retryable: false,
         },
       }
@@ -39,9 +39,21 @@ export class DownloadService implements IDownloadService {
       generatedCards,
       styleInputs,
       deckName = 'tarot-deck',
+      format = 'zip',
       includeMetadata = true,
       onProgress,
     } = input
+
+    if (input.format && !DOWNLOAD_FORMATS.includes(input.format)) {
+      return {
+        success: false,
+        error: {
+          code: DownloadErrorCode.INVALID_FORMAT,
+          message: 'Invalid download format specified',
+          retryable: false,
+        },
+      }
+    }
 
     if (!generatedCards || generatedCards.length === 0) {
       return {
@@ -54,13 +66,6 @@ export class DownloadService implements IDownloadService {
       }
     }
 
-    onProgress?.({
-      status: 'Loading ZIP packaging library...',
-      progress: 10,
-      currentStep: 'preparing',
-    })
-
-    const zip = new JSZip()
     const completedCards = generatedCards.filter(
       c => c.generationStatus === 'completed' && (c.imageUrl || c.imageDataUrl)
     )
@@ -75,6 +80,96 @@ export class DownloadService implements IDownloadService {
         },
       }
     }
+
+    if (format === 'individual') {
+      onProgress?.({
+        status: `Fetching and downloading ${completedCards.length} individual cards...`,
+        progress: 20,
+        currentStep: 'fetching',
+      })
+
+      let totalSize = 0
+
+      for (let i = 0; i < completedCards.length; i++) {
+        const card = completedCards[i]
+        if (!card) continue
+        const src = card.imageUrl || card.imageDataUrl
+        if (!src) continue
+
+        try {
+          const res = await fetch(src)
+          const blob = await res.blob()
+          totalSize += blob.size
+          const paddedNum = String(card.cardNumber).padStart(2, '0')
+          const safeName = card.cardName.toLowerCase().replace(/\s+/g, '-')
+          const cardFilename = `${paddedNum}-${safeName}.png`
+          const cardUrl = URL.createObjectURL(blob)
+
+          const anchor = document.createElement('a')
+          anchor.href = cardUrl
+          anchor.download = cardFilename
+          document.body.appendChild(anchor)
+          anchor.click()
+          anchor.remove()
+          setTimeout(() => URL.revokeObjectURL(cardUrl), 10_000)
+        } catch {
+          // Continue downloading other cards
+        }
+
+        onProgress?.({
+          status: `Downloaded card ${i + 1}/${completedCards.length}...`,
+          progress: 20 + Math.round(((i + 1) / completedCards.length) * 70),
+          currentStep: 'downloading',
+        })
+      }
+
+      if (includeMetadata && styleInputs) {
+        const metadata: DeckMetadata = {
+          generatedAt: new Date(),
+          deckName,
+          styleInputs,
+          cardCount: completedCards.length,
+          version: '1.0.0',
+        }
+        const metaBlob = new Blob([JSON.stringify(metadata, null, 2)], {
+          type: 'application/json',
+        })
+        totalSize += metaBlob.size
+        const metaUrl = URL.createObjectURL(metaBlob)
+        const anchor = document.createElement('a')
+        anchor.href = metaUrl
+        anchor.download = 'deck-metadata.json'
+        document.body.appendChild(anchor)
+        anchor.click()
+        anchor.remove()
+        setTimeout(() => URL.revokeObjectURL(metaUrl), 10_000)
+      }
+
+      onProgress?.({
+        status: 'Individual downloads complete!',
+        progress: 100,
+        currentStep: 'complete',
+      })
+
+      return {
+        success: true,
+        data: {
+          downloaded: true,
+          filename: `${deckName.toLowerCase().replace(/\s+/g, '-')}-individual`,
+          fileSize: totalSize,
+          cardCount: completedCards.length,
+          includedMetadata: !!includeMetadata,
+        },
+      }
+    }
+
+    onProgress?.({
+      status: 'Loading ZIP packaging library...',
+      progress: 10,
+      currentStep: 'preparing',
+    })
+
+    const zip = new JSZip()
 
     onProgress?.({
       status: `Fetching ${completedCards.length} card images...`,

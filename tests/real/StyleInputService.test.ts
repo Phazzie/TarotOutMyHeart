@@ -65,6 +65,64 @@ describe('StyleInputService', () => {
         expect(result.data.found).toBe(false)
       }
     })
+
+    it('loads saved draft successfully', async () => {
+      const inputs = {
+        theme: 'Cyberpunk',
+        tone: 'Dark',
+        description: 'Neon-lit city streets with rain reflections.',
+      }
+      await svc.saveStyleInputs({ styleInputs: inputs, saveAsDraft: true })
+
+      const result = await svc.loadStyleInputs({ loadFromDraft: true })
+      expect(result.success).toBe(true)
+      if (result.success && result.data && result.data.styleInputs) {
+        expect(result.data.found).toBe(true)
+        expect(result.data.styleInputs.theme).toBe('Cyberpunk')
+      }
+    })
+
+    it('handles localStorage throwing SecurityError/DOMException gracefully', async () => {
+      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new DOMException('The operation is insecure.', 'SecurityError')
+      })
+
+      const result = await svc.loadStyleInputs({ loadFromDraft: true })
+      expect(result.success).toBe(true)
+      if (result.success && result.data) {
+        expect(result.data.found).toBe(false)
+        expect(result.data.loadedFrom).toBe('default')
+      }
+    })
+  })
+
+  describe('clearDraft', () => {
+    it('clears saved draft and allows loading defaults', async () => {
+      const inputs = {
+        theme: 'Fantasy',
+        tone: 'Light',
+        description: 'Enchanted forest with glowing flora.',
+      }
+      await svc.saveStyleInputs({ styleInputs: inputs, saveAsDraft: true })
+
+      const clearResult = await svc.clearDraft()
+      expect(clearResult.success).toBe(true)
+
+      const loadResult = await svc.loadStyleInputs({ loadFromDraft: true })
+      expect(loadResult.success).toBe(true)
+      if (loadResult.success && loadResult.data) {
+        expect(loadResult.data.found).toBe(false)
+      }
+    })
+
+    it('does not throw when localStorage removeItem throws', async () => {
+      vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+        throw new DOMException('QuotaExceeded', 'QuotaExceededError')
+      })
+
+      const clearResult = await svc.clearDraft()
+      expect(clearResult.success).toBe(true)
+    })
   })
 
   describe('getDefaults & getPredefinedOptions', () => {

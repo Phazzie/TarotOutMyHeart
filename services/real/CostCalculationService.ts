@@ -154,9 +154,23 @@ export class CostCalculationService implements ICostCalculationService {
   }
 
   async formatCost(input: FormatCostInput): Promise<ServiceResponse<FormatCostOutput>> {
-    const { cost, includeWarning = true } = input
+    const { cost, format = 'summary', includeWarning = true } = input
 
-    const formatted = formatCurrency(cost)
+    let formatted: string
+
+    switch (format) {
+      case 'detailed':
+        formatted = `Total: ${formatCurrency(cost)}`
+        break
+      case 'minimal':
+        formatted = `~${formatCurrency(cost, 0)}`
+        break
+      case 'summary':
+      default:
+        formatted = formatCurrency(cost)
+        break
+    }
+
     const warningLevel = getWarningLevel(cost)
     const warningMessage = includeWarning ? getWarningMessage(warningLevel, cost) : undefined
 

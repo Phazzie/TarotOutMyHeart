@@ -121,10 +121,27 @@ export class ImageUploadMockService implements IImageUploadService {
     const failedImages: ImageValidationError[] = []
 
     for (const file of files) {
-      // Check for duplicate names (simplistic duplicate check)
-      const isDuplicate = Array.from(this.uploadedImages.values()).some(
-        img => img.fileName === file.name
-      )
+      // Check for duplicate images using name, size, and lastModified
+      const isDuplicate =
+        Array.from(this.uploadedImages.values()).some(img => {
+          const sameName = img.fileName === file.name
+          const sameSize = img.fileSize === file.size
+          const sameModified =
+            typeof img.file?.lastModified === 'number' && typeof file.lastModified === 'number'
+              ? img.file.lastModified === file.lastModified
+              : true
+          return sameName && sameSize && sameModified
+        }) ||
+        uploadedImages.some(img => {
+          const sameName = img.fileName === file.name
+          const sameSize = img.fileSize === file.size
+          const sameModified =
+            typeof img.file?.lastModified === 'number' && typeof file.lastModified === 'number'
+              ? img.file.lastModified === file.lastModified
+              : true
+          return sameName && sameSize && sameModified
+        })
+
       if (isDuplicate) {
         failedImages.push({
           code: ImageUploadErrorCode.DUPLICATE_IMAGE,

@@ -57,6 +57,7 @@ interface RawProxyPromptItem {
 }
 
 interface PromptProxySuccessData {
+  prompt?: unknown
   prompts?: unknown
   usage?: ApiUsage
   requestId?: string
@@ -424,7 +425,14 @@ export class PromptGenerationService implements IPromptGenerationService {
   async regeneratePrompt(
     input: RegeneratePromptInput
   ): Promise<ServiceResponse<RegeneratePromptOutput>> {
-    const { cardNumber, styleInputs, feedback } = input
+    const {
+      cardNumber,
+      referenceImageUrls = [],
+      styleInputs,
+      previousPrompt,
+      feedback,
+    } = input
+    const model = GROK_MODELS.vision
 
     if (!isCardNumber(cardNumber)) {
       return {
@@ -448,38 +456,211 @@ export class PromptGenerationService implements IPromptGenerationService {
       }
     }
 
-    const cardName = MAJOR_ARCANA_NAMES[cardNumber]
-    const meaning = MAJOR_ARCANA_MEANINGS[cardNumber]
+    const abortController = new AbortController()
+    const timeoutId = setTimeout(() => {
+      abortController.abort()
+    }, PROMPT_TIMEOUT_MS)
 
-    const newPromptText = `A ${styleInputs.tone.toLowerCase()} ${styleInputs.theme.toLowerCase()} tarot card illustration of "${cardName}". ${styleInputs.description} ${feedback ? `Adjustments: ${feedback}.` : ''} Symbolic elements for ${meaning.toLowerCase()} prominently featured. Highly detailed.`
+    try {
+      let response: Response
+      try {
+        response = await fetch('/api/prompts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cardNumber,
+            referenceImageUrls,
+            styleInputs,
+            previousPrompt,
+            feedback,
+            model,
+          }),
+          signal: abortController.signal,
+        })
+      } catch (fetchErr) {
+        if (
+          (fetchErr instanceof DOMException && fetchErr.name === 'AbortError') ||
+          (fetchErr instanceof Error && fetchErr.name === 'AbortError')
+        ) {
+          return {
+            success: false,
+            error: {
+              code: PromptGenerationErrorCode.API_TIMEOUT,
+              message: 'Request timed out waiting for Grok API',
+              retryable: true,
+            },
+          }
+        }
 
-    const newCardPrompt: CardPrompt = {
-      id: createPromptId(crypto.randomUUID()),
-      cardNumber,
-      cardName,
-      traditionalMeaning: meaning,
-      generatedPrompt: newPromptText,
-      confidence: 0.9,
-      generatedAt: new Date(),
-    }
+        return {
+          success: false,
+          error: {
+            code: PromptGenerationErrorCode.NETWORK_ERROR,
+            message:
+              fetchErr instanceof Error
+                ? fetchErr.message
+                : 'Network error during prompt regeneration',
+            retryable: true,
+          },
+        }
+      }
 
-    this.promptStore.set(newCardPrompt.id, newCardPrompt)
+      let json: unknown
+      try {
+        json = await response.json()
+      } catch {
+        return {
+          success: false,
+          error: {
+            code: response.ok
+              ? PromptGenerationErrorCode.INVALID_RESPONSE_FORMAT
+              : PromptGenerationErrorCode.API_ERROR,
+            message: response.ok
+              ? 'Invalid response format from server proxy.'
+              : `Server returned HTTP ${response.status}: ${response.statusText || 'Error'}`,
+            retryable: true,
+          },
+        }
+      }
 
-    const usage: ApiUsage = {
-      promptTokens: 100,
-      completionTokens: 150,
-      totalTokens: 250,
-      estimatedCost: 0.002,
-      model: GROK_MODELS.vision,
-    }
+      if (!isPromptProxyResponse(json)) {
+        return {
+          success: false,
+          error: {
+            code: PromptGenerationErrorCode.INVALID_RESPONSE_FORMAT,
+            message: 'Invalid response format from server proxy.',
+            retryable: true,
+          },
+        }
+      }
 
-    return {
-      success: true,
-      data: {
-        cardPrompt: newCardPrompt,
-        usage,
-        requestId: `req-regen-${Date.now()}`,
-      },
+      const res = json
+
+      if (!res.success) {
+        const rawCode = res.error?.code
+        const errorCode = isPromptGenerationErrorCode(rawCode)
+          ? rawCode
+          : PromptGenerationErrorCode.API_ERROR
+
+        return {
+          success: false,
+          error: {
+            code: errorCode,
+            message: res.error?.message ?? 'Prompt regeneration failed.',
+            retryable: res.error?.retryable ?? true,
+          },
+        }
+      }
+
+      if (!res.data || typeof res.data !== 'object') {
+        return {
+          success: false,
+          error: {
+            code: PromptGenerationErrorCode.INVALID_RESPONSE_FORMAT,
+            message: 'Server response missing valid prompt data.',
+            retryable: true,
+          },
+        }
+      }
+
+      const rawPromptCandidate =
+        res.data.prompt ?? (Array.isArray(res.data.prompts) ? res.data.prompts[0] : null)
+
+      const rawPromptItem = isRawProxyPromptItem(rawPromptCandidate) ? rawPromptCandidate : null
+
+      if (!rawPromptItem) {
+        return {
+          success: false,
+          error: {
+            code: PromptGenerationErrorCode.INVALID_RESPONSE_FORMAT,
+            message: 'Server response missing valid prompt for card.',
+            retryable: true,
+          },
+        }
+      }
+
+      const promptId = createPromptId(
+        typeof rawPromptItem.id === 'string' && rawPromptItem.id.length > 0
+          ? rawPromptItem.id
+          : crypto.randomUUID()
+      )
+      const traditionalMeaning =
+        typeof rawPromptItem.traditionalMeaning === 'string' &&
+        rawPromptItem.traditionalMeaning.length > 0
+          ? rawPromptItem.traditionalMeaning
+          : MAJOR_ARCANA_MEANINGS[cardNumber]
+      const cardName = MAJOR_ARCANA_NAMES[cardNumber]
+
+      let generatedAtDate: Date
+      if (rawPromptItem.generatedAt instanceof Date) {
+        generatedAtDate = rawPromptItem.generatedAt
+      } else if (
+        typeof rawPromptItem.generatedAt === 'string' ||
+        typeof rawPromptItem.generatedAt === 'number'
+      ) {
+        const parsedDate = new Date(rawPromptItem.generatedAt)
+        generatedAtDate = isNaN(parsedDate.getTime()) ? new Date() : parsedDate
+      } else {
+        generatedAtDate = new Date()
+      }
+
+      const confidence =
+        typeof rawPromptItem.confidence === 'number' ? rawPromptItem.confidence : 0.9
+
+      const newCardPrompt: CardPrompt = {
+        id: promptId,
+        cardNumber,
+        cardName,
+        traditionalMeaning,
+        generatedPrompt: rawPromptItem.generatedPrompt,
+        confidence,
+        generatedAt: generatedAtDate,
+      }
+
+      this.promptStore.set(newCardPrompt.id, newCardPrompt)
+
+      const usage: ApiUsage = res.data.usage ?? {
+        promptTokens: 200,
+        completionTokens: 150,
+        totalTokens: 350,
+        estimatedCost: 0.002,
+        model,
+      }
+
+      return {
+        success: true,
+        data: {
+          cardPrompt: newCardPrompt,
+          usage,
+          requestId: res.data.requestId ?? `req-regen-${Date.now()}`,
+        },
+      }
+    } catch (err) {
+      if (
+        (err instanceof DOMException && err.name === 'AbortError') ||
+        (err instanceof Error && err.name === 'AbortError')
+      ) {
+        return {
+          success: false,
+          error: {
+            code: PromptGenerationErrorCode.API_TIMEOUT,
+            message: 'Request timed out waiting for Grok API',
+            retryable: true,
+          },
+        }
+      }
+
+      return {
+        success: false,
+        error: {
+          code: PromptGenerationErrorCode.NETWORK_ERROR,
+          message:
+            err instanceof Error ? err.message : 'Network error during prompt regeneration',
+          retryable: true,
+        },
+      }
+    } finally {
+      clearTimeout(timeoutId)
     }
   }
 

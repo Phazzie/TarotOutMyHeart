@@ -54,13 +54,14 @@ interface SessionState {
 export class ImageGenerationService implements IImageGenerationService {
   private sessions: Map<string, SessionState> = new Map()
   private cancelRequested = false
+  private activeAbortController: AbortController | null = null
 
   private generateId(): GeneratedCardId {
     return createGeneratedCardId(crypto.randomUUID())
   }
 
   async generateImages(input: GenerateImagesInput): Promise<ServiceResponse<GenerateImagesOutput>> {
-    const { prompts, onProgress, allowPartialSuccess = true } = input
+    const { prompts, onProgress, allowPartialSuccess = true, saveToStorage } = input
 
     if (!prompts || prompts.length === 0) {
       return {
@@ -75,6 +76,8 @@ export class ImageGenerationService implements IImageGenerationService {
 
     const sessionId = `session-${Date.now()}`
     this.cancelRequested = false
+    this.activeAbortController = new AbortController()
+    const activeController = this.activeAbortController
 
     const generatedCards: GeneratedCard[] = []
     const usagePerCard: ImageGenerationUsage[] = []
@@ -103,7 +106,7 @@ export class ImageGenerationService implements IImageGenerationService {
     this.sessions.set(sessionId, sessionState)
 
     for (let index = 0; index < prompts.length; index++) {
-      if (this.cancelRequested) {
+      if (this.cancelRequested || activeController.signal.aborted) {
         sessionState.isCanceled = true
         break
       }
@@ -126,21 +129,31 @@ export class ImageGenerationService implements IImageGenerationService {
 
       const cardResult = await this.generateSingleCardWithRetry(
         promptObj,
-        input.model || GROK_IMAGE_MODEL
+        input.model || GROK_IMAGE_MODEL,
+        saveToStorage,
+        activeController
       )
 
       if (cardResult.success) {
         completedCount++
         generatedCards.push(cardResult.card)
-        totalCost += 0.04
+        totalCost += 0.02
         usagePerCard.push({
           cardNumber: cardNum,
           model: input.model || GROK_IMAGE_MODEL,
-          estimatedCost: 0.04,
+          estimatedCost: 0.02,
           generationTime: 12000,
           requestId: `req-img-${cardNum}-${Date.now()}`,
         })
       } else {
+        if (
+          cardResult.error.code === ImageGenerationErrorCode.SESSION_CANCELED ||
+          this.cancelRequested ||
+          activeController.signal.aborted
+        ) {
+          sessionState.isCanceled = true
+          break
+        }
         failedCount++
         const failedCard: GeneratedCard = {
           id: this.generateId(),
@@ -158,6 +171,8 @@ export class ImageGenerationService implements IImageGenerationService {
       }
     }
 
+    const isCanceled =
+      this.cancelRequested || activeController.signal.aborted || sessionState.isCanceled
     const finalProgress: ImageGenerationProgress = {
       total: prompts.length,
       completed: completedCount,
@@ -165,12 +180,13 @@ export class ImageGenerationService implements IImageGenerationService {
       current: -1,
       percentComplete: 100,
       estimatedTimeRemaining: 0,
-      status: this.cancelRequested
+      status: isCanceled
         ? 'Generation session canceled.'
         : `Generation complete! ${completedCount} succeeded, ${failedCount} failed.`,
     }
     sessionState.progress = finalProgress
     sessionState.isComplete = true
+    sessionState.isCanceled = isCanceled
     onProgress?.(finalProgress)
 
     const totalUsage: TotalImageGenerationUsage = {
@@ -190,14 +206,16 @@ export class ImageGenerationService implements IImageGenerationService {
         sessionId,
         startedAt: new Date(startTime),
         completedAt: new Date(),
-        fullySuccessful: failedCount === 0 && !this.cancelRequested,
+        fullySuccessful: failedCount === 0 && !isCanceled,
       },
     }
   }
 
   private async generateSingleCardWithRetry(
     promptObj: CardPrompt,
-    model: string
+    model: string,
+    saveToStorage?: boolean,
+    parentController?: AbortController | null
   ): Promise<
     | { success: true; card: GeneratedCard }
     | { success: false; error: { code: ImageGenerationErrorCode; message: string } }
@@ -208,7 +226,7 @@ export class ImageGenerationService implements IImageGenerationService {
     }
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      if (this.cancelRequested) {
+      if (this.cancelRequested || parentController?.signal.aborted) {
         return {
           success: false,
           error: { code: ImageGenerationErrorCode.SESSION_CANCELED, message: 'Canceled' },
@@ -217,10 +235,27 @@ export class ImageGenerationService implements IImageGenerationService {
 
       if (attempt > 0) {
         await new Promise(r => setTimeout(r, RETRY_DELAY_MS * attempt))
+        if (this.cancelRequested || parentController?.signal.aborted) {
+          return {
+            success: false,
+            error: { code: ImageGenerationErrorCode.SESSION_CANCELED, message: 'Canceled' },
+          }
+        }
       }
 
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), CARD_TIMEOUT_MS)
+
+      const onParentAbort = () => {
+        controller.abort()
+      }
+      if (parentController) {
+        if (parentController.signal.aborted) {
+          controller.abort()
+        } else {
+          parentController.signal.addEventListener('abort', onParentAbort, { once: true })
+        }
+      }
 
       try {
         const response = await fetch('/api/generate/card', {
@@ -231,11 +266,15 @@ export class ImageGenerationService implements IImageGenerationService {
             cardName: promptObj.cardName,
             generatedPrompt: promptObj.generatedPrompt,
             model,
+            saveToStorage,
           }),
           signal: controller.signal,
         })
 
         clearTimeout(timeoutId)
+        if (parentController) {
+          parentController.signal.removeEventListener('abort', onParentAbort)
+        }
 
         const json: unknown = await response.json()
         if (!isImageProxyResponse(json)) {
@@ -269,7 +308,23 @@ export class ImageGenerationService implements IImageGenerationService {
         }
       } catch (err) {
         clearTimeout(timeoutId)
-        if (err instanceof Error && err.name === 'AbortError') {
+        if (parentController) {
+          parentController.signal.removeEventListener('abort', onParentAbort)
+        }
+
+        const isAbort =
+          (typeof DOMException !== 'undefined' &&
+            err instanceof DOMException &&
+            err.name === 'AbortError') ||
+          (err instanceof Error && err.name === 'AbortError')
+
+        if (isAbort) {
+          if (this.cancelRequested || parentController?.signal.aborted) {
+            return {
+              success: false,
+              error: { code: ImageGenerationErrorCode.SESSION_CANCELED, message: 'Canceled' },
+            }
+          }
           lastError = { code: ImageGenerationErrorCode.API_TIMEOUT, message: 'Request timed out.' }
         } else {
           lastError = {
@@ -308,7 +363,7 @@ export class ImageGenerationService implements IImageGenerationService {
           usage: {
             cardNumber,
             model: GROK_IMAGE_MODEL,
-            estimatedCost: 0.04,
+            estimatedCost: 0.02,
             generationTime: 12000,
             requestId: `req-regen-${cardNumber}-${Date.now()}`,
           },
@@ -330,7 +385,13 @@ export class ImageGenerationService implements IImageGenerationService {
     input: CancelGenerationInput
   ): Promise<ServiceResponse<CancelGenerationOutput>> {
     this.cancelRequested = true
+    if (this.activeAbortController) {
+      this.activeAbortController.abort()
+    }
     const session = this.sessions.get(input.sessionId)
+    if (session) {
+      session.isCanceled = true
+    }
 
     return {
       success: true,
@@ -372,14 +433,14 @@ export class ImageGenerationService implements IImageGenerationService {
     imageCount: number
   }): Promise<ServiceResponse<EstimateImageCostOutput>> {
     const count = input.imageCount ?? 22
-    const totalCost = Number((count * 0.04).toFixed(4))
+    const totalCost = Number((count * 0.02).toFixed(4))
     const estimatedTime = count * 15
 
     return {
       success: true,
       data: {
         totalImages: count,
-        costPerImage: 0.04,
+        costPerImage: 0.02,
         totalEstimatedCost: totalCost,
         estimatedTime,
       },

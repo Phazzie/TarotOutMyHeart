@@ -81,12 +81,12 @@
   /**
    * Map of card numbers to their edited prompt text (before save)
    */
-  const editedPromptTexts = $state<Map<number, string>>(new Map())
+  let editedPromptTexts = $state<Map<number, string>>(new Map())
 
   /**
    * Set of cards that have been user-edited
    */
-  const userEditedCards = $state<Set<number>>(new Set())
+  let userEditedCards = $state<Set<number>>(new Set())
 
   /**
    * Card number currently being regenerated (for loading state)
@@ -96,7 +96,7 @@
   /**
    * Map storing original initial generated prompts for reset functionality
    */
-  const initialPromptsMap = $state<Map<number, string>>(new Map())
+  let initialPromptsMap = $state<Map<number, string>>(new Map())
 
   /**
    * Card number that was recently copied to clipboard (for visual feedback)
@@ -136,10 +136,15 @@
    * Sync initial prompt states whenever prompts are loaded/updated
    */
   $effect(() => {
+    let updated = false
     for (const prompt of prompts) {
       if (!initialPromptsMap.has(prompt.cardNumber)) {
         initialPromptsMap.set(prompt.cardNumber, prompt.generatedPrompt)
+        updated = true
       }
+    }
+    if (updated) {
+      initialPromptsMap = new Map(initialPromptsMap)
     }
   })
 
@@ -176,14 +181,14 @@
 
       if (response.success && response.data) {
         appStore.setGeneratedPrompts(response.data.cardPrompts)
-        editingCards.clear()
-        editedPromptTexts.clear()
-        userEditedCards.clear()
-        initialPromptsMap.clear()
-
+        editingCards = new Set()
+        editedPromptTexts = new Map()
+        userEditedCards = new Set()
+        const newInitialPrompts = new Map<number, string>()
         for (const prompt of response.data.cardPrompts) {
-          initialPromptsMap.set(prompt.cardNumber, prompt.generatedPrompt)
+          newInitialPrompts.set(prompt.cardNumber, prompt.generatedPrompt)
         }
+        initialPromptsMap = newInitialPrompts
       } else {
         appStore.setError(
           response.error?.message || 'Failed to generate prompts',
@@ -232,9 +237,13 @@
       if (response.success && response.data) {
         appStore.updatePrompt(cardNumber, response.data.cardPrompt)
         editingCards.delete(cardNumber)
+        editingCards = new Set(editingCards)
         editedPromptTexts.delete(cardNumber)
+        editedPromptTexts = new Map(editedPromptTexts)
         userEditedCards.delete(cardNumber)
+        userEditedCards = new Set(userEditedCards)
         initialPromptsMap.set(cardNumber, response.data.cardPrompt.generatedPrompt)
+        initialPromptsMap = new Map(initialPromptsMap)
       } else {
         appStore.setError(
           response.error?.message || 'Failed to regenerate prompt',
@@ -275,6 +284,7 @@
 
     if (editingCards.has(cardNumber)) {
       editedPromptTexts.set(cardNumber, enhancedText)
+      editedPromptTexts = new Map(editedPromptTexts)
     } else {
       try {
         const response = await promptService.editPrompt({
@@ -284,6 +294,7 @@
         if (response.success && response.data) {
           appStore.updatePrompt(cardNumber, response.data.cardPrompt)
           userEditedCards.add(cardNumber)
+          userEditedCards = new Set(userEditedCards)
         } else {
           appStore.setError(
             response.error?.message || 'Failed to enhance prompt',
@@ -333,9 +344,11 @@
       if (response.success && response.data) {
         appStore.updatePrompt(cardNumber, response.data.cardPrompt)
         userEditedCards.delete(cardNumber)
+        userEditedCards = new Set(userEditedCards)
         editingCards.delete(cardNumber)
+        editingCards = new Set(editingCards)
         editedPromptTexts.delete(cardNumber)
-        editingCards = editingCards
+        editedPromptTexts = new Map(editedPromptTexts)
       } else {
         appStore.setError(response.error?.message || 'Failed to reset prompt', response.error?.code)
       }
@@ -353,10 +366,10 @@
   function toggleExpand(cardNumber: number): void {
     if (expandedCards.has(cardNumber)) {
       expandedCards.delete(cardNumber)
-      expandedCards = expandedCards
+      expandedCards = new Set(expandedCards)
     } else {
       expandedCards.add(cardNumber)
-      expandedCards = expandedCards
+      expandedCards = new Set(expandedCards)
     }
   }
 
@@ -371,15 +384,17 @@
     const prompt = prompts.find(p => p.cardNumber === cardNumber)
     if (prompt) {
       editedPromptTexts.set(cardNumber, prompt.generatedPrompt)
+      editedPromptTexts = new Map(editedPromptTexts)
       editingCards.add(cardNumber)
-      editingCards = editingCards
+      editingCards = new Set(editingCards)
     }
   }
 
   function cancelEditing(cardNumber: number): void {
     editingCards.delete(cardNumber)
     editedPromptTexts.delete(cardNumber)
-    editingCards = editingCards
+    editingCards = new Set(editingCards)
+    editedPromptTexts = new Map(editedPromptTexts)
   }
 
   async function saveEdit(cardNumber: number): Promise<void> {
@@ -399,9 +414,11 @@
       if (response.success && response.data) {
         appStore.updatePrompt(cardNumber, response.data.cardPrompt)
         userEditedCards.add(cardNumber)
+        userEditedCards = new Set(userEditedCards)
         editingCards.delete(cardNumber)
         editedPromptTexts.delete(cardNumber)
-        editingCards = editingCards
+        editingCards = new Set(editingCards)
+        editedPromptTexts = new Map(editedPromptTexts)
       } else {
         appStore.setError(response.error?.message || 'Failed to save edit', response.error?.code)
       }
@@ -412,6 +429,7 @@
 
   function updateEditText(cardNumber: number, text: string): void {
     editedPromptTexts.set(cardNumber, text)
+    editedPromptTexts = new Map(editedPromptTexts)
   }
 
   // ============================================================================
