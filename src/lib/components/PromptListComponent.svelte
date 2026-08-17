@@ -337,10 +337,7 @@
         editedPromptTexts.delete(cardNumber)
         editingCards = editingCards
       } else {
-        appStore.setError(
-          response.error?.message || 'Failed to reset prompt',
-          response.error?.code
-        )
+        appStore.setError(response.error?.message || 'Failed to reset prompt', response.error?.code)
       }
     } catch (error) {
       appStore.setError(
@@ -797,13 +794,17 @@
     border-radius: 0.875rem;
     overflow: hidden;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05), inset 0 0 0 1px rgba(255, 215, 0, 0.2);
+    box-shadow:
+      0 4px 20px rgba(0, 0, 0, 0.05),
+      inset 0 0 0 1px rgba(255, 215, 0, 0.2);
   }
 
   .prompt-card:hover {
     transform: translateY(-3px);
     border-color: rgba(212, 175, 55, 0.85);
-    box-shadow: 0 12px 32px rgba(212, 175, 55, 0.25), inset 0 0 12px rgba(255, 215, 0, 0.3);
+    box-shadow:
+      0 12px 32px rgba(212, 175, 55, 0.25),
+      inset 0 0 12px rgba(255, 215, 0, 0.3);
   }
 
   .prompt-card.generated {
@@ -832,7 +833,11 @@
   }
 
   .card-header:hover {
-    background: linear-gradient(135deg, rgba(243, 232, 255, 0.95) 0%, rgba(254, 243, 199, 0.6) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(243, 232, 255, 0.95) 0%,
+      rgba(254, 243, 199, 0.6) 100%
+    );
   }
 
   .card-header:focus {
@@ -860,7 +865,9 @@
     font-weight: 700;
     font-size: 0.875rem;
     letter-spacing: 0.05em;
-    box-shadow: 0 2px 6px rgba(30, 27, 75, 0.3), inset 0 0 6px rgba(255, 215, 0, 0.25);
+    box-shadow:
+      0 2px 6px rgba(30, 27, 75, 0.3),
+      inset 0 0 6px rgba(255, 215, 0, 0.25);
     flex-shrink: 0;
   }
 
@@ -907,10 +914,19 @@
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
+    background: linear-gradient(
+      135deg,
+      #bf953f 0%,
+      #fcf6ba 25%,
+      #b38728 50%,
+      #fbf5b7 75%,
+      #aa771c 100%
+    );
     color: #2a1b00;
     border: 1px solid #d4af37;
-    box-shadow: 0 2px 6px rgba(170, 119, 28, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    box-shadow:
+      0 2px 6px rgba(170, 119, 28, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
     transition: all 0.2s ease;
   }
@@ -1006,7 +1022,9 @@
     line-height: 1.6;
     resize: vertical;
     margin-bottom: 0.75rem;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
     background: rgba(255, 255, 255, 0.9);
   }
 

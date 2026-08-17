@@ -85,8 +85,16 @@
 
       <!-- Celestial Constellation Stars & Glyphs Motif -->
       <circle cx="500" cy="500" r="40" fill="currentColor" opacity="0.3" />
-      <polygon points="500,430 512,488 570,500 512,512 500,570 488,512 430,500 488,488" fill="currentColor" />
-      <polygon points="500,450 508,492 550,500 508,508 500,550 492,508 450,500 492,492" fill="currentColor" transform="rotate(45 500 500)" opacity="0.6" />
+      <polygon
+        points="500,430 512,488 570,500 512,512 500,570 488,512 430,500 488,488"
+        fill="currentColor"
+      />
+      <polygon
+        points="500,450 508,492 550,500 508,508 500,550 492,508 450,500 492,492"
+        fill="currentColor"
+        transform="rotate(45 500 500)"
+        opacity="0.6"
+      />
 
       <!-- Ring Astrological Constellation Markers -->
       <circle cx="500" cy="80" r="6" fill="currentColor" />
@@ -738,11 +746,7 @@
   .step-tab.active {
     color: var(--color-text);
     font-weight: 600;
-    background: linear-gradient(
-      135deg,
-      rgba(107, 70, 193, 0.35) 0%,
-      rgba(212, 175, 55, 0.15) 100%
-    );
+    background: linear-gradient(135deg, rgba(107, 70, 193, 0.35) 0%, rgba(212, 175, 55, 0.15) 100%);
     box-shadow: 0 0 16px rgba(107, 70, 193, 0.4);
   }
 
@@ -889,11 +893,7 @@
 
   .mobile-step-tab.active {
     color: #fff;
-    background: linear-gradient(
-      90deg,
-      rgba(107, 70, 193, 0.3) 0%,
-      rgba(212, 175, 55, 0.15) 100%
-    );
+    background: linear-gradient(90deg, rgba(107, 70, 193, 0.3) 0%, rgba(212, 175, 55, 0.15) 100%);
     border-color: rgba(212, 175, 55, 0.35);
   }
 
@@ -1000,4 +1000,3 @@
     }
   }
 </style>
-

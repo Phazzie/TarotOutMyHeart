@@ -82,7 +82,11 @@ function isPromptProxyResponse(obj: unknown): obj is PromptProxyResponse {
 
 function isRawProxyPromptItem(obj: unknown): obj is RawProxyPromptItem {
   if (typeof obj !== 'object' || obj === null) return false
-  if (!('cardNumber' in obj) || typeof obj.cardNumber !== 'number' || !isCardNumber(obj.cardNumber)) {
+  if (
+    !('cardNumber' in obj) ||
+    typeof obj.cardNumber !== 'number' ||
+    !isCardNumber(obj.cardNumber)
+  ) {
     return false
   }
   if (!('cardName' in obj) || typeof obj.cardName !== 'string') {
@@ -186,7 +190,9 @@ export class PromptGenerationService implements IPromptGenerationService {
           error: {
             code: PromptGenerationErrorCode.NETWORK_ERROR,
             message:
-              fetchErr instanceof Error ? fetchErr.message : 'Network error during prompt generation',
+              fetchErr instanceof Error
+                ? fetchErr.message
+                : 'Network error during prompt generation',
             retryable: true,
           },
         }

@@ -73,14 +73,12 @@
       <h1 class="title font-tarot text-gold-gradient">TarotOutMyHeart</h1>
       <p class="subtitle font-tarot">AI-Powered Major Arcana Deck Generator</p>
       <p class="description">
-        Forge your bespoke 22-card Major Arcana tarot deck. Harness AI generation, upload
-        reference aesthetics, and bring your mystical vision to physical reality.
+        Forge your bespoke 22-card Major Arcana tarot deck. Harness AI generation, upload reference
+        aesthetics, and bring your mystical vision to physical reality.
       </p>
 
       <div class="cta">
-        <a href="/upload" class="gold-cta-button">
-          ✨ Begin Your Deck Creation →
-        </a>
+        <a href="/upload" class="gold-cta-button"> ✨ Begin Your Deck Creation → </a>
       </div>
     </div>
 
@@ -95,7 +93,7 @@
 
       <div class="card-display-container">
         <TarotCardFrame
-          isFlipped={isFlipped}
+          {isFlipped}
           cardName={activeCard.fullName}
           onClick={toggleFlip}
           class="hero-card-frame"
@@ -216,8 +214,8 @@
   <section class="info glass-panel">
     <h2 class="font-tarot text-gold-gradient">Development Status</h2>
     <p class="status-text">
-      This application is built using Seam-Driven Development (SDD) methodology. Interactive
-      Major Arcana showcase and component integration active.
+      This application is built using Seam-Driven Development (SDD) methodology. Interactive Major
+      Arcana showcase and component integration active.
     </p>
     <div class="links">
       <a href="https://github.com/Phazzie/TarotUpMyHeart" target="_blank" rel="noopener noreferrer">
@@ -283,7 +281,10 @@
       0 0 12px rgba(212, 175, 55, 0.25),
       inset 0 0 8px rgba(212, 175, 55, 0.15);
     animation: floatBadge 4s ease-in-out infinite alternate;
-    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    transition:
+      transform 0.3s ease,
+      border-color 0.3s ease,
+      box-shadow 0.3s ease;
     cursor: default;
   }
 
@@ -293,11 +294,21 @@
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
   }
 
-  .badge-1 { animation-delay: 0s; }
-  .badge-2 { animation-delay: 0.8s; }
-  .badge-3 { animation-delay: 1.6s; }
-  .badge-4 { animation-delay: 2.4s; }
-  .badge-5 { animation-delay: 3.2s; }
+  .badge-1 {
+    animation-delay: 0s;
+  }
+  .badge-2 {
+    animation-delay: 0.8s;
+  }
+  .badge-3 {
+    animation-delay: 1.6s;
+  }
+  .badge-4 {
+    animation-delay: 2.4s;
+  }
+  .badge-5 {
+    animation-delay: 3.2s;
+  }
 
   @keyframes floatBadge {
     0% {
@@ -447,8 +458,14 @@
     text-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
   }
 
-  .top-left { top: 10px; left: 12px; }
-  .top-right { top: 10px; right: 12px; }
+  .top-left {
+    top: 10px;
+    left: 12px;
+  }
+  .top-right {
+    top: 10px;
+    right: 12px;
+  }
 
   .card-illustration {
     flex: 1;
@@ -486,8 +503,14 @@
   }
 
   @keyframes pulseOrb {
-    0% { transform: scale(0.95); opacity: 0.5; }
-    100% { transform: scale(1.15); opacity: 1; }
+    0% {
+      transform: scale(0.95);
+      opacity: 0.5;
+    }
+    100% {
+      transform: scale(1.15);
+      opacity: 1;
+    }
   }
 
   .illustration-details {
@@ -496,7 +519,8 @@
     margin-top: 0.85rem;
   }
 
-  .arcane-tag, .element-tag {
+  .arcane-tag,
+  .element-tag {
     font-size: 0.725rem;
     padding: 0.2rem 0.5rem;
     border-radius: 4px;
@@ -613,7 +637,9 @@
   .step {
     padding: 2rem;
     text-align: center;
-    transition: transform 0.3s ease, border-color 0.3s ease;
+    transition:
+      transform 0.3s ease,
+      border-color 0.3s ease;
   }
 
   .step:hover {
@@ -656,7 +682,9 @@
   .feature {
     padding: 2rem;
     text-align: center;
-    transition: transform 0.3s ease, border-color 0.3s ease;
+    transition:
+      transform 0.3s ease,
+      border-color 0.3s ease;
   }
 
   .feature:hover {
@@ -758,4 +786,3 @@
     }
   }
 </style>
-

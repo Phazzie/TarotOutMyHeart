@@ -56,12 +56,7 @@
   })
 </script>
 
-<div
-  class="card-skeleton"
-  role="status"
-  aria-busy="true"
-  aria-label={displayStatus}
->
+<div class="card-skeleton" role="status" aria-busy="true" aria-label={displayStatus}>
   <!-- Background shimmer overlay -->
   <div class="skeleton-shimmer"></div>
 

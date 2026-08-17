@@ -1027,7 +1027,9 @@
   .textarea-input:focus {
     outline: none;
     border-color: var(--color-gold-leaf, #dfa845);
-    box-shadow: 0 0 12px rgba(223, 168, 69, 0.4), 0 0 0 2px rgba(223, 168, 69, 0.2);
+    box-shadow:
+      0 0 12px rgba(223, 168, 69, 0.4),
+      0 0 0 2px rgba(223, 168, 69, 0.2);
   }
 
   .select-input.error,

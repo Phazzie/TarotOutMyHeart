@@ -92,7 +92,7 @@
     children?: Snippet
   }
 
-  let {
+  const {
     isFlipped = false,
     cardName = 'Tarot Card',
     imageUrl,
