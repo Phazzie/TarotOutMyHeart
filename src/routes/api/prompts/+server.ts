@@ -53,7 +53,10 @@ export const POST: RequestHandler = async ({ request }) => {
   const { referenceImageUrls, styleInputs } = body
   const rawModel =
     typeof body === 'object' && body !== null && 'model' in body ? body.model : undefined
-  const modelToUse = typeof rawModel === 'string' && rawModel ? rawModel : GROK_MODELS.vision
+  const modelToUse =
+    typeof rawModel === 'string' && rawModel
+      ? rawModel
+      : process.env['GROK_TEXT_MODEL'] || GROK_MODELS.vision
 
   if (!referenceImageUrls?.length || !styleInputs?.theme) {
     return json(

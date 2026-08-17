@@ -56,7 +56,10 @@ export const POST: RequestHandler = async ({ request }) => {
 
   const rawModel =
     typeof body === 'object' && body !== null && 'model' in body ? body.model : undefined
-  const modelToUse = typeof rawModel === 'string' && rawModel ? rawModel : GROK_IMAGE_MODEL
+  const modelToUse =
+    typeof rawModel === 'string' && rawModel
+      ? rawModel
+      : process.env['GROK_IMAGE_MODEL'] || GROK_IMAGE_MODEL
 
   const client = new OpenAI({ baseURL: 'https://api.x.ai/v1', apiKey: XAI_API_KEY })
 
