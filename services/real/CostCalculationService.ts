@@ -1,80 +1,186 @@
 /**
- * CostCalculationService — real implementation.
- * Pure math. No external dependencies. No failure modes expected.
- * Pricing:
- *   - Prompt/completion tokens: $5.00 per 1,000,000 total tokens
- *   - Image generation:        $0.07 per image
+ * @fileoverview CostCalculationService — real implementation.
+ * Pure math based on Grok API pricing.
+ * Implements ICostCalculationService strictly without type escapes.
  */
-import type { ApiUsage } from '../../contracts/PromptGeneration';
-import type { TotalImageGenerationUsage } from '../../contracts/ImageGeneration';
 
-const TOKENS_PER_DOLLAR = 1_000_000 / 5.0; // $5 per 1M tokens
-const COST_PER_IMAGE = 0.07;
-const DECIMAL_PRECISION = 4;
+import type { ServiceResponse } from '$contracts/types/common'
+import type {
+  ICostCalculationService,
+  CalculateTotalCostInput,
+  CalculateTotalCostOutput,
+  EstimateCostInput,
+  EstimateCostOutput,
+  FormatCostInput,
+  FormatCostOutput,
+  CostSummary,
+  CostEstimate,
+  TextCostBreakdown,
+  ImageCostBreakdown,
+  VisionCostBreakdown,
+} from '$contracts/CostCalculation'
+import {
+  CostCalculationErrorCode,
+  GROK_PRICING,
+  COST_THRESHOLDS,
+  formatCurrency,
+  getWarningLevel,
+  getWarningMessage,
+} from '$contracts/CostCalculation'
 
-/** Round to N decimal places, avoiding floating-point drift. */
-function round(value: number, decimals: number): number {
-  const factor = 10 ** decimals;
-  return Math.round(value * factor) / factor;
-}
-
-type ServiceResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: { code: string; message: string } };
-
-export class CostCalculationService {
-  async calculatePromptCost(usage: ApiUsage): Promise<ServiceResult<number>> {
-    const cost = usage.totalTokens / TOKENS_PER_DOLLAR;
-    return { success: true, data: round(cost, DECIMAL_PRECISION) };
-  }
-
-  async calculateImageCost(usage: TotalImageGenerationUsage): Promise<ServiceResult<number>> {
-    // Only charge for images that were successfully generated (totalImages in this context
-    // represents successful/completed images when failedImages is tracked separately).
-    const cost = usage.totalImages * COST_PER_IMAGE;
-    return { success: true, data: round(cost, DECIMAL_PRECISION) };
-  }
-
+export class CostCalculationService implements ICostCalculationService {
   async calculateTotalCost(
-    promptUsage: ApiUsage,
-    imageUsage: TotalImageGenerationUsage,
-  ): Promise<ServiceResult<{ prompt: number; images: number; total: number }>> {
-    const promptResult = await this.calculatePromptCost(promptUsage);
-    const imageResult = await this.calculateImageCost(imageUsage);
+    input: CalculateTotalCostInput
+  ): Promise<ServiceResponse<CalculateTotalCostOutput>> {
+    const { promptUsage, imageUsage } = input
 
-    if (!promptResult.success) return promptResult;
-    if (!imageResult.success) return imageResult;
+    if (!promptUsage) {
+      return {
+        success: false,
+        error: {
+          code: CostCalculationErrorCode.MISSING_PROMPT_USAGE,
+          message: 'Missing prompt usage data',
+          retryable: false,
+        },
+      }
+    }
 
-    const prompt = promptResult.data;
-    const images = imageResult.data;
-    const total = round(prompt + images, DECIMAL_PRECISION);
+    if (!imageUsage) {
+      return {
+        success: false,
+        error: {
+          code: CostCalculationErrorCode.MISSING_IMAGE_USAGE,
+          message: 'Missing image usage data',
+          retryable: false,
+        },
+      }
+    }
 
-    return { success: true, data: { prompt, images, total } };
-  }
+    const textCost: TextCostBreakdown = {
+      inputTokens: promptUsage.promptTokens,
+      outputTokens: promptUsage.completionTokens,
+      inputCost: promptUsage.promptTokens * GROK_PRICING.textInputTokens,
+      outputCost: promptUsage.completionTokens * GROK_PRICING.textOutputTokens,
+      totalCost:
+        promptUsage.promptTokens * GROK_PRICING.textInputTokens +
+        promptUsage.completionTokens * GROK_PRICING.textOutputTokens,
+    }
 
-  /**
-   * Rough cost estimate before generation starts.
-   * @param referenceImageCount - number of reference images used for vision prompting
-   */
-  async estimateCost(
-    referenceImageCount: number,
-  ): Promise<ServiceResult<{ min: number; typical: number; max: number }>> {
-    // Image cost is fixed at 22 cards * $0.07
-    const imageCost = round(22 * COST_PER_IMAGE, DECIMAL_PRECISION);
+    const imageCost: ImageCostBreakdown = {
+      imagesGenerated: imageUsage.successfulImages,
+      imagesFailed: imageUsage.failedImages,
+      imagesRetried: 0,
+      generationCost: GROK_PRICING.imageGeneration,
+      totalCost: imageUsage.successfulImages * GROK_PRICING.imageGeneration,
+    }
 
-    // Prompt cost varies with token count; estimate based on reference image count.
-    // Each reference image ≈ 500–2000 tokens for vision encoding.
-    const minPromptCost = round(referenceImageCount * 0.02, DECIMAL_PRECISION);
-    const typicalPromptCost = round(referenceImageCount * 0.05, DECIMAL_PRECISION);
-    const maxPromptCost = round(referenceImageCount * 0.12, DECIMAL_PRECISION);
+    const visionCost: VisionCostBreakdown = {
+      requestCount: 1,
+      requestCost: GROK_PRICING.visionRequest,
+      totalCost: GROK_PRICING.visionRequest,
+    }
+
+    const totalCost = textCost.totalCost + imageCost.totalCost + visionCost.totalCost
+    const warningLevel = getWarningLevel(totalCost)
+    const formattedCost = formatCurrency(totalCost)
+
+    const summary: CostSummary = {
+      textCost,
+      imageCost,
+      visionCost,
+      totalCost,
+      warningLevel,
+      formattedCost,
+    }
+
+    const exceeded = warningLevel === 'maximum'
+    const canProceed = !exceeded
 
     return {
       success: true,
       data: {
-        min: round(minPromptCost + imageCost, DECIMAL_PRECISION),
-        typical: round(typicalPromptCost + imageCost, DECIMAL_PRECISION),
-        max: round(maxPromptCost + imageCost, DECIMAL_PRECISION),
+        summary,
+        exceeded,
+        canProceed,
       },
-    };
+    }
+  }
+
+  async estimateCost(input: EstimateCostInput): Promise<ServiceResponse<EstimateCostOutput>> {
+    const { imageCount, referenceImageCount, estimatedPromptLength = 1000 } = input
+
+    if (imageCount < 0 || referenceImageCount < 0) {
+      return {
+        success: false,
+        error: {
+          code: CostCalculationErrorCode.INVALID_IMAGE_COUNT,
+          message: 'Image counts cannot be negative',
+          retryable: false,
+        },
+      }
+    }
+
+    const promptGenCost =
+      referenceImageCount * GROK_PRICING.visionRequest +
+      estimatedPromptLength * GROK_PRICING.textOutputTokens
+    const imageGenCost = imageCount * GROK_PRICING.imageGeneration
+    const estimatedCost = promptGenCost + imageGenCost
+
+    const estimate: CostEstimate = {
+      estimatedCost,
+      breakdown: {
+        promptGeneration: promptGenCost,
+        imageGeneration: imageGenCost,
+      },
+      assumptions: [
+        `Vision API: ${referenceImageCount} reference images`,
+        `Text Generation: ~${estimatedPromptLength} tokens per prompt`,
+        `Image Generation: ${imageCount} images at $${GROK_PRICING.imageGeneration} each`,
+      ],
+    }
+
+    const canAfford = estimatedCost <= COST_THRESHOLDS.maximum
+    const warningLevel = getWarningLevel(estimatedCost)
+    const warningMessage = getWarningMessage(warningLevel, estimatedCost)
+
+    return {
+      success: true,
+      data: {
+        estimate,
+        canAfford,
+        warningMessage: warningMessage || undefined,
+      },
+    }
+  }
+
+  async formatCost(input: FormatCostInput): Promise<ServiceResponse<FormatCostOutput>> {
+    const { cost, format = 'summary', includeWarning = true } = input
+
+    let formatted: string
+
+    switch (format) {
+      case 'detailed':
+        formatted = `Total: ${formatCurrency(cost)}`
+        break
+      case 'minimal':
+        formatted = `~${formatCurrency(cost, 0)}`
+        break
+      case 'summary':
+      default:
+        formatted = formatCurrency(cost)
+        break
+    }
+
+    const warningLevel = getWarningLevel(cost)
+    const warningMessage = includeWarning ? getWarningMessage(warningLevel, cost) : undefined
+
+    return {
+      success: true,
+      data: {
+        formatted,
+        warningLevel,
+        warningMessage: warningMessage || undefined,
+      },
+    }
   }
 }

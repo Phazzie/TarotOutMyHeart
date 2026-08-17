@@ -4,6 +4,12 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   plugins: [sveltekit()],
 
+  server: {
+    fs: {
+      allow: ['.', './contracts', './services'],
+    },
+  },
+
   test: {
     // Include test files
     include: ['src/**/*.{test,spec}.{js,ts}', 'tests/**/*.{test,spec}.{js,ts}'],

@@ -1,0 +1,25 @@
+:root {
+  --color-obsidian: #0b0c10;
+  --color-card-bg: #14161d;
+  --color-gold-leaf: #dfa845;
+  --color-gold-glow: rgba(223, 168, 69, 0.25);
+  --font-tarot: 'Cinzel Decorative', serif;
+  --font-body: 'Outfit', sans-serif;
+}
+
+.font-tarot {
+  font-family: var(--font-tarot);
+}
+
+.text-gold-gradient {
+  background: linear-gradient(135deg, #f7d070 0%, #dfa845 50%, #996e1e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.glass-panel {
+  background: rgba(20, 22, 29, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(223, 168, 69, 0.2);
+  border-radius: 12px;
+}

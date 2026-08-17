@@ -471,7 +471,7 @@ describe('PromptGeneration Contract', () => {
         const duplicatePrompts = [...validPrompts]
         const duplicatedCard = duplicatePrompts[5]
         if (duplicatedCard) {
-          duplicatePrompts[5] = { ...duplicatedCard, id: 'different-id' as PromptId }
+          duplicatePrompts[6] = { ...duplicatedCard, id: 'different-id' as PromptId }
         }
 
         const response = await service.validatePrompts({
@@ -670,7 +670,7 @@ describe('PromptGeneration Contract', () => {
         })
 
         expect(response.success).toBe(true)
-        expect(response.data?.cardPrompt.generatedPrompt).toContain('edited')
+        expect(response.data?.cardPrompt.generatedPrompt).toBe(newPromptText)
       })
 
       it('should preserve card metadata when editing', async () => {

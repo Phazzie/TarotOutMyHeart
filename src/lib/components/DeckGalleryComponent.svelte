@@ -4,13 +4,13 @@
  * @purpose Display 22 Major Arcana cards in responsive grid with lightbox, filtering, and sorting
  * @dataFlow appStore.generatedCards → DeckDisplayService → Grid Display → Lightbox Modal
  * @boundary Consumes Seam #5 (DeckDisplay) via DeckDisplayMock service
- * @updated 2025-11-15
+ * @updated 2026-08-07
  *
  * Features:
  * - Responsive grid layout (4 cols desktop, 3 tablet, 2 mobile)
  * - Card thumbnails with hover effects
- * - Lightbox modal with full-size image view
- * - Keyboard navigation (Arrow keys, ESC, Tab)
+ * - Lightbox modal with full-size image view, smooth backdrop blur, and high-res inspector
+ * - Keyboard navigation (Arrow keys, ESC) using Svelte 5 $effect with cleanup
  * - Filter by status (all, completed, failed)
  * - Sort by card number, name, or generation date
  * - Accessibility (ARIA labels, focus management)
@@ -30,7 +30,7 @@
 -->
 
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte'
+  import { onMount } from 'svelte'
   import { deckDisplayService } from '$services/factory'
   import type {
     GeneratedCard,
@@ -98,6 +98,12 @@
   /** Error state */
   let error = $state<string | null>(null)
 
+  /** High-resolution view toggle state for lightbox modal */
+  let isHighResZoomed = $state<boolean>(false)
+
+  /** Copy prompt status state */
+  let copiedPrompt = $state<boolean>(false)
+
   /** Whether lightbox is open (derived from lightboxState) */
   const isLightboxOpen = $derived(lightboxState?.open ?? false)
 
@@ -140,8 +146,8 @@
           comparison = a.card.cardName.localeCompare(b.card.cardName)
           break
         case 'generated-date':
-          const dateA = a.card.generatedAt?.getTime() ?? 0
-          const dateB = b.card.generatedAt?.getTime() ?? 0
+          const dateA = a.card.generatedAt ? new Date(a.card.generatedAt).getTime() : 0
+          const dateB = b.card.generatedAt ? new Date(b.card.generatedAt).getTime() : 0
           comparison = dateA - dateB
           break
       }
@@ -166,7 +172,7 @@
   )
 
   // ============================================================================
-  // LIFECYCLE
+  // LIFECYCLE & EFFECTS
   // ============================================================================
 
   /**
@@ -191,16 +197,6 @@
     }
 
     loading = false
-
-    // Set up keyboard handlers
-    window.addEventListener('keydown', handleGlobalKeydown)
-  })
-
-  /**
-   * Clean up event listeners
-   */
-  onDestroy(() => {
-    window.removeEventListener('keydown', handleGlobalKeydown)
   })
 
   /**
@@ -209,6 +205,33 @@
   $effect(() => {
     if (cards.length > 0 && displayCards.length === 0) {
       initializeDisplay()
+    }
+  })
+
+  /**
+   * Keyboard event listener for Lightbox modal navigation (ArrowLeft, ArrowRight, Escape).
+   * Managed dynamically via Svelte 5 $effect with automatic cleanup on state change or unmount.
+   */
+  $effect(() => {
+    if (!isLightboxOpen) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        closeLightbox()
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault()
+        navigatePrevious()
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault()
+        navigateNext()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
     }
   })
 
@@ -242,6 +265,9 @@
    * Open lightbox for a specific card
    */
   async function openLightbox(cardNumber: number): Promise<void> {
+    isHighResZoomed = false
+    copiedPrompt = false
+
     const result = await displayService.openLightbox({
       cardNumber,
       showPrompt: true,
@@ -252,10 +278,12 @@
       lightboxState = result.data.lightboxState
       lightboxCard = result.data.card
 
-      // Focus lightbox for keyboard navigation
+      // Focus lightbox for accessibility
       setTimeout(() => {
-        const lightboxElement = document.querySelector('.lightbox') as HTMLElement
-        lightboxElement?.focus()
+        const lightboxElement = document.querySelector('.lightbox')
+        if (lightboxElement instanceof HTMLElement) {
+          lightboxElement.focus()
+        }
       }, 100)
     }
   }
@@ -264,6 +292,9 @@
    * Close lightbox
    */
   async function closeLightbox(): Promise<void> {
+    isHighResZoomed = false
+    copiedPrompt = false
+
     const result = await displayService.closeLightbox()
 
     if (result.success) {
@@ -277,6 +308,8 @@
    */
   async function navigatePrevious(): Promise<void> {
     if (!lightboxState?.canNavigateLeft) return
+    isHighResZoomed = false
+    copiedPrompt = false
 
     const result = await displayService.navigateLightbox({ direction: 'previous' })
 
@@ -291,6 +324,8 @@
    */
   async function navigateNext(): Promise<void> {
     if (!lightboxState?.canNavigateRight) return
+    isHighResZoomed = false
+    copiedPrompt = false
 
     const result = await displayService.navigateLightbox({ direction: 'next' })
 
@@ -346,24 +381,18 @@
   }
 
   /**
-   * Global keyboard handler
+   * Copy card prompt text to clipboard
    */
-  function handleGlobalKeydown(event: KeyboardEvent): void {
-    // ESC to close lightbox
-    if (event.key === 'Escape' && isLightboxOpen) {
-      event.preventDefault()
-      closeLightbox()
-    }
-
-    // Arrow navigation in lightbox
-    if (isLightboxOpen) {
-      if (event.key === 'ArrowLeft') {
-        event.preventDefault()
-        navigatePrevious()
-      } else if (event.key === 'ArrowRight') {
-        event.preventDefault()
-        navigateNext()
-      }
+  async function copyPromptToClipboard(promptText: string): Promise<void> {
+    if (!promptText) return
+    try {
+      await navigator.clipboard.writeText(promptText)
+      copiedPrompt = true
+      setTimeout(() => {
+        copiedPrompt = false
+      }, 2000)
+    } catch (err) {
+      console.error('Failed to copy prompt to clipboard:', err)
     }
   }
 
@@ -547,7 +576,7 @@
 
           <!-- Card Info Overlay -->
           <div class="card-overlay">
-            <div class="card-number">{displayCard.card.cardNumber}</div>
+            <div class="card-number">Card #{displayCard.card.cardNumber}</div>
             <div class="card-name">{displayCard.card.cardName}</div>
           </div>
 
@@ -572,6 +601,7 @@
      ============================================================================ -->
 
 {#if isLightboxOpen && lightboxCard}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div
     class="lightbox"
@@ -580,7 +610,6 @@
     aria-label="Card detail view"
     tabindex="-1"
     onclick={e => e.target === e.currentTarget && closeLightbox()}
-    onkeydown={e => e.key === 'Escape' && closeLightbox()}
   >
     <!-- Lightbox Content -->
     <div class="lightbox-content">
@@ -613,49 +642,102 @@
 
       <!-- Card Display -->
       <div class="lightbox-card">
-        <!-- Card Image -->
-        <div class="lightbox-image-container">
-          <img
-            src={getCardImageUrl(lightboxCard.card)}
-            alt={lightboxCard.card.cardName}
-            class="lightbox-image"
-          />
-        </div>
-
-        <!-- Card Details -->
-        <div class="lightbox-details">
-          <div class="lightbox-header">
-            <h2 class="lightbox-title">
-              {lightboxCard.card.cardNumber}. {lightboxCard.card.cardName}
-            </h2>
-            <div
-              class="lightbox-status"
-              style="color: {getStatusColor(lightboxCard.card.generationStatus)}"
-            >
-              {getStatusText(lightboxCard.card.generationStatus)}
-            </div>
+        <!-- Card Image Column -->
+        <div class="lightbox-image-column">
+          <div class="lightbox-image-container" class:zoomed={isHighResZoomed}>
+            <img
+              src={getCardImageUrl(lightboxCard.card)}
+              alt={lightboxCard.card.cardName}
+              class="lightbox-image"
+            />
+            {#if isHighResZoomed}
+              <div class="high-res-badge">1024×1024 High-Res View</div>
+            {/if}
           </div>
 
+          <!-- Controls under image -->
+          <div class="image-controls">
+            <button
+              type="button"
+              class="high-res-toggle-btn"
+              class:active={isHighResZoomed}
+              onclick={() => (isHighResZoomed = !isHighResZoomed)}
+              aria-label={isHighResZoomed ? 'Exit High-Res view' : 'Toggle High-Res view'}
+            >
+              {isHighResZoomed ? '🔍 Reset Scale' : '🔍 High-Res View'}
+            </button>
+          </div>
+        </div>
+
+        <!-- Card Details Column -->
+        <div class="lightbox-details">
+          <div class="lightbox-header">
+            <div class="header-top-row">
+              <span class="card-arcana-badge">Major Arcana</span>
+              <div
+                class="lightbox-status-badge"
+                style="background-color: {getStatusColor(lightboxCard.card.generationStatus)}"
+              >
+                {getStatusText(lightboxCard.card.generationStatus)}
+              </div>
+            </div>
+            <h2 class="lightbox-title">
+              <span class="card-num-prefix">Card #{lightboxCard.card.cardNumber}</span>
+              {lightboxCard.card.cardName}
+            </h2>
+          </div>
+
+          {#if lightboxCard.card.error}
+            <div class="lightbox-section error-section">
+              <h3 class="section-title text-error">Generation Error</h3>
+              <p class="error-detail">{lightboxCard.card.error}</p>
+            </div>
+          {/if}
+
           {#if lightboxState?.showPrompt}
-            <div class="lightbox-section">
-              <h3 class="section-title">Generation Prompt</h3>
+            <div class="lightbox-section prompt-section">
+              <div class="section-header">
+                <h3 class="section-title">Generation Prompt</h3>
+                <button
+                  type="button"
+                  class="copy-prompt-button"
+                  onclick={() => copyPromptToClipboard(lightboxCard?.card.prompt ?? '')}
+                  aria-label="Copy prompt to clipboard"
+                >
+                  {copiedPrompt ? '✓ Copied' : '📋 Copy Prompt'}
+                </button>
+              </div>
               <p class="prompt-text">{lightboxCard.card.prompt}</p>
             </div>
           {/if}
 
-          {#if lightboxState?.showMetadata && lightboxCard.card.generatedAt}
-            <div class="lightbox-section">
-              <h3 class="section-title">Metadata</h3>
+          {#if lightboxState?.showMetadata}
+            <div class="lightbox-section metadata-section">
+              <h3 class="section-title">Card Metadata</h3>
               <div class="metadata-grid">
                 <div class="metadata-item">
-                  <span class="metadata-label">Generated:</span>
-                  <span class="metadata-value">
-                    {new Date(lightboxCard.card.generatedAt).toLocaleString()}
-                  </span>
+                  <span class="metadata-label">Card ID</span>
+                  <span class="metadata-value font-mono">{lightboxCard.card.id}</span>
+                </div>
+                {#if lightboxCard.card.generatedAt}
+                  <div class="metadata-item">
+                    <span class="metadata-label">Generated</span>
+                    <span class="metadata-value">
+                      {new Date(lightboxCard.card.generatedAt).toLocaleString()}
+                    </span>
+                  </div>
+                {/if}
+                <div class="metadata-item">
+                  <span class="metadata-label">Resolution</span>
+                  <span class="metadata-value">1024 × 1024 px (PNG)</span>
+                </div>
+                <div class="metadata-item">
+                  <span class="metadata-label">Engine</span>
+                  <span class="metadata-value">Grok 2 Image Alpha</span>
                 </div>
                 {#if lightboxCard.card.retryCount > 0}
                   <div class="metadata-item">
-                    <span class="metadata-label">Retries:</span>
+                    <span class="metadata-label">Retry Attempts</span>
                     <span class="metadata-value">{lightboxCard.card.retryCount}</span>
                   </div>
                 {/if}
@@ -665,8 +747,13 @@
 
           <!-- Keyboard Navigation Hint -->
           <div class="keyboard-hint">
-            <span>Use ← → arrow keys to navigate</span>
-            <span>ESC to close</span>
+            <div class="hint-pills">
+              <kbd class="key-pill">←</kbd>
+              <kbd class="key-pill">→</kbd>
+              <span>Navigate</span>
+              <kbd class="key-pill">ESC</kbd>
+              <span>Close</span>
+            </div>
           </div>
         </div>
       </div>
@@ -680,8 +767,8 @@
 
 <style>
   /* ========================================================================
-	   GALLERY CONTAINER
-	   ======================================================================== */
+     GALLERY CONTAINER
+     ======================================================================== */
 
   .deck-gallery {
     width: 100%;
@@ -690,8 +777,8 @@
   }
 
   /* ========================================================================
-	   CONTROLS
-	   ======================================================================== */
+     CONTROLS
+     ======================================================================== */
 
   .gallery-controls {
     margin-bottom: var(--spacing-xl);
@@ -809,8 +896,8 @@
   }
 
   /* ========================================================================
-	   LOADING / ERROR / EMPTY STATES
-	   ======================================================================== */
+     LOADING / ERROR / EMPTY STATES
+     ======================================================================== */
 
   .loading-container,
   .error-container,
@@ -889,8 +976,8 @@
   }
 
   /* ========================================================================
-	   CARD GRID
-	   ======================================================================== */
+     CARD GRID
+     ======================================================================== */
 
   .card-grid {
     display: grid;
@@ -911,8 +998,8 @@
   }
 
   /* ========================================================================
-	   CARD TILE
-	   ======================================================================== */
+     CARD TILE
+     ======================================================================== */
 
   .card-tile {
     position: relative;
@@ -1033,8 +1120,8 @@
   }
 
   /* ========================================================================
-	   LIGHTBOX
-	   ======================================================================== */
+     LIGHTBOX MODAL & ENHANCEMENTS
+     ======================================================================== */
 
   .lightbox {
     position: fixed;
@@ -1046,14 +1133,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(15, 14, 23, 0.95);
-    backdrop-filter: blur(10px);
+    background: rgba(10, 9, 15, 0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
     padding: var(--spacing-lg);
-    animation: fadeIn var(--transition-normal);
+    animation: lightboxFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     outline: none;
   }
 
-  @keyframes fadeIn {
+  @keyframes lightboxFadeIn {
     from {
       opacity: 0;
     }
@@ -1067,39 +1155,44 @@
     width: 100%;
     max-width: 1200px;
     max-height: 90vh;
-    animation: slideUp var(--transition-normal);
+    animation: lightboxSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  @keyframes slideUp {
+  @keyframes lightboxSlideUp {
     from {
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(24px) scale(0.98);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
+      transform: translateY(0) scale(1);
     }
   }
 
   .lightbox-close {
     position: absolute;
-    top: 0;
-    right: 0;
-    z-index: 10;
-    padding: var(--spacing-md);
+    top: -12px;
+    right: -12px;
+    z-index: 20;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: var(--color-bg-secondary);
     border: 1px solid var(--glass-border);
     border-radius: 50%;
     color: var(--color-text);
-    font-size: var(--text-2xl);
+    font-size: var(--text-xl);
     line-height: 1;
     cursor: pointer;
     transition: all var(--transition-fast);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   }
 
   .lightbox-close:hover {
     background: var(--color-primary);
-    transform: rotate(90deg);
+    transform: rotate(90deg) scale(1.1);
   }
 
   .lightbox-nav {
@@ -1107,7 +1200,8 @@
     top: 50%;
     transform: translateY(-50%);
     padding: var(--spacing-lg) var(--spacing-md);
-    background: var(--color-bg-secondary);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-md);
     color: var(--color-text);
@@ -1115,7 +1209,8 @@
     line-height: 1;
     cursor: pointer;
     transition: all var(--transition-fast);
-    z-index: 10;
+    z-index: 15;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   }
 
   .lightbox-nav:hover {
@@ -1124,11 +1219,11 @@
   }
 
   .lightbox-nav-prev {
-    left: var(--spacing-md);
+    left: -20px;
   }
 
   .lightbox-nav-next {
-    right: var(--spacing-md);
+    right: -20px;
   }
 
   .lightbox-card {
@@ -1139,8 +1234,9 @@
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     padding: var(--spacing-xl);
-    max-height: 90vh;
+    max-height: 85vh;
     overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
   }
 
   @media (min-width: 768px) {
@@ -1149,18 +1245,78 @@
     }
   }
 
-  .lightbox-image-container {
+  .lightbox-image-column {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
   }
 
+  .lightbox-image-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .lightbox-image-container.zoomed {
+    transform: scale(1.12);
+    z-index: 5;
+  }
+
   .lightbox-image {
     max-width: 100%;
-    max-height: 70vh;
+    max-height: 65vh;
     object-fit: contain;
     border-radius: var(--radius-md);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+  }
+
+  .high-res-badge {
+    position: absolute;
+    top: var(--spacing-sm);
+    left: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: rgba(107, 70, 193, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-sm);
+    color: #ffffff;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+
+  .image-controls {
+    margin-top: var(--spacing-md);
+    display: flex;
+    justify-content: center;
+  }
+
+  .high-res-toggle-btn {
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .high-res-toggle-btn:hover {
+    background: var(--color-primary);
+    border-color: var(--color-primary-light);
+  }
+
+  .high-res-toggle-btn.active {
+    background: var(--color-primary);
+    border-color: var(--color-secondary);
+    color: #ffffff;
   }
 
   .lightbox-details {
@@ -1174,49 +1330,119 @@
     border-bottom: 1px solid var(--glass-border);
   }
 
-  .lightbox-title {
-    font-family: var(--font-heading);
-    font-size: var(--text-2xl);
-    margin-bottom: var(--spacing-sm);
-    color: var(--color-text);
+  .header-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xs);
   }
 
-  .lightbox-status {
-    font-size: var(--text-sm);
+  .card-arcana-badge {
+    font-size: var(--text-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-secondary);
+  }
+
+  .lightbox-status-badge {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    color: #ffffff;
+  }
+
+  .lightbox-title {
+    font-family: var(--font-heading);
+    font-size: var(--text-2xl);
+    color: var(--color-text);
+    margin: 0;
+  }
+
+  .card-num-prefix {
+    color: var(--color-text-secondary);
+    font-size: var(--text-lg);
+    font-weight: normal;
+    margin-right: var(--spacing-xs);
   }
 
   .lightbox-section {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-xs);
+  }
+
+  .error-section {
+    padding: var(--spacing-sm);
+    background: rgba(245, 101, 101, 0.1);
+    border: 1px solid rgba(245, 101, 101, 0.3);
+    border-radius: var(--radius-md);
+  }
+
+  .text-error {
+    color: #f56565 !important;
+  }
+
+  .error-detail {
+    font-size: var(--text-sm);
+    color: #feb2b2;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .section-title {
     font-family: var(--font-heading);
-    font-size: var(--text-lg);
+    font-size: var(--text-base);
     color: var(--color-secondary);
+    margin: 0;
+  }
+
+  .copy-prompt-button {
+    padding: 2px var(--spacing-sm);
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .copy-prompt-button:hover {
+    color: var(--color-text);
+    border-color: var(--color-primary);
   }
 
   .prompt-text {
     line-height: 1.6;
+    font-size: var(--text-sm);
     color: var(--color-text-secondary);
+    background: var(--color-bg-tertiary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
   }
 
   .metadata-grid {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-xs);
   }
 
   .metadata-item {
     display: flex;
     justify-content: space-between;
-    padding: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
     background: var(--color-bg-tertiary);
     border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
   }
 
   .metadata-label {
@@ -1228,22 +1454,44 @@
     color: var(--color-text);
   }
 
+  .font-mono {
+    font-family: monospace;
+  }
+
   .keyboard-hint {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-md);
+    margin-top: auto;
+    padding: var(--spacing-sm);
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-md);
-    font-size: var(--text-sm);
+    display: flex;
+    justify-content: center;
+  }
+
+  .hint-pills {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--text-xs);
     color: var(--color-text-muted);
-    text-align: center;
+  }
+
+  .key-pill {
+    display: inline-block;
+    padding: 2px 6px;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--glass-border);
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: var(--text-xs);
+    font-weight: bold;
+    color: var(--color-secondary);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   }
 
   /* ========================================================================
-	   RESPONSIVE
-	   ======================================================================== */
+     RESPONSIVE
+     ======================================================================== */
 
   @media (max-width: 640px) {
     .controls-row {
@@ -1267,6 +1515,14 @@
     .lightbox-nav {
       padding: var(--spacing-md) var(--spacing-sm);
       font-size: var(--text-2xl);
+    }
+
+    .lightbox-nav-prev {
+      left: -10px;
+    }
+
+    .lightbox-nav-next {
+      right: -10px;
     }
   }
 </style>

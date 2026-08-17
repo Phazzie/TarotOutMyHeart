@@ -1,103 +1,82 @@
 /**
  * @fileoverview TDD tests for CostCalculationService (real implementation).
- * Written BEFORE implementation — these must fail first (red phase).
- * PreMortem coverage: pure math, no external dependencies, no failure modes expected.
  */
-import { describe, it, expect } from 'vitest';
-import { CostCalculationService } from '../../services/real/CostCalculationService';
-
-// Inline types matching the contract shapes — avoids import alias resolution issues in vitest
-interface ApiUsage {
-  model: string;
-  promptTokens: number;
-  completionTokens: number;
-  totalTokens: number;
-  estimatedCost: number;
-}
-
-interface TotalImageGenerationUsage {
-  totalImages: number;
-  failedImages: number;
-  estimatedCost: number;
-}
+import { describe, it, expect } from 'vitest'
+import { CostCalculationService } from '../../services/real/CostCalculationService'
+import type { ApiUsage } from '$contracts/PromptGeneration'
+import type { TotalImageGenerationUsage } from '$contracts/ImageGeneration'
+import { GROK_MODELS } from '$contracts/PromptGeneration'
 
 describe('CostCalculationService', () => {
-  const svc = new CostCalculationService();
+  const svc = new CostCalculationService()
 
-  describe('calculatePromptCost', () => {
-    it('returns zero cost for zero tokens', async () => {
-      const usage: ApiUsage = { model: 'grok-4-fast-reasoning', promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCost: 0 };
-      const result = await svc.calculatePromptCost(usage);
-      expect(result.success).toBe(true);
-      if (result.success) expect(result.data).toBe(0);
-    });
+  const promptUsage: ApiUsage = {
+    model: GROK_MODELS.vision,
+    promptTokens: 5000,
+    completionTokens: 15000,
+    totalTokens: 20000,
+    estimatedCost: 0.16,
+  }
 
-    it('calculates cost at $5 per 1M tokens', async () => {
-      const usage: ApiUsage = { model: 'grok-4-fast-reasoning', promptTokens: 500000, completionTokens: 500000, totalTokens: 1_000_000, estimatedCost: 0 };
-      const result = await svc.calculatePromptCost(usage);
-      expect(result.success).toBe(true);
-      if (result.success) expect(result.data).toBeCloseTo(5.0, 2);
-    });
-
-    it('rounds to 4 decimal places', async () => {
-      const usage: ApiUsage = { model: 'grok-4-fast-reasoning', promptTokens: 1000, completionTokens: 0, totalTokens: 1000, estimatedCost: 0 };
-      const result = await svc.calculatePromptCost(usage);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        const str = result.data.toString();
-        const decimals = str.includes('.') ? str.split('.')[1].length : 0;
-        expect(decimals).toBeLessThanOrEqual(4);
-      }
-    });
-  });
-
-  describe('calculateImageCost', () => {
-    it('calculates cost at $0.07 per image', async () => {
-      const usage: TotalImageGenerationUsage = { totalImages: 22, failedImages: 0, estimatedCost: 0 };
-      const result = await svc.calculateImageCost(usage);
-      expect(result.success).toBe(true);
-      if (result.success) expect(result.data).toBeCloseTo(1.54, 2);
-    });
-
-    it('returns zero for zero completed images', async () => {
-      const usage: TotalImageGenerationUsage = { totalImages: 0, failedImages: 22, estimatedCost: 0 };
-      const result = await svc.calculateImageCost(usage);
-      expect(result.success).toBe(true);
-      if (result.success) expect(result.data).toBe(0);
-    });
-  });
+  const imageUsage: TotalImageGenerationUsage = {
+    totalImages: 22,
+    successfulImages: 22,
+    failedImages: 0,
+    estimatedCost: 2.2,
+    totalGenerationTime: 330,
+    usagePerCard: [],
+  }
 
   describe('calculateTotalCost', () => {
-    it('sums prompt and image costs', async () => {
-      const promptUsage: ApiUsage = { model: 'grok-4-fast-reasoning', promptTokens: 0, completionTokens: 0, totalTokens: 1_000_000, estimatedCost: 0 };
-      const imageUsage: TotalImageGenerationUsage = { totalImages: 22, failedImages: 0, estimatedCost: 0 };
-      const result = await svc.calculateTotalCost(promptUsage, imageUsage);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.prompt).toBeCloseTo(5.0, 2);
-        expect(result.data.images).toBeCloseTo(1.54, 2);
-        expect(result.data.total).toBeCloseTo(6.54, 2);
+    it('returns cost summary on success', async () => {
+      const result = await svc.calculateTotalCost({ promptUsage, imageUsage })
+      expect(result.success).toBe(true)
+      if (result.success && result.data) {
+        expect(result.data.canProceed).toBe(true)
+        expect(result.data.summary.totalCost).toBeGreaterThan(0)
       }
-    });
-  });
+    })
+
+    it('returns error when missing prompt usage', async () => {
+      const result = await svc.calculateTotalCost({ promptUsage: null as any, imageUsage })
+      expect(result.success).toBe(false)
+    })
+  })
 
   describe('estimateCost', () => {
-    it('returns min less than typical less than max', async () => {
-      const result = await svc.estimateCost(3);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data.min).toBeLessThan(result.data.typical);
-        expect(result.data.typical).toBeLessThan(result.data.max);
+    it('returns estimate for valid image and reference counts', async () => {
+      const result = await svc.estimateCost({ imageCount: 22, referenceImageCount: 3 })
+      expect(result.success).toBe(true)
+      if (result.success && result.data) {
+        expect(result.data.estimate.estimatedCost).toBeGreaterThan(0)
+        expect(result.data.canAfford).toBe(true)
       }
-    });
+    })
+  })
 
-    it('returns higher estimate for more images', async () => {
-      const low = await svc.estimateCost(1);
-      const high = await svc.estimateCost(5);
-      expect(low.success && high.success).toBe(true);
-      if (low.success && high.success) {
-        expect(high.data.typical).toBeGreaterThan(low.data.typical);
+  describe('formatCost', () => {
+    it('formats cost with summary format by default', async () => {
+      const result = await svc.formatCost({ cost: 2.34 })
+      expect(result.success).toBe(true)
+      if (result.success && result.data) {
+        expect(result.data.formatted).toBe('$2.34')
       }
-    });
-  });
-});
+    })
+
+    it('formats cost with detailed format', async () => {
+      const result = await svc.formatCost({ cost: 2.34, format: 'detailed' })
+      expect(result.success).toBe(true)
+      if (result.success && result.data) {
+        expect(result.data.formatted).toBe('Total: $2.34')
+      }
+    })
+
+    it('formats cost with minimal format', async () => {
+      const result = await svc.formatCost({ cost: 2.34, format: 'minimal' })
+      expect(result.success).toBe(true)
+      if (result.success && result.data) {
+        expect(result.data.formatted).toBe('~$2')
+      }
+    })
+  })
+})

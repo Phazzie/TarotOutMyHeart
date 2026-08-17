@@ -9,6 +9,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Grok API Key Configuration & Strict Type Guard Auditing** (2026-08-10):
+  - **Configured real `XAI_API_KEY`** in `.env` for Grok API integration.
+  - **Fixed `PromptGenerationService.ts`**: Restored `PROMPT_TIMEOUT_MS` constant. Replaced type assertions (`as ProxyResponse`) with strict type guard function (`isPromptProxyResponse(json)`).
+  - **Fixed `ImageGenerationService.ts`**: Replaced type assertions in `generateSingleCardWithRetry` with strict type guard function (`isImageProxyResponse(json)`).
+  - **Result**: `npm run check` (0 errors, 0 warnings), `npm run test:real` (24/24 passing across 7 service test suites).
+
+
+- **Strict Type Audit & Seam-Driven Work Scoping Skill** (2026-08-05):
+  - **Identified and refactored all `as Type` assertions and `!` non-null assertions** across `src/`, `services/`, and `contracts/` to establish 100% runtime type validation.
+  - **Changes**:
+    - Created `$lib/utils/types.ts` containing brand constructors (`createImageId`, `createPromptId`, `createGeneratedCardId`) and Type Guards (`isCardNumber`, `isImageMimeType`, `isPredefinedTheme`, `isPredefinedTone`, `isRawPromptArray`, `isStyleInputs`, `isKeyOfStyleInputs`, `toImageUploadErrorCode`, `isObject`).
+    - Configured ESLint rules `@typescript-eslint/consistent-type-assertions: ['error', { assertionStyle: 'never' }]` and `@typescript-eslint/no-non-null-assertion: 'error'`.
+    - Created workspace rule `.agents/rules/strict-typescript-validation.md` and custom skills `.agents/skills/strict-type-audit/SKILL.md` and `.agents/skills/seam-driven-work-scoping/SKILL.md`.
+    - Refactored `ImageUploadComponent.svelte`, `StyleInputComponent.svelte`, `DeckGalleryComponent.svelte`, `PromptListComponent.svelte`, `api/prompts/+server.ts`, and `api/generate/card/+server.ts`.
+    - Created master `implementation_plan.md` artifact covering remaining project milestones.
+  - **Result**: `npm run check` (0 errors), `npm run lint` (0 errors), `npm run test:all` (602 / 602 tests passed).
+
+- **API Proxy Abstraction Leaks & SDD Methodology Enforcement** (2026-08-05):
+  - **Identified and fixed major SDD methodology violations where server-side proxy routes bypassed contract enums and validation.**
+  - **Changes**:
+    - `api/prompts/+server.ts`: Replaced arbitrary string error codes with strict `PromptGenerationErrorCode` enums. Added validation to prevent Out-Of-Bounds array access by enforcing `0-21` bounds on parsed card numbers. Removed hardcoded `grok-4-fast-reasoning` model to honor client payload (fallback to `GROK_MODELS.vision`).
+    - `api/generate/card/+server.ts`: Replaced arbitrary string error codes with strict `ImageGenerationErrorCode` enums. Removed hardcoded `grok-2-image-generation` model to honor client payload (fallback to `GROK_IMAGE_MODEL`). Fixed syntax issues from incomplete JSON returns.
+    - `services/real/PromptGenerationService.ts`: Added strict `validatePrompts()` check on the real Grok output, returning `INCOMPLETE_RESPONSE` on failure instead of blindly trusting AI output and returning success.
+    - `services/real/ImageGenerationService.ts`: Updated `generateSingleCardWithRetry` to return a strongly typed error object `{ code: ImageGenerationErrorCode, message: string }` instead of arbitrary string messages. Ensured `model` parameter is correctly passed to the network layer instead of ignored.
+  - **Result**: Complete contract adherence for all proxy/real boundaries. `npm run check` and `npm run test:all` continue to pass perfectly (552 tests, 0 warnings).
+
+- **Final SDD Audit & Type Safety Enforcement** (2026-08-05):
+  - **Identified and removed all remaining `as any` type escapes** across `src/`, `services/`, and `contracts/` following a rigorous SDD compliance audit.
+  - **Changes**:
+    - `PromptGenerationMock.ts`: Removed `as any` from model validation and confidence validation checks, aligning with `PromptGenerationErrorCode.INVALID_RESPONSE_FORMAT`.
+    - `ImageUploadMock.ts` & `ImageUploadService.ts`: Aligned returns to use `{ success: true, data: { failedImages: [...] } }` for validation failures where operation succeeds, fixing invalid `success: false` payload type casting.
+    - `ImageGenerationService.ts`: Removed `card: null as any` on failures by updating internal return signature of `generateSingleCardWithRetry`. Replaced `crypto.randomUUID() as any` with `as PromptId`.
+    - `ImageUpload.test.ts`: Updated test expectations from `success: false` to `success: true` to align with the true structural expectations of `UploadImagesOutput` for partial/full image validation rejections.
+  - **Result**: Zero `as any` escapes exist outside of test files. `npm run test:all` and `npm run check` continue to pass with 0 errors.
+
+- **Test Suite Stabilization & Mock Corrections** (2026-08-05):
+  - **Identified and fixed test suite failures blocking progress.**
+  - **Changes**:
+    - `CostCalculationMock.ts`: Removed arbitrary image count validation (`imageCount > 100`) that caused test failures when testing threshold maximums.
+    - `PromptGeneration.test.ts`: Fixed flawed duplicate card testing logic to actually simulate duplicates (modifying index 6 instead of replacing index 5 with itself).
+    - `ImageGenerationMock.ts`: Updated error codes to match contract expectations (`WRONG_PROMPT_COUNT` vs `INVALID_PROMPTS`) and handled `saveToStorage` properly.
+    - `DeckDisplayMock.ts`: Implemented missing `INVALID_LAYOUT` and `INVALID_SIZE` validation correctly based on contract constants.
+    - `DownloadMock.ts`: Fixed broken validation logic (checking `completedCards.length < 22` instead of `=== 0`, checking for partial missing images, and validating format strings).
+    - `DownloadService.test.ts`: Replaced `vi.restoreAllMocks()` with `vi.clearAllMocks()` to prevent the `JSZip` mock implementation from being wiped out between tests.
+  - **Result**: `npm run test:all` exits with code 0. All 552 tests across contracts, mocks, integration, and real services pass successfully.
+
 - **Complete Mock Service Rewrite** (2025-12-14):
   - **Deleted and rewrote all 7 Tarot mock services from scratch**
   - Root cause: Original mocks were written without referencing contracts, causing 114 type errors

@@ -65,7 +65,11 @@ export class DeckDisplayMockService implements IDeckDisplayService {
   /**
    * Sort cards by the specified option (internal helper)
    */
-  private sortCardsInternal(cards: DisplayCard[], sortBy: SortOption, ascending: boolean): DisplayCard[] {
+  private sortCardsInternal(
+    cards: DisplayCard[],
+    sortBy: SortOption,
+    ascending: boolean
+  ): DisplayCard[] {
     const sorted = [...cards].sort((a, b) => {
       let comparison = 0
       switch (sortBy) {
@@ -93,7 +97,12 @@ export class DeckDisplayMockService implements IDeckDisplayService {
   ): Promise<ServiceResponse<InitializeDisplayOutput>> {
     await this.delay(50)
 
-    const { generatedCards, initialLayout = 'grid', initialSize = 'medium', autoOpenFirst = false } = input
+    const {
+      generatedCards,
+      initialLayout = 'grid',
+      initialSize = 'medium',
+      autoOpenFirst = false,
+    } = input
 
     if (!generatedCards || generatedCards.length === 0) {
       return {
@@ -101,6 +110,28 @@ export class DeckDisplayMockService implements IDeckDisplayService {
         error: {
           code: DeckDisplayErrorCode.NO_CARDS_PROVIDED,
           message: 'No cards provided for display',
+          retryable: false,
+        },
+      }
+    }
+
+    if (initialLayout && !['grid', 'list', 'carousel'].includes(initialLayout)) {
+      return {
+        success: false,
+        error: {
+          code: DeckDisplayErrorCode.INVALID_LAYOUT,
+          message: 'Invalid layout',
+          retryable: false,
+        },
+      }
+    }
+
+    if (initialSize && !['small', 'medium', 'large'].includes(initialSize)) {
+      return {
+        success: false,
+        error: {
+          code: DeckDisplayErrorCode.INVALID_SIZE,
+          message: 'Invalid size',
           retryable: false,
         },
       }
@@ -356,7 +387,7 @@ export class DeckDisplayMockService implements IDeckDisplayService {
       data: {
         state: { ...this.displayState },
         selectedCard,
-        lightboxState: openLightbox ? { ...this.lightboxState! } : undefined,
+        lightboxState: openLightbox && this.lightboxState ? { ...this.lightboxState } : undefined,
       },
     }
   }

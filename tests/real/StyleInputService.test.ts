@@ -1,101 +1,143 @@
 /**
  * @fileoverview TDD tests for StyleInputService (real implementation).
- * Written BEFORE implementation — red phase.
- * PreMortem #8: StyleInputService must NOT crash when localStorage is undefined (SSR).
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { StyleInputService, STORAGE_KEY } from '../../services/real/StyleInputService';
-import { DEFAULT_STYLE_INPUTS } from '../../contracts/StyleInput';
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { StyleInputService } from '../../services/real/StyleInputService'
+import { DEFAULT_STYLE_INPUTS } from '$contracts/StyleInput'
 
 describe('StyleInputService', () => {
-  let svc: StyleInputService;
+  let svc: StyleInputService
 
   beforeEach(() => {
-    localStorage.clear();
-    vi.restoreAllMocks();
-    svc = new StyleInputService();
-  });
+    localStorage.clear()
+    vi.restoreAllMocks()
+    svc = new StyleInputService()
+  })
+
+  describe('validateStyleInputs', () => {
+    it('validates theme, tone, and description', async () => {
+      const result = await svc.validateStyleInputs({
+        theme: 'Cyberpunk',
+        tone: 'Dark',
+        description: 'Neon dystopian setting with high contrast visual details.',
+      })
+
+      expect(result.success).toBe(true)
+      if (result.success && result.data) {
+        expect(result.data.validation.canProceed).toBe(true)
+      }
+    })
+
+    it('flags invalid inputs', async () => {
+      const result = await svc.validateStyleInputs({
+        theme: '',
+        tone: '',
+        description: 'short',
+      })
+
+      expect(result.success).toBe(true)
+      if (result.success && result.data) {
+        expect(result.data.validation.canProceed).toBe(false)
+      }
+    })
+  })
 
   describe('saveStyleInputs', () => {
-    it('saves valid inputs and returns them', async () => {
-      const inputs = { ...DEFAULT_STYLE_INPUTS, theme: 'Gothic', tone: 'Dark' };
-      const result = await svc.saveStyleInputs(inputs);
-      expect(result.success).toBe(true);
-      if (result.success) expect(result.data.theme).toBe('Gothic');
-    });
-
-    it('persists to localStorage', async () => {
-      const inputs = { ...DEFAULT_STYLE_INPUTS, theme: 'Cosmic' };
-      await svc.saveStyleInputs(inputs);
-      const raw = localStorage.getItem(STORAGE_KEY);
-      expect(raw).not.toBeNull();
-      expect(JSON.parse(raw!).theme).toBe('Cosmic');
-    });
-
-    it('rejects empty theme', async () => {
-      const inputs = { ...DEFAULT_STYLE_INPUTS, theme: '' };
-      const result = await svc.saveStyleInputs(inputs);
-      expect(result.success).toBe(false);
-      if (!result.success) expect(result.error.code).toBe('THEME_REQUIRED');
-    });
-
-    it('rejects theme with only whitespace', async () => {
-      const inputs = { ...DEFAULT_STYLE_INPUTS, theme: '   ' };
-      const result = await svc.saveStyleInputs(inputs);
-      expect(result.success).toBe(false);
-    });
-
-    it('rejects description exceeding char limit', async () => {
-      const inputs = { ...DEFAULT_STYLE_INPUTS, theme: 'Valid', description: 'x'.repeat(10000) };
-      const result = await svc.saveStyleInputs(inputs);
-      expect(result.success).toBe(false);
-      if (!result.success) expect(result.error.code).toBe('DESCRIPTION_TOO_LONG');
-    });
-  });
+    it('saves valid inputs', async () => {
+      const inputs = {
+        theme: 'Gothic',
+        tone: 'Dark',
+        description: 'Victorian era gothic aesthetic with supernatural elements.',
+      }
+      const result = await svc.saveStyleInputs({ styleInputs: inputs, saveAsDraft: true })
+      expect(result.success).toBe(true)
+      if (result.success && result.data) {
+        expect(result.data.saved).toBe(true)
+      }
+    })
+  })
 
   describe('loadStyleInputs', () => {
-    it('returns DEFAULT_STYLE_INPUTS when nothing saved', async () => {
-      const result = await svc.loadStyleInputs();
-      expect(result.success).toBe(true);
-      if (result.success) expect(result.data).toEqual(DEFAULT_STYLE_INPUTS);
-    });
+    it('returns empty draft when none exists', async () => {
+      const result = await svc.loadStyleInputs({ loadFromDraft: true })
+      expect(result.success).toBe(true)
+      if (result.success && result.data) {
+        expect(result.data.found).toBe(false)
+      }
+    })
 
-    it('returns previously saved inputs', async () => {
-      const inputs = { ...DEFAULT_STYLE_INPUTS, theme: 'Oceanic' };
-      await svc.saveStyleInputs(inputs);
-      const result = await svc.loadStyleInputs();
-      expect(result.success).toBe(true);
-      if (result.success) expect(result.data.theme).toBe('Oceanic');
-    });
+    it('loads saved draft successfully', async () => {
+      const inputs = {
+        theme: 'Cyberpunk',
+        tone: 'Dark',
+        description: 'Neon-lit city streets with rain reflections.',
+      }
+      await svc.saveStyleInputs({ styleInputs: inputs, saveAsDraft: true })
 
-    it('returns DEFAULT_STYLE_INPUTS if localStorage contains corrupt JSON', async () => {
-      localStorage.setItem(STORAGE_KEY, 'this is not json {{{');
-      const result = await svc.loadStyleInputs();
-      expect(result.success).toBe(true);
-      if (result.success) expect(result.data).toEqual(DEFAULT_STYLE_INPUTS);
-    });
-  });
+      const result = await svc.loadStyleInputs({ loadFromDraft: true })
+      expect(result.success).toBe(true)
+      if (result.success && result.data && result.data.styleInputs) {
+        expect(result.data.found).toBe(true)
+        expect(result.data.styleInputs.theme).toBe('Cyberpunk')
+      }
+    })
 
-  describe('SSR safety (PreMortem #8)', () => {
-    it('does not crash if localStorage is unavailable (simulated SSR)', async () => {
-      // Simulate SSR by removing localStorage
-      const original = global.localStorage;
-      // @ts-expect-error intentionally breaking localStorage for SSR simulation
-      delete global.localStorage;
-      const ssrSvc = new StyleInputService();
-      const result = await ssrSvc.loadStyleInputs();
-      expect(result.success).toBe(true);
-      global.localStorage = original;
-    });
-  });
+    it('handles localStorage throwing SecurityError/DOMException gracefully', async () => {
+      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new DOMException('The operation is insecure.', 'SecurityError')
+      })
 
-  describe('clearStyleInputs', () => {
-    it('removes saved inputs', async () => {
-      await svc.saveStyleInputs({ ...DEFAULT_STYLE_INPUTS, theme: 'Temp' });
-      await svc.clearStyleInputs();
-      const result = await svc.loadStyleInputs();
-      expect(result.success).toBe(true);
-      if (result.success) expect(result.data).toEqual(DEFAULT_STYLE_INPUTS);
-    });
-  });
-});
+      const result = await svc.loadStyleInputs({ loadFromDraft: true })
+      expect(result.success).toBe(true)
+      if (result.success && result.data) {
+        expect(result.data.found).toBe(false)
+        expect(result.data.loadedFrom).toBe('default')
+      }
+    })
+  })
+
+  describe('clearDraft', () => {
+    it('clears saved draft and allows loading defaults', async () => {
+      const inputs = {
+        theme: 'Fantasy',
+        tone: 'Light',
+        description: 'Enchanted forest with glowing flora.',
+      }
+      await svc.saveStyleInputs({ styleInputs: inputs, saveAsDraft: true })
+
+      const clearResult = await svc.clearDraft()
+      expect(clearResult.success).toBe(true)
+
+      const loadResult = await svc.loadStyleInputs({ loadFromDraft: true })
+      expect(loadResult.success).toBe(true)
+      if (loadResult.success && loadResult.data) {
+        expect(loadResult.data.found).toBe(false)
+      }
+    })
+
+    it('does not throw when localStorage removeItem throws', async () => {
+      vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+        throw new DOMException('QuotaExceeded', 'QuotaExceededError')
+      })
+
+      const clearResult = await svc.clearDraft()
+      expect(clearResult.success).toBe(true)
+    })
+  })
+
+  describe('getDefaults & getPredefinedOptions', () => {
+    it('returns default style values and predefined options', async () => {
+      const defaultsRes = await svc.getDefaults()
+      expect(defaultsRes.success).toBe(true)
+      if (defaultsRes.success && defaultsRes.data) {
+        expect(defaultsRes.data.defaults.theme).toBe(DEFAULT_STYLE_INPUTS.theme)
+      }
+
+      const optionsRes = await svc.getPredefinedOptions()
+      expect(optionsRes.success).toBe(true)
+      if (optionsRes.success && optionsRes.data) {
+        expect(optionsRes.data.themes.length).toBeGreaterThan(0)
+      }
+    })
+  })
+})

@@ -19,6 +19,7 @@ import {
   DownloadErrorCode,
   generateCardFilename,
   generateDeckFilename,
+  DOWNLOAD_FORMATS,
 } from '$contracts/Download'
 
 /**
@@ -52,11 +53,23 @@ export class DownloadMockService implements IDownloadService {
       generatedCards,
       styleInputs,
       deckName = 'tarot-deck',
+      format = 'zip',
       includeMetadata = true,
       onProgress,
     } = input
 
-    // Validate input
+    // Validate input format
+    if (input.format && !DOWNLOAD_FORMATS.includes(input.format)) {
+      return {
+        success: false,
+        error: {
+          code: DownloadErrorCode.INVALID_FORMAT,
+          message: 'Invalid download format',
+          retryable: false,
+        },
+      }
+    }
+
     if (!generatedCards || generatedCards.length === 0) {
       return {
         success: false,
@@ -70,12 +83,12 @@ export class DownloadMockService implements IDownloadService {
 
     // Check for completed cards
     const completedCards = generatedCards.filter(c => c.generationStatus === 'completed')
-    if (completedCards.length === 0) {
+    if (completedCards.length < 22) {
       return {
         success: false,
         error: {
           code: DownloadErrorCode.INCOMPLETE_CARDS,
-          message: 'No completed cards to download',
+          message: 'Not all cards are completed',
           retryable: false,
         },
       }
@@ -83,12 +96,12 @@ export class DownloadMockService implements IDownloadService {
 
     // Check for missing images
     const cardsWithImages = completedCards.filter(c => c.imageUrl || c.imageDataUrl)
-    if (cardsWithImages.length === 0) {
+    if (cardsWithImages.length < completedCards.length) {
       return {
         success: false,
         error: {
           code: DownloadErrorCode.MISSING_IMAGES,
-          message: 'No cards have images to download',
+          message: 'Some cards have missing images',
           retryable: false,
         },
       }
@@ -127,6 +140,52 @@ export class DownloadMockService implements IDownloadService {
 
     await this.delay(300)
 
+    if (format === 'individual') {
+      for (const card of cardsWithImages) {
+        const cardFilename = generateCardFilename(card.cardNumber, card.cardName)
+        const mockSingleBlob = new Blob(['mock single card image'], { type: 'image/png' })
+        this.triggerDownload(mockSingleBlob, cardFilename)
+      }
+      if (includeMetadata) {
+        const metaBlob = new Blob(
+          [
+            JSON.stringify(
+              {
+                generatedAt: new Date().toISOString(),
+                deckName,
+                styleInputs,
+                cardCount: cardsWithImages.length,
+                version: '1.0.0',
+              },
+              null,
+              2
+            ),
+          ],
+          { type: 'application/json' }
+        )
+        this.triggerDownload(metaBlob, 'deck-metadata.json')
+      }
+
+      if (onProgress) {
+        onProgress({
+          status: 'Download complete!',
+          progress: 100,
+          currentStep: 'complete',
+        })
+      }
+
+      return {
+        success: true,
+        data: {
+          downloaded: true,
+          filename: `${deckName.toLowerCase().replace(/\s+/g, '-')}-individual`,
+          fileSize: cardsWithImages.length * 1000,
+          cardCount: cardsWithImages.length,
+          includedMetadata: includeMetadata,
+        },
+      }
+    }
+
     // Create mock ZIP content
     const mockZipContent = JSON.stringify({
       cards: cardsWithImages.map(c => ({
@@ -134,13 +193,15 @@ export class DownloadMockService implements IDownloadService {
         name: c.cardName,
         filename: generateCardFilename(c.cardNumber, c.cardName),
       })),
-      metadata: includeMetadata ? {
-        generatedAt: new Date().toISOString(),
-        deckName,
-        styleInputs,
-        cardCount: cardsWithImages.length,
-        version: '1.0.0',
-      } : null,
+      metadata: includeMetadata
+        ? {
+            generatedAt: new Date().toISOString(),
+            deckName,
+            styleInputs,
+            cardCount: cardsWithImages.length,
+            version: '1.0.0',
+          }
+        : null,
     })
 
     const mockBlob = new Blob([mockZipContent], { type: 'application/zip' })
@@ -235,12 +296,24 @@ export class DownloadMockService implements IDownloadService {
 
     const completedCards = generatedCards.filter(c => c.generationStatus === 'completed')
 
-    if (completedCards.length === 0) {
+    if (completedCards.length < 22) {
       return {
         success: false,
         error: {
           code: DownloadErrorCode.INCOMPLETE_CARDS,
           message: 'No completed cards',
+          retryable: false,
+        },
+      }
+    }
+
+    const cardsWithImages = completedCards.filter(c => c.imageUrl || c.imageDataUrl)
+    if (cardsWithImages.length < completedCards.length) {
+      return {
+        success: false,
+        error: {
+          code: DownloadErrorCode.MISSING_IMAGES,
+          message: 'Some cards have missing images',
           retryable: false,
         },
       }

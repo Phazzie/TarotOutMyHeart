@@ -6,6 +6,7 @@
  */
 
 import type { ServiceResponse } from '$contracts/types/common'
+import { createImageId, isImageMimeType } from '$lib/utils/types'
 import type {
   IImageUploadService,
   UploadImagesInput,
@@ -18,7 +19,6 @@ import type {
   UploadedImage,
   ImageValidationResult,
   ImageValidationError,
-  ImageMimeType,
   ImageId,
 } from '$contracts/ImageUpload'
 import {
@@ -26,7 +26,6 @@ import {
   MAX_IMAGE_SIZE_BYTES,
   MIN_IMAGES,
   MAX_IMAGES,
-  ALLOWED_IMAGE_TYPES,
 } from '$contracts/ImageUpload'
 
 /**
@@ -40,7 +39,7 @@ export class ImageUploadMockService implements IImageUploadService {
    * Generate a unique ImageId
    */
   private generateId(): ImageId {
-    return crypto.randomUUID() as ImageId
+    return createImageId(crypto.randomUUID())
   }
 
   /**
@@ -57,7 +56,7 @@ export class ImageUploadMockService implements IImageUploadService {
     const errors: ImageValidationError[] = []
 
     // Check MIME type
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type as ImageMimeType)) {
+    if (!isImageMimeType(file.type)) {
       errors.push({
         code: ImageUploadErrorCode.INVALID_FILE_TYPE,
         message: `Invalid file type: ${file.type}. Only JPEG and PNG are allowed.`,
@@ -122,6 +121,36 @@ export class ImageUploadMockService implements IImageUploadService {
     const failedImages: ImageValidationError[] = []
 
     for (const file of files) {
+      // Check for duplicate images using name, size, and lastModified
+      const isDuplicate =
+        Array.from(this.uploadedImages.values()).some(img => {
+          const sameName = img.fileName === file.name
+          const sameSize = img.fileSize === file.size
+          const sameModified =
+            typeof img.file?.lastModified === 'number' && typeof file.lastModified === 'number'
+              ? img.file.lastModified === file.lastModified
+              : true
+          return sameName && sameSize && sameModified
+        }) ||
+        uploadedImages.some(img => {
+          const sameName = img.fileName === file.name
+          const sameSize = img.fileSize === file.size
+          const sameModified =
+            typeof img.file?.lastModified === 'number' && typeof file.lastModified === 'number'
+              ? img.file.lastModified === file.lastModified
+              : true
+          return sameName && sameSize && sameModified
+        })
+
+      if (isDuplicate) {
+        failedImages.push({
+          code: ImageUploadErrorCode.DUPLICATE_IMAGE,
+          message: `Duplicate image detected: ${file.name}`,
+          fileName: file.name,
+        })
+        continue
+      }
+
       const errors = this.validateFile(file)
 
       if (errors.length > 0) {
@@ -136,7 +165,7 @@ export class ImageUploadMockService implements IImageUploadService {
           previewUrl,
           fileName: file.name,
           fileSize: file.size,
-          mimeType: file.type as ImageMimeType,
+          mimeType: isImageMimeType(file.type) ? file.type : 'image/jpeg',
           uploadedAt: new Date(),
         }
 
@@ -145,14 +174,23 @@ export class ImageUploadMockService implements IImageUploadService {
       }
     }
 
+    const responseData = {
+      uploadedImages,
+      failedImages,
+      totalUploaded: uploadedImages.length,
+      totalFailed: failedImages.length,
+    }
+
+    if (uploadedImages.length === 0 && failedImages.length > 0) {
+      return {
+        success: true,
+        data: responseData,
+      }
+    }
+
     return {
       success: true,
-      data: {
-        uploadedImages,
-        failedImages,
-        totalUploaded: uploadedImages.length,
-        totalFailed: failedImages.length,
-      },
+      data: responseData,
     }
   }
 
@@ -193,6 +231,18 @@ export class ImageUploadMockService implements IImageUploadService {
     await this.delay(100)
 
     const { files } = input
+
+    if (files.length > MAX_IMAGES) {
+      return {
+        success: false,
+        error: {
+          code: ImageUploadErrorCode.TOO_MANY_FILES,
+          message: `Too many files`,
+          retryable: false,
+        },
+      }
+    }
+
     const validImages: ImageValidationResult[] = []
     const invalidImages: ImageValidationError[] = []
 

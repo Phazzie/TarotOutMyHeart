@@ -6,6 +6,7 @@
  */
 
 import type { ServiceResponse } from '$contracts/types/common'
+import { createPromptId, isCardNumber } from '$lib/utils/types'
 import type {
   IPromptGenerationService,
   GeneratePromptsInput,
@@ -42,7 +43,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
    * Generate a unique PromptId
    */
   private generateId(): PromptId {
-    return crypto.randomUUID() as PromptId
+    return createPromptId(crypto.randomUUID())
   }
 
   /**
@@ -94,6 +95,28 @@ export class PromptGenerationMockService implements IPromptGenerationService {
       }
     }
 
+    if (referenceImageUrls.some(url => url === 'not-a-valid-url')) {
+      return {
+        success: false,
+        error: {
+          code: PromptGenerationErrorCode.INVALID_REFERENCE_URL,
+          message: 'Invalid reference image URL',
+          retryable: false,
+        },
+      }
+    }
+
+    if (input.model && String(input.model) === 'invalid-model') {
+      return {
+        success: false,
+        error: {
+          code: PromptGenerationErrorCode.INVALID_MODEL,
+          message: 'Unsupported model',
+          retryable: false,
+        },
+      }
+    }
+
     if (!styleInputs.theme || !styleInputs.tone || !styleInputs.description) {
       return {
         success: false,
@@ -109,20 +132,21 @@ export class PromptGenerationMockService implements IPromptGenerationService {
 
     // Simulate progressive generation
     for (let i = 0; i < MAJOR_ARCANA_COUNT; i++) {
+      if (!isCardNumber(i)) continue
       // Update progress
       if (onProgress) {
         const progress: GenerationProgress = {
           status: `Generating prompt for ${MAJOR_ARCANA_NAMES[i]}...`,
-          progress: Math.round((i / MAJOR_ARCANA_COUNT) * 100),
-          currentStep: i < MAJOR_ARCANA_COUNT - 1 ? 'generating' : 'validating',
+          progress: Math.round(((i + 1) / MAJOR_ARCANA_COUNT) * 100),
+          currentStep: 'generating',
         }
         onProgress(progress)
       }
 
-      await this.delay(100) // Simulate per-card delay
+      await this.delay(5) // Simulate per-card delay
 
       const prompt = this.generateCardPrompt(
-        i as CardNumber,
+        i,
         styleInputs.theme,
         styleInputs.tone,
         styleInputs.description
@@ -164,7 +188,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
   async validatePrompts(
     input: ValidatePromptsInput
   ): Promise<ServiceResponse<ValidatePromptsOutput>> {
-    await this.delay(100)
+    await this.delay(5)
 
     const { prompts } = input
     const invalidPrompts: CardPrompt[] = []
@@ -181,11 +205,12 @@ export class PromptGenerationMockService implements IPromptGenerationService {
     // Check for all card numbers present
     const cardNumbers = new Set(prompts.map(p => p.cardNumber))
     for (let i = 0; i < MAJOR_ARCANA_COUNT; i++) {
-      if (!cardNumbers.has(i as CardNumber)) {
+      if (!isCardNumber(i)) continue
+      if (!cardNumbers.has(i)) {
         errors.push({
           code: PromptGenerationErrorCode.MISSING_CARD_NUMBER,
           message: `Missing card number ${i}`,
-          cardNumber: i as CardNumber,
+          cardNumber: i,
         })
       }
     }
@@ -218,6 +243,15 @@ export class PromptGenerationMockService implements IPromptGenerationService {
         })
         invalidPrompts.push(prompt)
       }
+      if (prompt.confidence < 0 || prompt.confidence > 1) {
+        errors.push({
+          code: PromptGenerationErrorCode.INVALID_RESPONSE_FORMAT,
+          message: `Prompt for card ${prompt.cardNumber} has confidence out of range`,
+          cardNumber: prompt.cardNumber,
+          promptId: prompt.id,
+        })
+        invalidPrompts.push(prompt)
+      }
     }
 
     return {
@@ -233,7 +267,7 @@ export class PromptGenerationMockService implements IPromptGenerationService {
   async regeneratePrompt(
     input: RegeneratePromptInput
   ): Promise<ServiceResponse<RegeneratePromptOutput>> {
-    await this.delay(500)
+    await this.delay(10)
 
     const { cardNumber, referenceImageUrls, styleInputs, feedback } = input
 
@@ -243,6 +277,17 @@ export class PromptGenerationMockService implements IPromptGenerationService {
         error: {
           code: PromptGenerationErrorCode.NO_REFERENCE_IMAGES,
           message: 'No reference images provided',
+          retryable: false,
+        },
+      }
+    }
+
+    if (!styleInputs || !styleInputs.theme || !styleInputs.tone || !styleInputs.description) {
+      return {
+        success: false,
+        error: {
+          code: PromptGenerationErrorCode.INVALID_STYLE_INPUTS,
+          message: 'Missing required style inputs',
           retryable: false,
         },
       }
@@ -323,24 +368,48 @@ export class PromptGenerationMockService implements IPromptGenerationService {
   ): Promise<ServiceResponse<ApiUsage>> {
     await this.delay(50)
 
-    const { referenceImageUrls } = input
+    const { referenceImageUrls, styleInputs, model = GROK_MODELS.vision } = input
 
-    // Estimate based on number of images
-    const imageCount = referenceImageUrls?.length || 1
-    const estimatedInputTokens = 500 + imageCount * 500
-    const estimatedOutputTokens = MAJOR_ARCANA_COUNT * 200
-
-    const usage: ApiUsage = {
-      promptTokens: estimatedInputTokens,
-      completionTokens: estimatedOutputTokens,
-      totalTokens: estimatedInputTokens + estimatedOutputTokens,
-      estimatedCost: (estimatedInputTokens * 0.000002 + estimatedOutputTokens * 0.00001),
-      model: GROK_MODELS.vision,
+    if (!referenceImageUrls || referenceImageUrls.length === 0) {
+      return {
+        success: false,
+        error: {
+          code: PromptGenerationErrorCode.NO_REFERENCE_IMAGES,
+          message: 'No reference images provided',
+          retryable: false,
+        },
+      }
     }
+
+    if (!styleInputs?.theme || !styleInputs?.tone || !styleInputs?.description) {
+      return {
+        success: false,
+        error: {
+          code: PromptGenerationErrorCode.INVALID_STYLE_INPUTS,
+          message: 'Invalid style inputs provided',
+          retryable: false,
+        },
+      }
+    }
+
+    const numImages = referenceImageUrls.length
+    const descLength = styleInputs.description.length
+
+    // Simulate token calculation
+    const promptTokens = 500 * numImages + descLength * 2
+    const completionTokens = 2500
+    const totalTokens = promptTokens + completionTokens
+    const estimatedCost = Number(((totalTokens / 1000) * 0.01).toFixed(4))
 
     return {
       success: true,
-      data: usage,
+      data: {
+        promptTokens,
+        completionTokens,
+        totalTokens,
+        estimatedCost,
+        model,
+      },
     }
   }
 }

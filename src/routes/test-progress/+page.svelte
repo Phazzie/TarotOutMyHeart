@@ -9,44 +9,48 @@
   import { appStore } from '$lib/stores/appStore.svelte'
   import { imageGenerationService } from '$services/factory'
   import type { CardPrompt } from '$contracts/PromptGeneration'
+  import { createPromptId, isCardNumber } from '$lib/utils/types'
 
   // Mock service
   const generationService = imageGenerationService
 
   // Mock prompts for testing
-  const mockPrompts: CardPrompt[] = Array.from({ length: 22 }, (_, i) => ({
-    id: `prompt-${i}` as import('../../../contracts/PromptGeneration').PromptId,
-    cardNumber: i as import('../../../contracts/PromptGeneration').CardNumber,
-    cardName:
-      [
-        'The Fool',
-        'The Magician',
-        'The High Priestess',
-        'The Empress',
-        'The Emperor',
-        'The Hierophant',
-        'The Lovers',
-        'The Chariot',
-        'Strength',
-        'The Hermit',
-        'Wheel of Fortune',
-        'Justice',
-        'The Hanged Man',
-        'Death',
-        'Temperance',
-        'The Devil',
-        'The Tower',
-        'The Star',
-        'The Moon',
-        'The Sun',
-        'Judgement',
-        'The World',
-      ][i] || `Card ${i}`,
-    traditionalMeaning: 'Sample meaning',
-    generatedPrompt: `A tarot card illustration for card ${i}...`,
-    confidence: 0.95,
-    generatedAt: new Date(),
-  }))
+  const mockPrompts: CardPrompt[] = Array.from({ length: 22 }, (_, i) => {
+    const cardNumber = isCardNumber(i) ? i : 0
+    return {
+      id: createPromptId(`prompt-${i}`),
+      cardNumber,
+      cardName:
+        [
+          'The Fool',
+          'The Magician',
+          'The High Priestess',
+          'The Empress',
+          'The Emperor',
+          'The Hierophant',
+          'The Lovers',
+          'The Chariot',
+          'Strength',
+          'The Hermit',
+          'Wheel of Fortune',
+          'Justice',
+          'The Hanged Man',
+          'Death',
+          'Temperance',
+          'The Devil',
+          'The Tower',
+          'The Star',
+          'The Moon',
+          'The Sun',
+          'Judgement',
+          'The World',
+        ][i] || `Card ${i}`,
+      traditionalMeaning: 'Sample meaning',
+      generatedPrompt: `A tarot card illustration for card ${i}...`,
+      confidence: 0.95,
+      generatedAt: new Date(),
+    }
+  })
 
   // Test functions
   async function startGeneration() {

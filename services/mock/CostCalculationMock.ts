@@ -125,7 +125,7 @@ export class CostCalculationMockService implements ICostCalculationService {
 
     const { imageCount, referenceImageCount, estimatedPromptLength = 1000 } = input
 
-    if (imageCount <= 0 || imageCount > 100) {
+    if (imageCount <= 0) {
       return {
         success: false,
         error: {
@@ -161,7 +161,7 @@ export class CostCalculationMockService implements ICostCalculationService {
         `${imageCount} cards to generate`,
         `~${estimatedPromptLength} tokens of style description`,
         `Using grok-vision-beta for prompts`,
-        `Using grok-2-image-alpha for images`,
+        `Using grok-imagine-image-2.0 for images`,
       ],
     }
 

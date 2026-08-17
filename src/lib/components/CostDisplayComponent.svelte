@@ -268,7 +268,7 @@
         totalImages: appStore.generatedCards.length,
         successfulImages: appStore.completedCardCount,
         failedImages: appStore.failedCardCount,
-        estimatedCost: appStore.completedCardCount * 0.1,
+        estimatedCost: appStore.completedCardCount * 0.02,
         totalGenerationTime: 120000,
         usagePerCard: [],
       }
@@ -412,7 +412,7 @@
                 <tr>
                   <td>
                     <span class="breakdown-detail">
-                      ({actualCostData.imageCost.imagesGenerated} images @ $0.10 each)
+                      ({actualCostData.imageCost.imagesGenerated} images @ $0.02 each)
                     </span>
                   </td>
                   <td></td>
@@ -526,7 +526,7 @@
         <ul>
           <li><strong>Text Input:</strong> $0.002 per 1K tokens</li>
           <li><strong>Text Output:</strong> $0.010 per 1K tokens</li>
-          <li><strong>Image Generation:</strong> $0.10 per image</li>
+          <li><strong>Image Generation:</strong> $0.02 per image</li>
           <li><strong>Vision API:</strong> $0.05 per request</li>
         </ul>
         <p class="info-note">

@@ -37,18 +37,31 @@
 -->
 
 <script lang="ts">
+  import { onDestroy } from 'svelte'
   import PromptListComponent from '$lib/components/PromptListComponent.svelte'
   import GenerationProgressComponent from '$lib/components/GenerationProgressComponent.svelte'
   import { appStore } from '$lib/stores/appStore.svelte'
   import { goto } from '$app/navigation'
   import { imageGenerationService } from '$services/factory'
-  import type { CardNumber } from '$contracts/index'
+  import { isCardNumber } from '$lib/utils/types'
 
   // ============================================================================
   // SERVICE INITIALIZATION
   // ============================================================================
 
   const generationService = imageGenerationService
+  let navigationTimeout: ReturnType<typeof setTimeout> | null = null
+
+  onDestroy(() => {
+    if (navigationTimeout) {
+      clearTimeout(navigationTimeout)
+      navigationTimeout = null
+    }
+    if (appStore.isGenerating) {
+      generationService.cancelGeneration({ sessionId: 'active' })
+      appStore.setLoading('generatingImages', false)
+    }
+  })
 
   // ============================================================================
   // DERIVED STATE
@@ -111,7 +124,7 @@
 
         if (failedCount === 0) {
           // All succeeded - show success message briefly then go to gallery
-          setTimeout(() => {
+          navigationTimeout = setTimeout(() => {
             goto('/gallery')
           }, 2000)
         }
@@ -136,9 +149,8 @@
    * Stops the current generation session.
    * Cards completed before cancellation are preserved.
    */
-  function handleCancel(): void {
-    // In a real implementation, we'd call generationService.cancelGeneration()
-    // For now, just stop the loading state
+  async function handleCancel(): Promise<void> {
+    await generationService.cancelGeneration({ sessionId: 'active' })
     appStore.setLoading('generatingImages', false)
     appStore.setError('Generation canceled by user')
   }
@@ -149,6 +161,11 @@
    * @param cardNumber - Card number (0-21) to retry
    */
   async function handleRetryFailed(cardNumber: number): Promise<void> {
+    if (!isCardNumber(cardNumber)) {
+      appStore.setError(`Invalid card number: ${cardNumber}`)
+      return
+    }
+
     const prompt = appStore.generatedPrompts.find(p => p.cardNumber === cardNumber)
 
     if (!prompt) {
@@ -158,15 +175,16 @@
 
     try {
       const response = await generationService.regenerateImage({
-        cardNumber: cardNumber as CardNumber,
+        cardNumber,
         prompt: prompt.generatedPrompt,
         previousAttempts: 1,
       })
 
-      if (response.success && response.data) {
+      if (response.success && response.data?.generatedCard) {
+        const generatedCard = response.data.generatedCard
         // Update the specific card in the store
         const newCards = appStore.generatedCards.map(card =>
-          card.cardNumber === cardNumber ? response.data!.generatedCard : card
+          card.cardNumber === cardNumber ? generatedCard : card
         )
         appStore.setGeneratedCards(newCards)
       } else {
