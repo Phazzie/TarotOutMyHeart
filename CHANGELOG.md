@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Dependency audit** (2026-11-12): Upgraded the toolchain so `npm audit --audit-level=moderate` passes. Direct majors: `@sveltejs/kit` 3, `@sveltejs/adapter-vercel` 7, `@sveltejs/vite-plugin-svelte` 7, `svelte` 5.57, `vite` 8, `vitest` 5, `typescript` 6.0, `svelte-check` 4, `@typescript-eslint/*` 8, `@vercel/blob` 2, `openai` 7. `overrides` pin patched `zod`, `glob`, `minimatch`, and `@vercel/oidc`. Node engine is `>=22.17` (`.nvmrc` and Depot CI are Node 22). Kit config moved from `svelte.config.js` into `vite.config.ts`. The Vercel adapter runtime is `nodejs22.x`.
+- **ZIP downloads** (2026-11-12): `DownloadService` packs images from `arrayBuffer` and builds the archive as a `uint8array` wrapped in a `Blob`, so ZIP generation works in jsdom. The two stress cases that failed on `main` now pass.
+
 ### Added
 
 - **Depot CI** (2026-11-12): Added `.depot/workflows/ci.yml` for Cursor Origin (Depot app on `depot-ubuntu-24.04`). Pull requests and pushes to `main` run `npm ci` and `npm run ci`, the SDD compliance checks from `.github/workflows/sdd-compliance.yml`, and `npm audit --audit-level=moderate`. Pull requests also run `scripts/ai-review.mjs`, which posts a Grok review with `origin pr comment` when `XAI_API_KEY` is set and prints a skip line (exit 0) when the key or the `origin` CLI is missing. GitHub Actions workflows stay in place. Mapping, dropped GitHub-only jobs, and Depot secrets are in `docs/origin-ci.md`.

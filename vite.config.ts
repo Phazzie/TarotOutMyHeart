@@ -1,8 +1,22 @@
+import adapter from '@sveltejs/adapter-vercel'
 import { sveltekit } from '@sveltejs/kit/vite'
-import { defineConfig } from 'vitest/config'
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
+import { defineConfig } from 'vite'
 
 export default defineConfig({
-  plugins: [sveltekit()],
+  plugins: [
+    sveltekit({
+      preprocess: vitePreprocess(),
+      adapter: adapter({
+        runtime: 'nodejs22.x',
+      }),
+      alias: {
+        $contracts: './contracts',
+        $services: './services',
+        $lib: './src/lib',
+      },
+    }),
+  ],
 
   server: {
     fs: {
@@ -10,25 +24,6 @@ export default defineConfig({
     },
   },
 
-  test: {
-    // Include test files
-    include: ['src/**/*.{test,spec}.{js,ts}', 'tests/**/*.{test,spec}.{js,ts}'],
-
-    // Test environment
-    environment: 'jsdom',
-
-    // Global test setup
-    globals: true,
-
-    // Coverage configuration
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', '.svelte-kit/', 'build/', 'tests/', '*.config.*'],
-    },
-  },
-
-  // Resolve path aliases (matches svelte.config.js)
   resolve: {
     alias: {
       $contracts: './contracts',

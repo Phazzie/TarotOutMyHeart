@@ -1356,6 +1356,26 @@ _To be filled at project completion_
 
 ---
 
+### Lesson #17: A green moderate audit needed majors plus targeted overrides 🔐
+
+**Date**: 2026-11-12  
+**Phase**: Depot `npm-audit` job  
+**What happened**: `vitest` 5, `@sveltejs/adapter-vercel` 7, and `@vercel/blob` 2 cleared their own advisories and pulled SvelteKit 3, Vite 8, and TypeScript 6. Moderate findings remained in transitive `zod` 3, `glob` 13, `minimatch` 10, and `@vercel/oidc` 3 even at the latest parent releases.
+
+**What we learned**:
+
+- SvelteKit 3, Vitest 5, and OpenAI SDK 7 require Node `>=22.17`. Depot CI and `.nvmrc` have to move together or `npm run ci` fails on the runner.
+- Kit 3 reads config from `sveltekit()` in `vite.config.ts` and errors if `svelte.config.js` still exists. `$app/stores` is gone; layouts read `page` from `$app/state`.
+- When the patched release is a transitive package (`zod` 4.6.7, `glob` 14.0.6, `minimatch` 11.0.8, `@vercel/oidc` 4.0.8), an `overrides` entry for that parent is enough. A blanket `minimatch` override would replace ESLint's minimatch 3 and can break lint.
+- JSZip `generateAsync({ type: 'blob' })` fails in jsdom because `FileReader` rejects jsdom blobs. Packing `Uint8Array`s and wrapping the `uint8array` output in a `Blob` makes the zip tests pass.
+
+**Prevention**:
+
+- After a major install, run `npm audit --audit-level=moderate` and `npm ls` on whatever is still listed. Override only the copies that are inside the advisory range.
+- Bump the CI Node version in the same change as a dependency whose `engines` field demands it.
+
+---
+
 ## References
 
 - See `/seam-driven-development.md` for full SDD methodology

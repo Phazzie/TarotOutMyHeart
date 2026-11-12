@@ -7,12 +7,11 @@ import type { GeneratedCard, GeneratedCardId } from '$contracts/ImageGeneration'
 import type { StyleInputs } from '$contracts/StyleInput'
 
 vi.mock('jszip', () => {
-  return {
-    default: vi.fn().mockImplementation(() => ({
-      file: vi.fn(),
-      generateAsync: vi.fn().mockResolvedValue(new Blob(['zip-content'])),
-    })),
+  class JSZipMock {
+    file = vi.fn()
+    generateAsync = vi.fn().mockResolvedValue(new Uint8Array([1, 2, 3]))
   }
+  return { default: JSZipMock }
 })
 
 const makeCompletedCard = (n: number): GeneratedCard => ({
