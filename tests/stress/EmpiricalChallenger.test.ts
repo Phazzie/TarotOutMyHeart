@@ -376,7 +376,12 @@ describe('Empirical Challenger Stress Test Suite', () => {
       let zipInstance: JSZip | null = null
       const originalGenerateAsync = JSZip.prototype.generateAsync
 
-      vi.spyOn(JSZip.prototype, 'generateAsync').mockImplementation(function (this: JSZip, options) {
+      vi.spyOn(JSZip.prototype, 'generateAsync').mockImplementation(function (
+        this: JSZip,
+        options
+      ) {
+        // The assertion below reads files off the instance the service just filled.
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         zipInstance = this
         return originalGenerateAsync.call(this, options)
       })
@@ -413,7 +418,7 @@ describe('Empirical Challenger Stress Test Suite', () => {
     })
 
     it('Scenario 3.2: Valid format "individual" handles card downloads and metadata JSON anchor', async () => {
-      let createdAnchors: HTMLAnchorElement[] = []
+      const createdAnchors: HTMLAnchorElement[] = []
       const originalCreateElement = document.createElement.bind(document)
 
       vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
@@ -463,7 +468,12 @@ describe('Empirical Challenger Stress Test Suite', () => {
       let zipInstance: JSZip | null = null
       const originalGenerateAsync = JSZip.prototype.generateAsync
 
-      vi.spyOn(JSZip.prototype, 'generateAsync').mockImplementation(function (this: JSZip, options) {
+      vi.spyOn(JSZip.prototype, 'generateAsync').mockImplementation(function (
+        this: JSZip,
+        options
+      ) {
+        // Same capture as scenario 3.1: the instance is the zip under test.
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         zipInstance = this
         return originalGenerateAsync.call(this, options)
       })
@@ -531,17 +541,17 @@ describe('Empirical Challenger Stress Test Suite', () => {
       expect(nominal.data?.warningMessage).toBeUndefined()
 
       // Warning (>= 5.00 and < 10.00)
-      const warning = await costService.formatCost({ cost: 6.50, includeWarning: true })
+      const warning = await costService.formatCost({ cost: 6.5, includeWarning: true })
       expect(warning.data?.warningLevel).toBe('warning')
       expect(warning.data?.warningMessage).toContain('above normal range')
 
       // High (>= 10.00 and < 20.00)
-      const high = await costService.formatCost({ cost: 12.00, includeWarning: true })
+      const high = await costService.formatCost({ cost: 12.0, includeWarning: true })
       expect(high.data?.warningLevel).toBe('high')
       expect(high.data?.warningMessage).toContain('High cost alert')
 
       // Maximum (>= 20.00)
-      const max = await costService.formatCost({ cost: 25.00, includeWarning: true })
+      const max = await costService.formatCost({ cost: 25.0, includeWarning: true })
       expect(max.data?.warningLevel).toBe('maximum')
       expect(max.data?.warningMessage).toContain('exceeds maximum allowed')
     })

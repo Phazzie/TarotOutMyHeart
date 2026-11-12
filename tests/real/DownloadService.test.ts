@@ -80,7 +80,11 @@ describe('DownloadService', () => {
 
     it('returns success with correct counts for completed cards', async () => {
       const cards = [makeCompletedCard(0), makeCompletedCard(1)]
-      const result = await svc.downloadDeck({ generatedCards: cards, styleInputs, includeMetadata: true })
+      const result = await svc.downloadDeck({
+        generatedCards: cards,
+        styleInputs,
+        includeMetadata: true,
+      })
       expect(result.success).toBe(true)
       if (result.success && result.data) {
         expect(result.data.cardCount).toBe(2)

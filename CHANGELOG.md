@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Depot CI** (2026-11-12): Added `.depot/workflows/ci.yml` for Cursor Origin (Depot app on `depot-ubuntu-24.04`). Pull requests and pushes to `main` run `npm ci` and `npm run ci`, the SDD compliance checks from `.github/workflows/sdd-compliance.yml`, and `npm audit --audit-level=moderate`. Pull requests also run `scripts/ai-review.mjs`, which posts a Grok review with `origin pr comment` when `XAI_API_KEY` is set and prints a skip line (exit 0) when the key or the `origin` CLI is missing. GitHub Actions workflows stay in place. Mapping, dropped GitHub-only jobs, and Depot secrets are in `docs/origin-ci.md`.
+- **Prettier** (2026-11-12): Reformatted four files that already failed `prettier --check`, so `npm run ci` can pass: `services/real/PromptGenerationService.ts`, `tests/challenger_hardening.test.ts`, `tests/real/DownloadService.test.ts`, `tests/stress/EmpiricalChallenger.test.ts`.
+- **Lint blockers for `npm run ci`** (2026-11-12): `src/routes/api/prompts/+server.ts` now reads `generatedPrompt` and the single-card number through the existing `isCardNumber` guard instead of type assertions. In `tests/stress/EmpiricalChallenger.test.ts`, the zip spy keeps an explicit `no-this-alias` exception (the test has to hold that instance), and one `let` that was never reassigned is `const`.
+
 ### Fixed
 
 - **Grok API Key Configuration & Strict Type Guard Auditing** (2026-08-10):

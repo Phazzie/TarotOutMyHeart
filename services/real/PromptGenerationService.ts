@@ -425,13 +425,7 @@ export class PromptGenerationService implements IPromptGenerationService {
   async regeneratePrompt(
     input: RegeneratePromptInput
   ): Promise<ServiceResponse<RegeneratePromptOutput>> {
-    const {
-      cardNumber,
-      referenceImageUrls = [],
-      styleInputs,
-      previousPrompt,
-      feedback,
-    } = input
+    const { cardNumber, referenceImageUrls = [], styleInputs, previousPrompt, feedback } = input
     const model = GROK_MODELS.vision
 
     if (!isCardNumber(cardNumber)) {
@@ -654,8 +648,7 @@ export class PromptGenerationService implements IPromptGenerationService {
         success: false,
         error: {
           code: PromptGenerationErrorCode.NETWORK_ERROR,
-          message:
-            err instanceof Error ? err.message : 'Network error during prompt regeneration',
+          message: err instanceof Error ? err.message : 'Network error during prompt regeneration',
           retryable: true,
         },
       }

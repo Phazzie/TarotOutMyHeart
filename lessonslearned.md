@@ -1330,6 +1330,32 @@ _To be filled at project completion_
 
 ---
 
+### Lesson #16: Optional CI steps must skip green, and locked installs are the Depot command 🔒
+
+**Date**: 2026-11-12  
+**Phase**: Move CI from GitHub Actions to Cursor Origin (Depot)  
+**What happened**: GitHub Actions is unusable on this account (billing lock). CI is moving to Depot workflows that still use GitHub Actions YAML. The old `ci.yml` installed with `npm install` and let typecheck and formatting fail open. A Grok review that exits non-zero when `XAI_API_KEY` is not in Depot yet would make every pull request red.
+
+**What we learned**:
+
+- Depot runs `.depot/workflows/*.yml` on `depot-ubuntu-24.04`. The install command that matches a committed lockfile is `npm ci`, then this repo's existing `npm run ci` (lint, check, test:all, build).
+- An AI review job is optional infrastructure. Missing `XAI_API_KEY` or a missing `origin` CLI must log the reason and exit 0. Posting uses `origin pr comment <PR_NUMBER> --body-file … --edit-last --create-if-none`.
+- CodeQL and GitHub Releases cannot move with the workflow file. They stay documented as GitHub-only. Vercel still deploys; Depot does not replace that.
+- `npm audit --audit-level=moderate` is not a trivial green command on this lockfile. Clearing it needs semver-major upgrades (`vitest` 5, `@sveltejs/adapter-vercel` 7, `@vercel/blob` 2). Do not force those just to silence the audit.
+
+**What we did**:
+
+1. Added `.depot/workflows/ci.yml` and `scripts/ai-review.mjs`.
+2. Left `.github/workflows/` in the tree.
+3. Wrote `docs/origin-ci.md` with the workflow map, dropped jobs, and the Depot secret (`XAI_API_KEY`).
+
+**Prevention**:
+
+- When a CI secret is not in the new forge yet, the job that needs it skips cleanly.
+- Do not `npm audit fix --force` as part of a CI move.
+
+---
+
 ## References
 
 - See `/seam-driven-development.md` for full SDD methodology
