@@ -1,0 +1,165 @@
+# Depot CI for TarotOutMyHeart.
+# GitHub Actions syntax, executed by the Depot app on depot-ubuntu-24.04
+# once this repository is detached from GitHub.
+# Local equivalent: npm ci && npm run ci, plus the SDD and audit steps below.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    name: Lint, types, tests, and build
+    runs-on: depot-ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Locked install
+        run: npm ci
+
+      - name: Project CI
+        run: npm run ci
+
+      - name: AI review unit tests
+        run: node --test scripts/ai-review.test.mjs
+
+  sdd-compliance:
+    name: SDD compliance
+    runs-on: depot-ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Contract immutability
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          base="${BASE_REF:-main}"
+          git fetch origin "$base"
+          CHANGED=$(git diff --name-only "origin/${base}...HEAD" | grep '^contracts/' || true)
+          if [ -n "$CHANGED" ]; then
+            echo "Contract files have been modified."
+            echo "$CHANGED"
+            echo "Per SDD, contracts stay immutable once defined. Add a new version instead."
+            exit 1
+          fi
+          echo "No contract files changed."
+
+      - name: No any type escapes
+        run: |
+          ANY_FOUND=$(git grep -n ": any" src/ contracts/ services/ 2>/dev/null || true)
+          ANY_FOUND_AS=$(git grep -n "as any" src/ contracts/ services/ 2>/dev/null || true)
+          if [ -n "$ANY_FOUND" ] || [ -n "$ANY_FOUND_AS" ]; then
+            echo "Found 'any' type escapes."
+            if [ -n "$ANY_FOUND" ]; then
+              echo "$ANY_FOUND"
+            fi
+            if [ -n "$ANY_FOUND_AS" ]; then
+              echo "$ANY_FOUND_AS"
+            fi
+            exit 1
+          fi
+          echo "No 'any' type escapes found."
+
+      - name: Seams documented
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          base="${BASE_REF:-main}"
+          git fetch origin "$base"
+          NEW_CONTRACTS=$(git diff --name-status "origin/${base}...HEAD" | grep '^A' | grep 'contracts/.*\.ts$' | awk '{print $2}' || true)
+          if [ -z "$NEW_CONTRACTS" ]; then
+            echo "No new contract files."
+            exit 0
+          fi
+          SEAMSLIST_UPDATED=$(git diff --name-only "origin/${base}...HEAD" | grep 'SEAMSLIST.md' || true)
+          if [ -z "$SEAMSLIST_UPDATED" ]; then
+            echo "New contracts added but SEAMSLIST.md was not updated."
+            echo "$NEW_CONTRACTS"
+            exit 1
+          fi
+          echo "SEAMSLIST.md updated."
+
+      - name: No manual transformations
+        run: |
+          TRANSFORMS=$(git grep -n -E "function (adapt|transform|convert|map.*Data)" src/ services/ 2>/dev/null | grep -v node_modules || true)
+          if [ -n "$TRANSFORMS" ]; then
+            echo "Potential manual data transformations (warning only):"
+            echo "$TRANSFORMS"
+          fi
+          echo "Manual transformation check complete."
+
+      - name: Mock coverage
+        run: |
+          CONTRACTS=$(find contracts/ -name "*.ts" -not -path "*/types/*" -not -name "index.ts" 2>/dev/null || true)
+          if [ -z "$CONTRACTS" ]; then
+            echo "No contracts defined yet."
+            exit 0
+          fi
+          MISSING_MOCKS=""
+          for contract in $CONTRACTS; do
+            filename=$(basename "$contract" .ts)
+            if [ ! -f "services/mock/${filename}Mock.ts" ]; then
+              MISSING_MOCKS="${MISSING_MOCKS}${filename}"$'\n'
+            fi
+          done
+          if [ -n "$MISSING_MOCKS" ]; then
+            echo "Contracts missing mock implementations:"
+            printf '%s' "$MISSING_MOCKS"
+            exit 1
+          fi
+          echo "All contracts have mock implementations."
+
+  npm-audit:
+    name: npm audit
+    runs-on: depot-ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Locked install
+        run: npm ci
+
+      - name: Audit moderate and higher
+        run: npm audit --audit-level=moderate
+
+  ai-review:
+    name: Grok review
+    if: github.event_name == 'pull_request'
+    runs-on: depot-ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Locked install
+        run: npm ci
+
+      - name: Grok review
+        env:
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+          # Prefer Origin comments. A leftover Actions token must not retarget GitHub.
+          GITHUB_TOKEN: ''
+        run: node scripts/ai-review.mjs

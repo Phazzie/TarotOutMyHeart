@@ -40,7 +40,12 @@ import { ImageUploadService } from '../services/real/ImageUploadService'
 import { POST as promptPostHandler } from '../src/routes/api/prompts/+server'
 import { POST as cardGeneratePostHandler } from '../src/routes/api/generate/card/+server'
 import { DEFAULT_STYLE_INPUTS } from '$contracts/StyleInput'
-import { PromptGenerationErrorCode, type CardNumber, type CardPrompt, type PromptId } from '$contracts/PromptGeneration'
+import {
+  PromptGenerationErrorCode,
+  type CardNumber,
+  type CardPrompt,
+  type PromptId,
+} from '$contracts/PromptGeneration'
 import { type GeneratedCard, type GeneratedCardId } from '$contracts/ImageGeneration'
 import { CostCalculationErrorCode } from '$contracts/CostCalculation'
 import { DownloadErrorCode } from '$contracts/Download'
@@ -55,7 +60,10 @@ const makePrompt = (cardNumber: number): CardPrompt => ({
   generatedAt: new Date(),
 })
 
-const makeCard = (cardNumber: number, status: 'completed' | 'failed' = 'completed'): GeneratedCard => ({
+const makeCard = (
+  cardNumber: number,
+  status: 'completed' | 'failed' = 'completed'
+): GeneratedCard => ({
   id: `card-${cardNumber}` as GeneratedCardId,
   cardNumber: cardNumber as CardNumber,
   cardName: `Card ${cardNumber}`,
@@ -233,7 +241,8 @@ describe('CHALLENGER 2: Empirical Stress Test Suite', () => {
                 content: JSON.stringify({
                   cardNumber: 13,
                   cardName: 'Death',
-                  generatedPrompt: 'A stylized skeletal figure surrounded by golden blooming lotus flowers.',
+                  generatedPrompt:
+                    'A stylized skeletal figure surrounded by golden blooming lotus flowers.',
                 }),
               },
             },
@@ -272,7 +281,9 @@ describe('CHALLENGER 2: Empirical Stress Test Suite', () => {
           ? userMessage.find((c: any) => c.type === 'text' && c.text.includes('Death'))?.text
           : ''
         expect(textContent).toContain('Previous prompt: Old prompt about a skeleton')
-        expect(textContent).toContain('User feedback / adjustments requested: Add lotus flowers and gold accents')
+        expect(textContent).toContain(
+          'User feedback / adjustments requested: Add lotus flowers and gold accents'
+        )
       })
 
       it('rejects invalid card numbers (e.g. 22, -1, 99) when reference images are absent', async () => {
@@ -543,7 +554,12 @@ Hope you like it!`
       })
 
       mockImagesGenerate.mockResolvedValueOnce({
-        data: [{ b64_json: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' }],
+        data: [
+          {
+            b64_json:
+              'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+          },
+        ],
       })
 
       const req = new Request('http://localhost/api/generate/card', {
@@ -572,7 +588,12 @@ Hope you like it!`
       })
 
       mockImagesGenerate.mockResolvedValueOnce({
-        data: [{ b64_json: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' }],
+        data: [
+          {
+            b64_json:
+              'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+          },
+        ],
       })
 
       const req = new Request('http://localhost/api/generate/card', {
@@ -676,7 +697,8 @@ Hope you like it!`
         vi.stubGlobal(
           'fetch',
           vi.fn().mockResolvedValue({
-            json: () => Promise.resolve({ success: true, data: { url: 'https://blob.vercel.com/img.jpg' } }),
+            json: () =>
+              Promise.resolve({ success: true, data: { url: 'https://blob.vercel.com/img.jpg' } }),
           })
         )
 

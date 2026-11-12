@@ -10,12 +10,19 @@ import {
   MAJOR_ARCANA_MEANINGS,
   PromptGenerationErrorCode,
   GROK_MODELS,
-  type CardNumber,
 } from '$contracts/PromptGeneration'
 import { isRawPromptArray, createPromptId, isCardNumber } from '$lib/utils/types'
 import type { RequestHandler } from './$types'
 
 export const config = { maxDuration: 90 }
+
+/** Read a string `generatedPrompt` from a model JSON value without a type assertion. */
+function readGeneratedPrompt(value: unknown): string | undefined {
+  if (typeof value !== 'object' || value === null) return undefined
+  if (!('generatedPrompt' in value)) return undefined
+  const prompt = Reflect.get(value, 'generatedPrompt')
+  return typeof prompt === 'string' ? prompt : undefined
+}
 
 export const POST: RequestHandler = async ({ request }) => {
   const apiKey = process.env['XAI_API_KEY']
@@ -108,8 +115,8 @@ Generate image generation prompts for a custom tarot deck based on reference ima
 The style should be: ${styleDescription}
 Output a detailed image generation prompt in JSON format.`
 
-  if (isSingleCard) {
-    const targetCardNumber = cardNumber as CardNumber
+  if (typeof cardNumber === 'number' && isCardNumber(cardNumber)) {
+    const targetCardNumber = cardNumber
     const cardName = MAJOR_ARCANA_NAMES[targetCardNumber]
     const meaning = MAJOR_ARCANA_MEANINGS[targetCardNumber]
 
@@ -171,24 +178,10 @@ Return ONLY a JSON object with this exact structure (no markdown, no explanation
         )
       }
 
-      let promptText = ''
-      if (
-        typeof parsed === 'object' &&
-        parsed !== null &&
-        !Array.isArray(parsed) &&
-        'generatedPrompt' in parsed &&
-        typeof (parsed as Record<string, unknown>)['generatedPrompt'] === 'string'
-      ) {
-        promptText = (parsed as Record<string, unknown>)['generatedPrompt'] as string
-      } else if (
-        Array.isArray(parsed) &&
-        parsed[0] &&
-        typeof parsed[0] === 'object' &&
-        'generatedPrompt' in parsed[0] &&
-        typeof (parsed[0] as Record<string, unknown>)['generatedPrompt'] === 'string'
-      ) {
-        promptText = (parsed[0] as Record<string, unknown>)['generatedPrompt'] as string
-      } else {
+      const promptText = Array.isArray(parsed)
+        ? readGeneratedPrompt(parsed[0])
+        : readGeneratedPrompt(parsed)
+      if (promptText === undefined) {
         return json(
           {
             success: false,
