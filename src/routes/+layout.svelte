@@ -2,7 +2,7 @@
 /**
  * @fileoverview Root layout - App shell with navigation and global styles
  * @purpose Provides consistent header/footer/navigation across all pages
- * @dataFlow Wraps all page content via <slot />; reads current route from $page.url.pathname
+ * @dataFlow Wraps all page content via <slot />; reads current route from page.url.pathname
  * @updated 2026-08-07
  *
  * Features:
@@ -15,10 +15,14 @@
 -->
 
 <script lang="ts">
-  import { page } from '$app/stores'
+  import type { Snippet } from 'svelte'
+  import { page } from '$app/state'
 
-  // Mobile menu toggle state
-  let mobileMenuOpen = false
+  const { children }: { children: Snippet } = $props()
+
+  // Open only for the path where the user toggled the menu. A route change closes it.
+  let menuPath = $state<string | null>(null)
+  const mobileMenuOpen = $derived(menuPath === page.url.pathname)
 
   // Navigation items with step numbers
   const navItems = [
@@ -37,12 +41,8 @@
   }
 
   // Close mobile menu when route changes
-  $: if ($page.url.pathname) {
-    mobileMenuOpen = false
-  }
-
   function toggleMobileMenu() {
-    mobileMenuOpen = !mobileMenuOpen
+    menuPath = mobileMenuOpen ? null : page.url.pathname
   }
 </script>
 
@@ -146,12 +146,11 @@
 
         <!-- Desktop Step Navigation Tabs -->
         <ul class="nav-links step-tabs desktop-nav">
-          {#each navItems as item, index}
+          {#each navItems as item, index (item.href)}
             <li class="nav-item">
               <a
                 href={item.href}
-                class="step-tab"
-                class:active={isActive(item.href, $page.url.pathname)}
+                class={['step-tab', { active: isActive(item.href, page.url.pathname) }]}
               >
                 {#if item.step}
                   <span class="step-badge">{item.step}</span>
@@ -168,8 +167,7 @@
 
         <!-- Mobile Hamburger Button -->
         <button
-          class="hamburger"
-          class:open={mobileMenuOpen}
+          class={['hamburger', { open: mobileMenuOpen }]}
           onclick={toggleMobileMenu}
           aria-label="Toggle menu"
           aria-expanded={mobileMenuOpen}
@@ -184,12 +182,11 @@
       {#if mobileMenuOpen}
         <div class="mobile-nav-wrapper">
           <ul class="nav-links mobile-nav">
-            {#each navItems as item}
+            {#each navItems as item (item.href)}
               <li>
                 <a
                   href={item.href}
-                  class="mobile-step-tab"
-                  class:active={isActive(item.href, $page.url.pathname)}
+                  class={['mobile-step-tab', { active: isActive(item.href, page.url.pathname) }]}
                 >
                   {#if item.step}
                     <span class="step-badge">{item.step}</span>
@@ -206,7 +203,7 @@
   </header>
 
   <main>
-    <slot />
+    {@render children()}
   </main>
 
   <footer>

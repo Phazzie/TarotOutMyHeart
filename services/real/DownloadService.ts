@@ -18,6 +18,13 @@ import type {
 import { DownloadErrorCode, DOWNLOAD_FORMATS } from '$contracts/Download'
 import JSZip from 'jszip'
 
+/** Copy zip bytes into a fresh ArrayBuffer so Blob accepts them under TypeScript 6. */
+function zipBytesToBlob(bytes: Uint8Array): Blob {
+  const copy = new ArrayBuffer(bytes.byteLength)
+  new Uint8Array(copy).set(bytes)
+  return new Blob([copy], { type: 'application/zip' })
+}
+
 export class DownloadService implements IDownloadService {
   private isBrowser(): boolean {
     return typeof window !== 'undefined'
@@ -185,10 +192,10 @@ export class DownloadService implements IDownloadService {
 
       try {
         const res = await fetch(src)
-        const blob = await res.blob()
+        const bytes = new Uint8Array(await res.arrayBuffer())
         const paddedNum = String(card.cardNumber).padStart(2, '0')
         const safeName = card.cardName.toLowerCase().replace(/\s+/g, '-')
-        zip.file(`${paddedNum}-${safeName}.png`, blob)
+        zip.file(`${paddedNum}-${safeName}.png`, bytes)
       } catch {
         // Continue zipping other cards if one fails
       }
@@ -218,7 +225,8 @@ export class DownloadService implements IDownloadService {
     })
 
     try {
-      const zipBlob = await zip.generateAsync({ type: 'blob' })
+      const zipBytes = await zip.generateAsync({ type: 'uint8array' })
+      const zipBlob = zipBytesToBlob(zipBytes)
       const filename = `${deckName.toLowerCase().replace(/\s+/g, '-')}.zip`
       const url = URL.createObjectURL(zipBlob)
 
@@ -343,16 +351,17 @@ export class DownloadService implements IDownloadService {
       if (!src) continue
       try {
         const res = await fetch(src)
-        const blob = await res.blob()
+        const bytes = new Uint8Array(await res.arrayBuffer())
         const paddedNum = String(card.cardNumber).padStart(2, '0')
         const safeName = card.cardName.toLowerCase().replace(/\s+/g, '-')
-        zip.file(`${paddedNum}-${safeName}.png`, blob)
+        zip.file(`${paddedNum}-${safeName}.png`, bytes)
       } catch {
         // Skip card if fetch fails
       }
     }
 
-    const zipBlob = await zip.generateAsync({ type: 'blob' })
+    const zipBytes = await zip.generateAsync({ type: 'uint8array' })
+    const zipBlob = zipBytesToBlob(zipBytes)
     const url = URL.createObjectURL(zipBlob)
 
     return {

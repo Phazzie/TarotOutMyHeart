@@ -27,31 +27,43 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@sveltejs/adapter-vercel": "^5.0.0",
-    "@sveltejs/kit": "^2.0.0",
-    "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "@sveltejs/adapter-vercel": "^7.0.3",
+    "@sveltejs/kit": "^3.2.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@types/node": "^24.10.0",
-    "@typescript-eslint/eslint-plugin": "^7.0.0",
-    "@typescript-eslint/parser": "^7.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.0",
+    "@typescript-eslint/parser": "^8.46.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-svelte": "^2.35.1",
     "husky": "^9.1.7",
     "jsdom": "^27.1.0",
-    "prettier": "^3.2.0",
-    "prettier-plugin-svelte": "^3.1.2",
-    "svelte": "^5.0.0",
-    "svelte-check": "^3.6.0",
-    "typescript": "^5.3.0",
-    "vite": "^5.0.0",
-    "vitest": "^1.2.0"
+    "prettier": "3.6.2",
+    "prettier-plugin-svelte": "3.4.0",
+    "svelte": "^5.57.1",
+    "svelte-check": "^4.7.8",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.12",
+    "vitest": "^5.1.0"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.17.0"
   },
   "dependencies": {
-    "@vercel/blob": "^0.27.0",
+    "@vercel/blob": "^2.9.0",
     "jszip": "^3.10.1",
-    "openai": "^4.98.0"
+    "openai": "^7.55.0"
+  },
+  "overrides": {
+    "zod": "4.6.7",
+    "@vercel/blob": {
+      "@vercel/oidc": "4.0.8"
+    },
+    "@vercel/nft": {
+      "glob": "14.0.6"
+    },
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "11.0.8"
+    }
   }
 }

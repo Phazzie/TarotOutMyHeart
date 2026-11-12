@@ -25,9 +25,9 @@ export default defineConfig({
   resolve: {
     alias: {
       // Mirror the path aliases in svelte.config.js / tsconfig.json
-      $contracts: resolve(__dirname, './contracts'),
-      $services: resolve(__dirname, './services'),
-      $lib: resolve(__dirname, './src/lib'),
+      $contracts: resolve(import.meta.dirname, './contracts'),
+      $services: resolve(import.meta.dirname, './services'),
+      $lib: resolve(import.meta.dirname, './src/lib'),
     },
   },
 })

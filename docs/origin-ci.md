@@ -15,7 +15,7 @@ Triggers:
 - every pull request
 - every push to the default branch (`main`)
 
-Runner: `depot-ubuntu-24.04`. Node.js **20** (this repo's `.nvmrc` and `engines`).
+Runner: `depot-ubuntu-24.04`. Node.js **22** (this repo's `.nvmrc`). SvelteKit 3, Vitest 5, and the OpenAI SDK 7 require Node `>=22.17`.
 
 | Job | Commands |
 | --- | --- |
@@ -73,11 +73,9 @@ These stay where they already are. Depot CI does not deploy.
 | `USE_MOCKS` | Vercel project env | Production should be `false`. Depot `npm run build` does not need it |
 | `GITHUB_TOKEN` | GitHub, automatic | Only `release.yml` uses it. Not a Depot secret |
 
-## Known local audit result
+## Audit
 
-`npm audit --audit-level=moderate` exits non-zero on the current lockfile (moderate, high, and critical advisories). `npm audit fix` without `--force` does not clear the job. The remaining fixes that audit itself marks as semver-major are `vitest@5`, `@sveltejs/adapter-vercel@7`, and `@vercel/blob@2`. Those upgrades are not part of this CI move.
-
-The Depot `npm-audit` job runs the same command the GitHub workflow used and fails when the command fails. That matches `.github/workflows/security.yml`, which reported the audit and then exited 1.
+`npm audit --audit-level=moderate` passes after the semver-major upgrades in `package.json` (`vitest` 5, `@sveltejs/adapter-vercel` 7, `@sveltejs/kit` 3, `@vercel/blob` 2, `openai` 7) plus `overrides` for patched transitive copies of `zod` 4.6.7, `glob` 14.0.6, `minimatch` 11.0.8, and `@vercel/oidc` 4.0.8. Four low-severity findings remain. The Depot `npm-audit` job fails only at moderate and above.
 
 ## Local commands
 
