@@ -38,10 +38,12 @@ world explains the flow instead of decorating it.
   services.
 - Card art in my screenshots is placeholder purple from the test stubs, not real Grok art,
   so I have not seen how real cards sit in the pigeonholes.
-- Three narrow edge cases from PR review, logged rather than fixed:
-  - A resubmit or upload still in flight during "Withdraw application" can land in the
-    next deck. The fix is a deck/session id that late responses are checked against.
-  - After Cancel, cards that were never attempted aren't listed as Returned, so they can
+- Edge cases from PR review:
+  - Fixed after merge (audit, 27 Nov): a resubmit, generation or upload still in flight
+    during "Withdraw application" no longer lands in the next deck. The store has a deck
+    epoch that late responses are checked against, and the upload service drops uploads
+    that started before a clear.
+  - Still open: after Cancel, cards that were never attempted aren't listed as Returned, so they can
     only be redone with "Approve all 22", not one at a time.
 
 **Weakest / boldest:** only one site in this thread. Boldest part: the lobby ticket
@@ -55,7 +57,7 @@ phone (22 case files before the Approve button).
   That's true today but advertises the cost to anyone.
 - `/test-progress` now 404s outside `npm run dev` (it was a public button that spent real
   credits). The file is kept.
-- Not merged to main. PR #39 is open; merge it when you're happy.
+- Merged: PR #39 went to main on 27 Nov and is live at https://tarot-out-my-heart.vercel.app.
 
 **Blockers:** none. GitHub Actions does run on this repo (I had wrongly assumed it was
 billing-locked). Its Build and "No 'any'" checks were red for two real reasons, now fixed:

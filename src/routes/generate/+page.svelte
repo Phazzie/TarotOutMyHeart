@@ -119,16 +119,20 @@
     }
 
     appStore.setLoading('generatingImages', true)
+    const epoch = appStore.deckEpoch
 
     try {
       const response = await generationService.generateImages({
         prompts: appStore.generatedPrompts,
         saveToStorage: true,
         onProgress: progress => {
+          if (epoch !== appStore.deckEpoch) return
           // Update app store with real-time progress
           appStore.updateGenerationProgress(progress)
         },
       })
+
+      if (epoch !== appStore.deckEpoch) return
 
       if (response.success && response.data) {
         // Store generated cards
@@ -152,11 +156,12 @@
         )
       }
     } catch (error) {
+      if (epoch !== appStore.deckEpoch) return
       appStore.setError(
         error instanceof Error ? error.message : 'Unexpected error during generation'
       )
     } finally {
-      appStore.setLoading('generatingImages', false)
+      if (epoch === appStore.deckEpoch) appStore.setLoading('generatingImages', false)
     }
   }
 
@@ -195,12 +200,16 @@
     retrying = [...retrying, cardNumber]
     // An earlier failure's banner would contradict this new attempt.
     appStore.clearError()
+    const epoch = appStore.deckEpoch
     try {
       const response = await generationService.regenerateImage({
         cardNumber,
         prompt: prompt.generatedPrompt,
         previousAttempts: current?.retryCount ?? 0,
       })
+
+      // Withdrawn meanwhile: this card belongs to a deck that no longer exists.
+      if (epoch !== appStore.deckEpoch) return
 
       if (response.success && response.data?.generatedCard) {
         const generatedCard = response.data.generatedCard
@@ -216,6 +225,7 @@
         )
       }
     } catch (error) {
+      if (epoch !== appStore.deckEpoch) return
       appStore.setError(
         error instanceof Error ? error.message : `Error retrying card ${cardNumber}`
       )

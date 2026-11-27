@@ -252,7 +252,10 @@
 
     try {
       // Call upload service
+      const epoch = appStore.deckEpoch
       const result = await uploadService.uploadImages({ files })
+      // Withdrawn while uploading: these exhibits belong to the old deck.
+      if (epoch !== appStore.deckEpoch) return
 
       if (result.success && result.data) {
         const { uploadedImages: newImages, failedImages, totalUploaded } = result.data

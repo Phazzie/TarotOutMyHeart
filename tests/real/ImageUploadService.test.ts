@@ -79,6 +79,35 @@ describe('ImageUploadService', () => {
       const result = await svc.uploadImages({ files: [] })
       expect(result.success).toBe(false)
     })
+    it('drops an upload that was still in flight when the deck was cleared', async () => {
+      let release: (value: unknown) => void = () => {}
+      const pending = new Promise(resolve => {
+        release = resolve
+      })
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation(() =>
+          pending.then(() => ({
+            json: () =>
+              Promise.resolve({ success: true, data: { url: 'https://blob.vercel.com/late.jpg' } }),
+          }))
+        )
+      )
+
+      const upload = svc.uploadImages({
+        files: [
+          makeFile('late.jpg', 'image/jpeg', 1024),
+          makeFile('later.jpg', 'image/jpeg', 2048),
+        ],
+      })
+      await svc.clearAllImages()
+      release(undefined)
+      const result = await upload
+
+      expect(result.data?.uploadedImages).toHaveLength(0)
+      const after = await svc.getUploadedImages()
+      expect(after.data?.count).toBe(0)
+    })
   })
 
   describe('getUploadedImages', () => {

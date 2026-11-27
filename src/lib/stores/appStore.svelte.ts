@@ -118,6 +118,13 @@ class AppStore {
   uploadedImages = $state<UploadedImage[]>([])
 
   /**
+   * Bumped by reset(). Async work (uploads, generation, resubmits) captures it
+   * before awaiting and drops its result if a Start Over happened meanwhile,
+   * so a late response from the old deck never lands in the new one.
+   */
+  deckEpoch = $state(0)
+
+  /**
    * Maximum number of images allowed.
    * Must match the ImageUpload contract: the real upload service rejects anything above it.
    */
@@ -667,6 +674,7 @@ class AppStore {
    * ```
    */
   reset(): void {
+    this.deckEpoch += 1
     // Clear all data
     this.uploadedImages = []
     this.styleInputs = null
