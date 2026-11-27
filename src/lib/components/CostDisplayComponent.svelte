@@ -326,7 +326,7 @@
   {#if isCalculating}
     <div class="cost-loading" aria-live="polite">
       <div class="spinner"></div>
-      <p>Calculating cost...</p>
+      <p>Totting up fees…</p>
     </div>
   {/if}
 
@@ -346,11 +346,11 @@
       <div class="cost-total">
         <h2 class="cost-label">
           {#if hasBothCosts && showComparison}
-            Actual Cost
+            Actual fees
           {:else if actualCostData}
-            Total Cost
+            Total fees
           {:else}
-            Estimated Cost
+            Fee estimate
           {/if}
         </h2>
         <p class="cost-amount" aria-label="Total cost: {formatCurrency(displayCost)}">
@@ -382,14 +382,14 @@
       <!-- Cost Breakdown -->
       {#if showBreakdown}
         <div class="cost-breakdown">
-          <h3 class="breakdown-title">Cost Breakdown</h3>
+          <h3 class="breakdown-title">Itemized</h3>
 
           {#if actualCostData}
             <!-- Actual cost breakdown -->
             <table class="breakdown-table" aria-label="Detailed cost breakdown">
               <tbody>
                 <tr>
-                  <td>Prompt Generation:</td>
+                  <td>Drafting case files</td>
                   <td class="breakdown-value">
                     {formatCurrency(actualCostData.textCost.totalCost)}
                   </td>
@@ -404,7 +404,7 @@
                   <td></td>
                 </tr>
                 <tr>
-                  <td>Image Generation:</td>
+                  <td>Illustrating cards</td>
                   <td class="breakdown-value">
                     {formatCurrency(actualCostData.imageCost.totalCost)}
                   </td>
@@ -418,7 +418,7 @@
                   <td></td>
                 </tr>
                 <tr>
-                  <td>Vision API:</td>
+                  <td>Reading exhibits</td>
                   <td class="breakdown-value">
                     {formatCurrency(actualCostData.visionCost.totalCost)}
                   </td>
@@ -435,11 +435,11 @@
                   <td colspan="2"><hr /></td>
                 </tr>
                 <tr class="breakdown-total">
-                  <td>Per Card:</td>
+                  <td>Per card</td>
                   <td class="breakdown-value">{formatCurrency(perCardCost)}</td>
                 </tr>
                 <tr class="breakdown-total">
-                  <td><strong>Total (22 cards):</strong></td>
+                  <td><strong>Total, 22 cards</strong></td>
                   <td class="breakdown-value">
                     <strong>{formatCurrency(actualCostData.totalCost)}</strong>
                   </td>
@@ -451,13 +451,13 @@
             <table class="breakdown-table" aria-label="Estimated cost breakdown">
               <tbody>
                 <tr>
-                  <td>Prompt Generation:</td>
+                  <td>Drafting case files</td>
                   <td class="breakdown-value">
                     {formatCurrency(estimatedCostData.breakdown.promptGeneration)}
                   </td>
                 </tr>
                 <tr>
-                  <td>Image Generation:</td>
+                  <td>Illustrating cards</td>
                   <td class="breakdown-value">
                     {formatCurrency(estimatedCostData.breakdown.imageGeneration)}
                   </td>
@@ -466,11 +466,11 @@
                   <td colspan="2"><hr /></td>
                 </tr>
                 <tr class="breakdown-total">
-                  <td>Per Card:</td>
+                  <td>Per card</td>
                   <td class="breakdown-value">{formatCurrency(perCardCost)}</td>
                 </tr>
                 <tr class="breakdown-total">
-                  <td><strong>Total (22 cards):</strong></td>
+                  <td><strong>Total, 22 cards</strong></td>
                   <td class="breakdown-value">
                     <strong>{formatCurrency(estimatedCostData.estimatedCost)}</strong>
                   </td>
@@ -481,7 +481,7 @@
             <!-- Assumptions -->
             {#if estimatedCostData.assumptions.length > 0}
               <details class="cost-assumptions">
-                <summary>Estimation Assumptions</summary>
+                <summary>Fine print</summary>
                 <ul>
                   {#each estimatedCostData.assumptions as assumption}
                     <li>{assumption}</li>
@@ -518,26 +518,7 @@
       {/if}
     </div>
 
-    <!-- Info Tooltip -->
-    <details class="cost-info">
-      <summary tabindex="0">How are costs calculated?</summary>
-      <div class="info-content">
-        <p>Costs are based on Grok API pricing:</p>
-        <ul>
-          <li><strong>Text Input:</strong> $0.002 per 1K tokens</li>
-          <li><strong>Text Output:</strong> $0.010 per 1K tokens</li>
-          <li><strong>Image Generation:</strong> $0.02 per image</li>
-          <li><strong>Vision API:</strong> $0.05 per request</li>
-        </ul>
-        <p class="info-note">
-          Prices current as of November 2025. Check
-          <a href="https://x.ai/api/pricing" target="_blank" rel="noopener noreferrer">
-            x.ai/api/pricing
-          </a>
-          for latest rates.
-        </p>
-      </div>
-    </details>
+    <p class="fee-note">Paid by the Bureau in Grok credits. You are charged nothing.</p>
   {/if}
 </div>
 
@@ -546,34 +527,25 @@
 <!-- ============================================================================ -->
 
 <style>
+  /* A carbon-copy fee slip clipped to the side of the intake form. */
   .cost-display {
-    width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 1rem;
-    font-family:
-      system-ui,
-      -apple-system,
-      sans-serif;
+    font-family: var(--font-body);
+    color: var(--ink);
   }
 
-  /* Loading State */
   .cost-loading {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 1rem;
-    padding: 2rem;
-    background: rgba(139, 92, 246, 0.05);
-    border-radius: 12px;
-    backdrop-filter: blur(10px);
+    gap: 0.6rem;
+    padding: 0.8rem;
+    font-size: 0.85rem;
   }
 
   .spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid rgba(139, 92, 246, 0.2);
-    border-top-color: #8b5cf6;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #c9bfa5;
+    border-top-color: var(--stamp-red);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
@@ -584,398 +556,155 @@
     }
   }
 
-  /* Error State */
   .cost-error {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1rem;
-    background: rgba(239, 68, 68, 0.1);
-    border: 2px solid rgba(239, 68, 68, 0.3);
-    border-radius: 8px;
-    color: #dc2626;
+    gap: 0.5rem;
+    padding: 0.7rem;
+    border: 2px solid var(--stamp-red);
+    background: var(--carbon-pink);
+    color: #7d1f1c;
+    font-size: 0.85rem;
   }
 
-  .error-icon {
-    font-size: 1.5rem;
-  }
-
-  /* Cost Card */
   .cost-card {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(217, 70, 239, 0.1));
-    border-radius: 16px;
-    padding: 2rem;
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(139, 92, 246, 0.2);
-    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15);
-    transition: all 0.3s ease;
-  }
-
-  .cost-card.cost-warning {
-    border-color: rgba(251, 191, 36, 0.4);
-    background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(217, 70, 239, 0.1));
-  }
-
-  .cost-card.cost-high {
-    border-color: rgba(249, 115, 22, 0.4);
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(217, 70, 239, 0.1));
-  }
-
-  .cost-card.cost-maximum {
-    border-color: rgba(239, 68, 68, 0.4);
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(217, 70, 239, 0.1));
-  }
-
-  /* Total Cost */
-  .cost-total {
-    text-align: center;
-    margin-bottom: 1.5rem;
     position: relative;
+    padding: 1rem 1rem 0.8rem;
+    background: var(--carbon-yellow);
+    border: 1px solid #d7c35c;
+    box-shadow: 0 10px 18px -12px rgba(0, 0, 0, 0.6);
+    /* Perforated top edge. */
+    -webkit-mask: radial-gradient(circle 5px at 8px 0, transparent 98%, #000) -8px 0 / 16px 100%;
+    mask: radial-gradient(circle 5px at 8px 0, transparent 98%, #000) -8px 0 / 16px 100%;
+  }
+
+  .cost-total {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.25rem 0.75rem;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.6rem;
   }
 
   .cost-label {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #8b5cf6;
-    margin: 0 0 0.5rem 0;
+    width: 100%;
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
   }
 
   .cost-amount {
-    font-size: 3rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0;
+    font-family: var(--font-typed);
+    font-size: 2rem;
     line-height: 1;
   }
 
   .cost-type-badge {
-    display: inline-block;
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: 600;
+    padding: 0.1rem 0.4rem;
+    border: 2px solid var(--stamp-blue);
+    color: var(--stamp-blue);
+    font-family: var(--font-heading);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-top: 0.5rem;
+    transform: rotate(-4deg);
   }
 
-  .cost-type-badge.estimate {
-    background: rgba(59, 130, 246, 0.1);
-    color: #2563eb;
-    border: 1px solid rgba(59, 130, 246, 0.3);
-  }
-
-  .cost-type-badge.actual {
-    background: rgba(34, 197, 94, 0.1);
-    color: #16a34a;
-    border: 1px solid rgba(34, 197, 94, 0.3);
-  }
-
-  /* Warning Badge */
   .cost-warning-badge {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1rem;
-    background: rgba(251, 191, 36, 0.1);
-    border: 2px solid rgba(251, 191, 36, 0.3);
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
+    gap: 0.4rem;
+    padding: 0.5rem;
+    margin-bottom: 0.6rem;
+    border: 1px dashed #6b4a00;
+    font-size: 0.8rem;
   }
 
-  .cost-card.cost-high .cost-warning-badge {
-    background: rgba(249, 115, 22, 0.1);
-    border-color: rgba(249, 115, 22, 0.3);
-  }
-
-  .cost-card.cost-maximum .cost-warning-badge {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.3);
-  }
-
-  .warning-icon {
-    font-size: 1.5rem;
-    flex-shrink: 0;
-  }
-
-  .warning-text {
-    margin: 0;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #92400e;
-  }
-
-  .cost-card.cost-high .warning-text {
-    color: #7c2d12;
-  }
-
-  .cost-card.cost-maximum .warning-text {
-    color: #7f1d1d;
-  }
-
-  /* Cost Breakdown */
-  .cost-breakdown {
-    margin-top: 1.5rem;
-  }
-
-  .breakdown-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #4b5563;
-    margin: 0 0 1rem 0;
+  .breakdown-title,
+  .comparison-title {
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    margin-bottom: 0.3rem;
   }
 
   .breakdown-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
   }
 
   .breakdown-table td {
-    padding: 0.5rem 0;
-    color: #374151;
+    padding: 0.2rem 0;
+    border-bottom: 1px dotted rgba(0, 0, 0, 0.3);
   }
 
   .breakdown-value {
     text-align: right;
-    font-weight: 600;
-    color: #1f2937;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .breakdown-detail {
-    font-size: 0.75rem;
-    color: #6b7280;
-    font-style: italic;
+    font-family: var(--font-typed);
   }
 
   .breakdown-divider td {
-    padding: 0.75rem 0 0.5rem 0;
+    border: none;
+    padding: 0;
   }
 
   .breakdown-divider hr {
     border: none;
-    border-top: 1px solid rgba(139, 92, 246, 0.2);
-    margin: 0;
+    border-top: 1px solid var(--ink);
+    margin: 0.2rem 0;
   }
 
-  .breakdown-total td {
-    padding-top: 0.75rem;
-    font-size: 0.95rem;
+  .breakdown-detail {
+    font-size: 0.72rem;
+    color: #4a3f13;
   }
 
-  /* Cost Assumptions */
   .cost-assumptions {
-    margin-top: 1rem;
-    padding: 1rem;
-    background: rgba(139, 92, 246, 0.05);
-    border-radius: 8px;
-    border: 1px solid rgba(139, 92, 246, 0.1);
+    margin-top: 0.6rem;
+    font-size: 0.75rem;
   }
 
   .cost-assumptions summary {
     cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #6b7280;
-    user-select: none;
-  }
-
-  .cost-assumptions summary:hover {
-    color: #8b5cf6;
+    font-family: var(--font-heading);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .cost-assumptions ul {
-    margin: 0.75rem 0 0 0;
-    padding-left: 1.5rem;
-    list-style: disc;
+    margin: 0.3rem 0 0;
+    padding-left: 1rem;
   }
 
-  .cost-assumptions li {
-    font-size: 0.8125rem;
-    color: #6b7280;
-    margin-top: 0.25rem;
-  }
-
-  /* Comparison */
   .cost-comparison {
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid rgba(139, 92, 246, 0.2);
-  }
-
-  .comparison-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #4b5563;
-    margin: 0 0 1rem 0;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    margin-top: 0.6rem;
   }
 
   .comparison-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 0.85rem;
   }
 
   .comparison-item {
     display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    justify-content: space-between;
   }
 
-  .comparison-item.comparison-diff {
-    grid-column: 1 / -1;
-    padding-top: 0.5rem;
-    border-top: 1px solid rgba(139, 92, 246, 0.1);
+  .diff-over {
+    color: var(--stamp-red);
   }
 
-  .comparison-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+  .diff-under {
+    color: #24542f;
   }
 
-  .comparison-value {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #1f2937;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .comparison-value.diff-over {
-    color: #dc2626;
-  }
-
-  .comparison-value.diff-under {
-    color: #16a34a;
-  }
-
-  /* Info Tooltip */
-  .cost-info {
-    margin-top: 1.5rem;
-    padding: 1rem;
-    background: rgba(139, 92, 246, 0.05);
-    border-radius: 8px;
-    border: 1px solid rgba(139, 92, 246, 0.1);
-  }
-
-  .cost-info summary {
-    cursor: pointer;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #6b7280;
-    user-select: none;
-    list-style: none;
-  }
-
-  .cost-info summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .cost-info summary::before {
-    content: '💡 ';
-    margin-right: 0.5rem;
-  }
-
-  .cost-info summary:hover {
-    color: #8b5cf6;
-  }
-
-  .cost-info[open] summary {
-    margin-bottom: 0.75rem;
-    color: #8b5cf6;
-  }
-
-  .info-content {
-    font-size: 0.8125rem;
-    color: #4b5563;
-  }
-
-  .info-content p {
-    margin: 0 0 0.5rem 0;
-  }
-
-  .info-content ul {
-    margin: 0.5rem 0;
-    padding-left: 1.5rem;
-    list-style: disc;
-  }
-
-  .info-content li {
-    margin-top: 0.25rem;
-  }
-
-  .info-note {
-    margin-top: 0.75rem;
-    font-size: 0.75rem;
-    color: #6b7280;
-    font-style: italic;
-  }
-
-  .info-note a {
-    color: #8b5cf6;
-    text-decoration: none;
-  }
-
-  .info-note a:hover {
-    text-decoration: underline;
-  }
-
-  /* Responsive Design */
-  @media (max-width: 640px) {
-    .cost-amount {
-      font-size: 2.5rem;
-    }
-
-    .comparison-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .comparison-item.comparison-diff {
-      grid-column: 1;
-    }
-  }
-
-  /* Accessibility: Focus States */
-  .cost-info summary:focus,
-  .cost-assumptions summary:focus {
-    outline: 2px solid #8b5cf6;
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-
-  /* Dark mode support (if needed) */
-  @media (prefers-color-scheme: dark) {
-    .cost-amount,
-    .breakdown-value,
-    .comparison-value {
-      color: #f3f4f6;
-    }
-
-    .cost-label,
-    .breakdown-title,
-    .comparison-title {
-      color: #d1d5db;
-    }
-
-    .warning-text {
-      color: #fcd34d;
-    }
-
-    .cost-card.cost-high .warning-text {
-      color: #fb923c;
-    }
-
-    .cost-card.cost-maximum .warning-text {
-      color: #fca5a5;
-    }
+  .fee-note {
+    margin-top: 0.6rem;
+    font-size: 0.8rem;
+    color: #d9d2b6;
   }
 </style>

@@ -217,6 +217,6 @@ export async function completeUploadStep(page: Page): Promise<void> {
   })
   await expect(page.getByText('reference.png')).toBeVisible()
   await page.getByRole('button', { name: /Cyberpunk Neon/ }).click()
-  await page.getByRole('button', { name: 'Save Style Preferences' }).click()
+  await page.getByRole('button', { name: 'Save style preferences' }).click()
   await expect(page.getByText(/saved successfully/i)).toBeVisible()
 }

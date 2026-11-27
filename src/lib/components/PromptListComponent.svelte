@@ -443,9 +443,7 @@
   }
 
   function getRomanBadgeText(cardNumber: number): string {
-    const roman = ROMAN_NUMERALS[cardNumber] ?? String(cardNumber)
-    if (cardNumber === 0) return '0. 0'
-    return `${roman}. ${roman}`
+    return ROMAN_NUMERALS[cardNumber] ?? String(cardNumber)
   }
 
   function truncate(text: string, maxLength: number): string {
@@ -468,23 +466,22 @@
   <!-- Header with Generate Button -->
   <div class="header">
     <div class="title-group">
-      <h2 class="title">Card Prompts ({prompts.length}/22)</h2>
-      <span class="gold-subtitle">Major Arcana Gold Leaf Edition</span>
+      <h2 class="title">Case files <span class="count">{prompts.length}/22</span></h2>
+      <span class="gold-subtitle">One per Major Arcana. Read, amend, or redraft any of them.</span>
     </div>
     <button
       type="button"
       class="generate-button"
       onclick={generateAllPrompts}
       disabled={!canGenerate || isGenerating}
-      aria-label={hasAllPrompts ? 'Regenerate all prompts' : 'Generate all prompts'}
     >
       {#if isGenerating}
         <span class="spinner" aria-hidden="true"></span>
-        Generating...
+        The clerk is drafting…
       {:else if hasAllPrompts}
-        ✨ Regenerate All
+        Redraft all case files
       {:else}
-        ✨ Generate All Prompts
+        Draft all 22 case files
       {/if}
     </button>
   </div>
@@ -492,11 +489,12 @@
   <!-- Status Message -->
   {#if !canGenerate}
     <div class="status-message warning" role="alert">
-      Please upload reference images and define style inputs before generating prompts.
+      No application on file. Complete Form MA-22 at Window 1 (exhibits and a declaration of
+      aesthetic) first.
     </div>
   {:else if prompts.length === 0}
     <div class="status-message info" role="status">
-      Ready to generate prompts. Click "Generate All Prompts" to begin.
+      Your application is on file. Ask the clerk to draft the case files.
     </div>
   {/if}
 
@@ -529,8 +527,14 @@
         >
           <div class="card-header-content">
             <!-- Roman Numeral Badge -->
-            <div class="roman-badge" aria-label="Roman numeral badge {romanBadgeText}">
-              <span class="roman-leaf-icon" aria-hidden="true">⚜</span>
+            <!-- Case numbers are the card's arcana number: MA-00 is The Fool, MA-21 The World. -->
+            <div
+              class="roman-badge"
+              aria-label="Case MA-{String(prompt.cardNumber).padStart(2, '0')}"
+            >
+              <span class="roman-leaf-icon" aria-hidden="true"
+                >MA-{String(prompt.cardNumber).padStart(2, '0')}</span
+              >
               <span class="roman-text">{romanBadgeText}</span>
             </div>
 
@@ -542,11 +546,10 @@
             <!-- Gold Leaf Status Tag -->
             <div class="card-status-badge" aria-label="Status: {status}">
               <span class="badge-gold-leaf {status}">
-                <span class="gold-leaf-sparkle" aria-hidden="true">✨</span>
                 {#if status === 'edited'}
-                  Edited
+                  Amended
                 {:else if status === 'generated'}
-                  Generated
+                  Drafted
                 {:else}
                   Pending
                 {/if}
@@ -571,13 +574,13 @@
             <!-- Metadata -->
             <div class="card-metadata">
               <div class="metadata-item">
-                <strong>Confidence:</strong>
+                <strong>Clerk's confidence:</strong>
                 <span class={getConfidenceColor(prompt.confidence)}>
                   {(prompt.confidence * 100).toFixed(0)}%
                 </span>
               </div>
               <div class="metadata-item">
-                <strong>Generated:</strong>
+                <strong>Drafted:</strong>
                 {new Date(prompt.generatedAt).toLocaleString()}
               </div>
             </div>
@@ -602,9 +605,9 @@
                     type="button"
                     class="button-save"
                     onclick={() => saveEdit(prompt.cardNumber)}
-                    aria-label="Save changes"
+                    aria-label="File amendment"
                   >
-                    Save
+                    File amendment
                   </button>
                   <button
                     type="button"
@@ -630,29 +633,29 @@
                   type="button"
                   class="quick-btn enhance-btn"
                   onclick={() => enhancePrompt(prompt.cardNumber)}
-                  aria-label="Enhance prompt for {prompt.cardName}"
+                  aria-label="Embellish case file for {prompt.cardName}"
                 >
-                  ✨ Enhance Prompt
+                  Embellish
                 </button>
                 <button
                   type="button"
                   class="quick-btn copy-btn"
                   onclick={() => copyPrompt(prompt.cardNumber, activePromptText)}
-                  aria-label="Copy prompt for {prompt.cardName}"
+                  aria-label="Copy case file for {prompt.cardName}"
                 >
                   {#if copiedCardId === prompt.cardNumber}
-                    ✓ Copied!
+                    Copied
                   {:else}
-                    📋 Copy Prompt
+                    Copy text
                   {/if}
                 </button>
                 <button
                   type="button"
                   class="quick-btn reset-btn"
                   onclick={() => resetToDefault(prompt.cardNumber)}
-                  aria-label="Reset prompt for {prompt.cardName} to default"
+                  aria-label="Restore original case file for {prompt.cardName}"
                 >
-                  🔄 Reset to Default
+                  Restore original
                 </button>
               </div>
 
@@ -662,22 +665,22 @@
                     type="button"
                     class="button-edit"
                     onclick={() => startEditing(prompt.cardNumber)}
-                    aria-label="Edit prompt for {prompt.cardName}"
+                    aria-label="Amend case file for {prompt.cardName}"
                   >
-                    Edit
+                    Amend
                   </button>
                   <button
                     type="button"
                     class="button-regenerate"
                     onclick={() => regeneratePrompt(prompt.cardNumber)}
                     disabled={isRegenerating || !canGenerate}
-                    aria-label="Regenerate prompt for {prompt.cardName}"
+                    aria-label="Redraft case file for {prompt.cardName}"
                   >
                     {#if isRegenerating}
                       <span class="spinner-small" aria-hidden="true"></span>
-                      Regenerating...
+                      Redrafting…
                     {:else}
-                      Regenerate
+                      Redraft
                     {/if}
                   </button>
                 </div>
@@ -692,10 +695,11 @@
   <!-- Empty State -->
   {#if prompts.length === 0 && canGenerate}
     <div class="empty-state" role="status">
-      <p class="empty-icon" aria-hidden="true">✨</p>
-      <p class="empty-text">No prompts generated yet</p>
+      <p class="empty-icon" aria-hidden="true">∅</p>
+      <p class="empty-text">No case files yet</p>
       <p class="empty-subtext">
-        Click "Generate All Prompts" to create AI-generated prompts for all 22 Major Arcana cards
+        The clerk writes one illustration brief per card, from The Fool (MA-00) to The World
+        (MA-21), using your exhibits and declaration.
       </p>
     </div>
   {/if}
@@ -706,536 +710,80 @@
 <!-- ============================================================================ -->
 
 <style>
-  /* Container with Subtle Glass Backing */
   .prompt-list-container {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-  }
-
-  /* Header */
-  .header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 1rem;
   }
 
-  .title-group {
+  .header {
     display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 1rem;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 0.6rem;
   }
 
   .title {
-    font-size: 1.875rem;
-    font-weight: 700;
-    color: #4c1d95;
-    margin: 0;
+    font-size: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .count {
+    font-family: var(--font-typed);
+    font-size: 1rem;
+    color: var(--stamp-red);
+    margin-left: 0.4rem;
   }
 
   .gold-subtitle {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #b45309;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+    display: block;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
   }
 
-  /* Generate Button */
   .generate-button {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #6d28d9 0%, #b45309 50%, #d97706 100%);
-    color: white;
-    border: 1px solid #fef3c7;
-    border-radius: 0.5rem;
-    font-size: 1rem;
+    padding: 0.6rem 1.1rem;
+    background: var(--stamp-blue);
+    border: 2px solid var(--stamp-blue);
+    color: #fff;
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
     font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     cursor: pointer;
-    transition: all 0.25s ease;
-    box-shadow: 0 4px 12px rgba(180, 83, 9, 0.35);
   }
 
   .generate-button:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 18px rgba(180, 83, 9, 0.45);
-    filter: brightness(1.08);
-  }
-
-  .generate-button:active:not(:disabled) {
-    transform: translateY(0);
+    background: #173d78;
   }
 
   .generate-button:disabled {
-    opacity: 0.5;
+    opacity: 0.45;
     cursor: not-allowed;
   }
 
-  /* Status Messages */
-  .status-message {
-    padding: 1rem;
-    border-radius: 0.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .status-message.warning {
-    background-color: #fef3c7;
-    border: 1px solid #f59e0b;
-    color: #92400e;
-  }
-
-  .status-message.info {
-    background-color: #dbeafe;
-    border: 1px solid #3b82f6;
-    color: #1e40af;
-  }
-
-  /* Prompt Cards Container */
-  .prompt-cards {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  /* Glass Panel & Metallic Gold Border Styling */
-  .prompt-card {
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1.5px solid rgba(212, 175, 55, 0.45);
-    border-radius: 0.875rem;
-    overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow:
-      0 4px 20px rgba(0, 0, 0, 0.05),
-      inset 0 0 0 1px rgba(255, 215, 0, 0.2);
-  }
-
-  .prompt-card:hover {
-    transform: translateY(-3px);
-    border-color: rgba(212, 175, 55, 0.85);
-    box-shadow:
-      0 12px 32px rgba(212, 175, 55, 0.25),
-      inset 0 0 12px rgba(255, 215, 0, 0.3);
-  }
-
-  .prompt-card.generated {
-    border-color: rgba(212, 175, 55, 0.65);
-  }
-
-  .prompt-card.edited {
-    border-color: rgba(245, 158, 11, 0.85);
-    background: rgba(254, 243, 199, 0.7);
-  }
-
-  .prompt-card.placeholder {
-    border-color: #d1d5db;
-    opacity: 0.7;
-  }
-
-  /* Card Header */
-  .card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.25rem;
-    cursor: pointer;
-    user-select: none;
-    background: linear-gradient(135deg, rgba(250, 245, 255, 0.9) 0%, rgba(254, 243, 199, 0.4) 100%);
-  }
-
-  .card-header:hover {
-    background: linear-gradient(
-      135deg,
-      rgba(243, 232, 255, 0.95) 0%,
-      rgba(254, 243, 199, 0.6) 100%
-    );
-  }
-
-  .card-header:focus {
-    outline: 2px solid #b45309;
-    outline-offset: -2px;
-  }
-
-  .card-header-content {
-    display: flex;
-    align-items: center;
-    gap: 1.25rem;
-    flex: 1;
-  }
-
-  /* Roman Numeral Badges */
-  .roman-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.4rem 0.75rem;
-    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
-    border: 1px solid rgba(212, 175, 55, 0.75);
-    border-radius: 0.5rem;
-    color: #fef08a;
-    font-weight: 700;
-    font-size: 0.875rem;
-    letter-spacing: 0.05em;
-    box-shadow:
-      0 2px 6px rgba(30, 27, 75, 0.3),
-      inset 0 0 6px rgba(255, 215, 0, 0.25);
-    flex-shrink: 0;
-  }
-
-  .roman-leaf-icon {
-    color: #fbbf24;
-    font-size: 0.75rem;
-  }
-
-  .roman-text {
-    font-family: serif;
-  }
-
-  /* Card Info */
-  .card-info {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .card-name {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0 0 0.25rem 0;
-  }
-
-  .card-meaning {
-    font-size: 0.875rem;
-    color: #4b5563;
-    margin: 0;
-  }
-
-  /* Gold Leaf Card Status Tag */
-  .card-status-badge {
-    flex-shrink: 0;
-  }
-
-  .badge-gold-leaf {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.35rem 0.85rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    background: linear-gradient(
-      135deg,
-      #bf953f 0%,
-      #fcf6ba 25%,
-      #b38728 50%,
-      #fbf5b7 75%,
-      #aa771c 100%
-    );
-    color: #2a1b00;
-    border: 1px solid #d4af37;
-    box-shadow:
-      0 2px 6px rgba(170, 119, 28, 0.35),
-      inset 0 1px 0 rgba(255, 255, 255, 0.6);
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
-    transition: all 0.2s ease;
-  }
-
-  .badge-gold-leaf:hover {
-    filter: brightness(1.08);
-    box-shadow: 0 4px 10px rgba(170, 119, 28, 0.45);
-  }
-
-  .badge-gold-leaf.edited {
-    background: linear-gradient(135deg, #e6a100 0%, #fff3b0 30%, #c48200 60%, #ffd966 100%);
-    color: #3b2000;
-  }
-
-  .badge-gold-leaf.placeholder {
-    background: linear-gradient(135deg, #d1d5db 0%, #f3f4f6 50%, #9ca3af 100%);
-    color: #374151;
-    border-color: #9ca3af;
-    box-shadow: none;
-    text-shadow: none;
-  }
-
-  .gold-leaf-sparkle {
-    font-size: 0.75rem;
-  }
-
-  /* Expand Icon */
-  .expand-icon {
-    font-size: 1rem;
-    color: #b45309;
-    margin-left: 1rem;
-    transition: transform 0.2s;
-  }
-
-  /* Card Preview (Collapsed) */
-  .card-preview {
-    padding: 0 1.25rem 1.25rem 1.25rem;
-    color: #4b5563;
-    font-size: 0.875rem;
-    line-height: 1.5;
-  }
-
-  /* Card Content (Expanded) */
-  .card-content {
-    padding: 0 1.25rem 1.25rem 1.25rem;
-    border-top: 1px solid rgba(212, 175, 55, 0.3);
-  }
-
-  /* Metadata */
-  .card-metadata {
-    display: flex;
-    gap: 2rem;
-    padding: 1rem 0;
-    font-size: 0.875rem;
-    color: #6b7280;
-    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
-    margin-bottom: 1rem;
-  }
-
-  .metadata-item strong {
-    color: #374151;
-  }
-
-  /* Prompt Display */
-  .prompt-display {
-    padding: 1.25rem;
-    background: rgba(249, 250, 251, 0.85);
-    border: 1px solid rgba(209, 213, 219, 0.6);
-    border-radius: 0.625rem;
-    margin-bottom: 1rem;
-  }
-
-  .prompt-text {
-    margin: 0;
-    line-height: 1.6;
-    color: #1f2937;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-  }
-
-  /* Edit Container */
-  .edit-container {
-    margin-bottom: 1rem;
-  }
-
-  .prompt-textarea {
-    width: 100%;
-    padding: 1rem;
-    border: 2px solid rgba(212, 175, 55, 0.5);
-    border-radius: 0.5rem;
-    font-family: inherit;
-    font-size: 1rem;
-    line-height: 1.6;
-    resize: vertical;
-    margin-bottom: 0.75rem;
-    transition:
-      border-color 0.2s,
-      box-shadow 0.2s;
-    background: rgba(255, 255, 255, 0.9);
-  }
-
-  .prompt-textarea:focus {
-    outline: none;
-    border-color: #b45309;
-    box-shadow: 0 0 0 3px rgba(180, 83, 9, 0.2);
-  }
-
-  /* Edit Actions */
-  .edit-actions {
-    display: flex;
-    gap: 0.75rem;
-  }
-
-  /* Actions Section & Quick Action Buttons */
-  .actions-section {
-    display: flex;
-    flex-direction: column;
-    gap: 0.875rem;
-  }
-
-  .quick-action-buttons {
-    display: flex;
-    gap: 0.625rem;
-    flex-wrap: wrap;
-  }
-
-  .quick-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 0.9rem;
-    border-radius: 0.5rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid transparent;
-  }
-
-  .enhance-btn {
-    background: linear-gradient(135deg, #7e22ce 0%, #a855f7 100%);
-    color: white;
-    border-color: rgba(233, 213, 255, 0.3);
-    box-shadow: 0 2px 6px rgba(126, 34, 206, 0.3);
-  }
-
-  .enhance-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(126, 34, 206, 0.45);
-  }
-
-  .copy-btn {
-    background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
-    color: white;
-    border-color: rgba(204, 251, 241, 0.3);
-    box-shadow: 0 2px 6px rgba(15, 118, 110, 0.3);
-  }
-
-  .copy-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(15, 118, 110, 0.45);
-  }
-
-  .reset-btn {
-    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
-    color: #f3f4f6;
-    border-color: rgba(209, 213, 219, 0.2);
-    box-shadow: 0 2px 6px rgba(55, 65, 81, 0.3);
-  }
-
-  .reset-btn:hover {
-    transform: translateY(-1px);
-    background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
-    box-shadow: 0 4px 12px rgba(31, 41, 55, 0.45);
-  }
-
-  /* Standard Card Actions */
-  .card-actions {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-  }
-
-  /* Buttons */
-  button {
-    font-family: inherit;
-  }
-
-  .button-save,
-  .button-edit,
-  .button-regenerate {
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .button-save {
-    background-color: #7c3aed;
-    color: white;
-  }
-
-  .button-save:hover {
-    background-color: #6d28d9;
-  }
-
-  .button-cancel {
-    padding: 0.5rem 1rem;
-    border: 1px solid #d1d5db;
-    background-color: white;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #6b7280;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .button-cancel:hover {
-    background-color: #f9fafb;
-    border-color: #9ca3af;
-  }
-
-  .button-edit {
-    background-color: #2563eb;
-    color: white;
-  }
-
-  .button-edit:hover {
-    background-color: #1d4ed8;
-  }
-
-  .button-regenerate {
-    background-color: #d97706;
-    color: white;
-  }
-
-  .button-regenerate:hover:not(:disabled) {
-    background-color: #b45309;
-  }
-
-  .button-regenerate:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  /* Empty State */
-  .empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
-    color: #6b7280;
-  }
-
-  .empty-icon {
-    font-size: 4rem;
-    margin: 0 0 1rem 0;
-  }
-
-  .empty-text {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #374151;
-    margin: 0 0 0.5rem 0;
-  }
-
-  .empty-subtext {
-    font-size: 1rem;
-    margin: 0;
-  }
-
-  /* Spinners */
   .spinner,
   .spinner-small {
     display: inline-block;
-    width: 1rem;
-    height: 1rem;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: white;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
     border-radius: 50%;
-    animation: spin 0.6s linear infinite;
+    animation: spin 0.8s linear infinite;
   }
 
   .spinner-small {
-    width: 0.875rem;
-    height: 0.875rem;
+    border-color: rgba(0, 0, 0, 0.2);
+    border-top-color: var(--ink);
   }
 
   @keyframes spin {
@@ -1244,7 +792,251 @@
     }
   }
 
-  /* Screen Reader Only */
+  .status-message {
+    padding: 0.7rem 0.9rem;
+    border: 2px solid;
+    font-size: 0.9rem;
+  }
+
+  .status-message.warning {
+    border-color: var(--stamp-red);
+    background: var(--carbon-pink);
+    color: #7d1f1c;
+  }
+
+  .status-message.info {
+    border-color: var(--stamp-blue);
+    background: #e3eaf6;
+    color: #173d78;
+  }
+
+  .prompt-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr));
+    gap: 1.6rem 1rem;
+    padding-top: 0.9rem;
+  }
+
+  /* Each case file is a manila folder with a tab. */
+  .prompt-card {
+    position: relative;
+    background: var(--manila);
+    border: 1px solid var(--manila-dark);
+    box-shadow: 0 6px 10px -8px rgba(0, 0, 0, 0.6);
+  }
+
+  .prompt-card::before {
+    content: '';
+    position: absolute;
+    top: -14px;
+    left: 0;
+    width: 42%;
+    height: 15px;
+    background: var(--manila);
+    border: 1px solid var(--manila-dark);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem 0.4rem;
+    cursor: pointer;
+  }
+
+  .card-header:focus-visible {
+    outline-offset: -3px;
+  }
+
+  .card-header-content {
+    flex: 1;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: start;
+    gap: 0.6rem;
+    min-width: 0;
+  }
+
+  .roman-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.15rem 0.35rem;
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    line-height: 1.05;
+  }
+
+  .roman-leaf-icon {
+    font-family: var(--font-heading);
+    font-size: 0.55rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .roman-text {
+    font-family: var(--font-typed);
+    font-size: 0.85rem;
+  }
+
+  .card-info {
+    min-width: 0;
+  }
+
+  .card-name {
+    font-family: var(--font-tarot);
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+  }
+
+  .card-meaning {
+    font-size: 0.75rem;
+    color: #5a4a23;
+  }
+
+  .badge-gold-leaf {
+    display: inline-block;
+    padding: 0.05rem 0.35rem;
+    border: 2px solid;
+    font-family: var(--font-heading);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transform: rotate(-6deg);
+  }
+
+  .badge-gold-leaf.generated {
+    color: var(--stamp-blue);
+  }
+
+  .badge-gold-leaf.edited {
+    color: #2f6b3d;
+  }
+
+  .badge-gold-leaf.placeholder {
+    color: #7d7462;
+  }
+
+  .expand-icon {
+    font-size: 0.7rem;
+    padding-top: 0.2rem;
+    color: #5a4a23;
+  }
+
+  /* The typed sheet inside the folder. */
+  .card-preview,
+  .card-content {
+    margin: 0 0.5rem 0.6rem;
+    padding: 0.6rem 0.7rem;
+    background: var(--paper);
+    border: 1px solid #d8cfb6;
+    font-family: var(--font-typed);
+    font-size: 0.85rem;
+    line-height: 1.45;
+  }
+
+  .card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .card-metadata {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem 1rem;
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+  }
+
+  .text-green-600 {
+    color: #24542f;
+  }
+
+  .text-yellow-600 {
+    color: #8a5a00;
+  }
+
+  .text-red-600 {
+    color: var(--stamp-red);
+  }
+
+  .prompt-text {
+    white-space: pre-wrap;
+  }
+
+  .prompt-textarea {
+    width: 100%;
+    padding: 0.4rem;
+    border: 1px solid var(--ink-soft);
+    background: #fffbe8;
+    font-family: var(--font-typed);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    resize: vertical;
+  }
+
+  .edit-actions,
+  .quick-action-buttons,
+  .card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .actions-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-family: var(--font-body);
+  }
+
+  .quick-btn,
+  .button-edit,
+  .button-regenerate,
+  .button-save,
+  .button-cancel {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.65rem;
+    background: transparent;
+    border: 1px solid var(--ink-soft);
+    color: var(--ink);
+    font-family: var(--font-heading);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .quick-btn:hover,
+  .button-edit:hover,
+  .button-cancel:hover {
+    background: #ece4cd;
+  }
+
+  .button-save,
+  .button-regenerate {
+    border-color: var(--stamp-blue);
+    color: var(--stamp-blue);
+  }
+
+  .button-save:hover,
+  .button-regenerate:hover:not(:disabled) {
+    background: var(--stamp-blue);
+    color: #fff;
+  }
+
+  .button-regenerate:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   .sr-only {
     position: absolute;
     width: 1px;
@@ -1253,71 +1045,32 @@
     margin: -1px;
     overflow: hidden;
     clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
+    border: 0;
   }
 
-  /* Responsive Design */
-  @media (max-width: 768px) {
-    .header {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .generate-button {
-      width: 100%;
-      justify-content: center;
-    }
-
-    .card-header-content {
-      flex-wrap: wrap;
-    }
-
-    .card-name {
-      font-size: 1.125rem;
-    }
-
-    .card-metadata {
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .quick-action-buttons,
-    .card-actions,
-    .edit-actions {
-      flex-direction: column;
-    }
-
-    .quick-btn,
-    .button-save,
-    .button-cancel,
-    .button-edit,
-    .button-regenerate {
-      width: 100%;
-      justify-content: center;
-    }
+  .empty-state {
+    padding: 1.5rem 1rem;
+    border: 2px dashed #b8ab88;
+    text-align: center;
   }
 
-  /* Accessibility - High Contrast Mode */
-  @media (prefers-contrast: high) {
-    .prompt-card {
-      border-width: 3px;
-    }
-
-    .card-header:focus {
-      outline-width: 3px;
-    }
+  .empty-icon {
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    color: #8f8670;
   }
 
-  /* Accessibility - Reduced Motion */
-  @media (prefers-reduced-motion: reduce) {
-    .prompt-card,
-    .expand-icon,
-    .spinner,
-    .spinner-small,
-    .quick-btn {
-      animation: none;
-      transition: none;
-    }
+  .empty-text {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .empty-subtext {
+    max-width: 52ch;
+    margin: 0.3rem auto 0;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
   }
 </style>

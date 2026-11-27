@@ -1404,3 +1404,18 @@ When adding lessons learned:
 6. Update summary metrics at project milestones
 
 **This is a living document** - update it throughout the project, not just at the end!
+
+### Redesign lessons (2026-11-27)
+
+- **Screenshots find bugs tests miss.** The "Card 3" name bug in `regenerateImage` only showed
+  up when looking at the gallery after a resubmit. Every unit test used `Card ${n}` names in
+  its fixtures, so the wrong name looked right. Add an e2e assertion for anything you spot.
+- **Keep accessible names stable when restyling.** Visible copy changed a lot ("Save Style
+  Preferences" became "File declaration"), but aria-labels stayed, so most e2e selectors
+  survived.
+- **`:global()` styles in a page component only load with that page.** The `.window-head`
+  styles lived in `/generate` and were missing when `/gallery` was opened directly. Shared
+  styles belong in `+layout.svelte`.
+- **Absolutely-positioned decorations cause sideways scroll on phones** even when invisible
+  (a scaled, transparent stamp). The e2e overflow check caught it.
+- **`$app/environment` didn't type-check in a `+page.ts` here;** `import.meta.env.DEV` works.

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Bureau of Fate redesign** (2026-11-27). The site is now a government office that issues
+  fate: Lobby with a ticket dispenser, Window 1 Intake (Form MA-22: exhibits and a
+  declaration of aesthetic), Window 2 Processing (case files, a "Now serving" LED board),
+  Window 3 Issuance (certificate of issuance, pigeonhole gallery, inspection-desk lightbox,
+  certified-copies .zip). New palette and type (Oswald, Courier Prime, Special Elite, VT323,
+  Cinzel Decorative). All features kept; button and error copy rewritten in the world.
+- The gallery lightbox can download a single card (`Take this card (.png)`). The duplicate
+  per-card download grid is hidden on the gallery (`DownloadComponent showIndividual`).
+- README rewritten: what it is, how to run and test it, what's rough. Added GRUDGES.md and
+  PROGRESS.md.
+
+### Fixed
+
+- Resubmitted cards came back named "Card N" instead of their real name.
+- `/test-progress` (runs a real 22-card generation) is no longer served in production.
+- Lightbox showed a wrong model name and resolution, and fell back to a dead placeholder
+  image service.
+- Upload page scrolled sideways on phones (hidden RECEIVED stamp).
+
+
 ### Fixed
 
 - **Shakedown fixes** (2026-11-27), found by driving the app in a real browser:

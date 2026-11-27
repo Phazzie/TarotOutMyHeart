@@ -12,13 +12,13 @@ test('hamburger menu opens and navigates', async ({ page, api }) => {
   await page.getByRole('button', { name: 'Toggle menu' }).click()
   await page
     .locator('.mobile-nav')
-    .getByRole('link', { name: /Upload/ })
+    .getByRole('link', { name: /Intake/ })
     .click()
   await expect(page).toHaveURL(/\/upload$/)
   await expect(page.locator('.mobile-nav')).toBeHidden()
 })
 
-for (const path of ['/', '/upload', '/generate', '/gallery']) {
+for (const path of ['/', '/upload', '/style', '/generate', '/gallery']) {
   test(`no sideways scroll on ${path}`, async ({ page, api }) => {
     void api
     await page.goto(path)

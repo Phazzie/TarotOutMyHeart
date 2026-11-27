@@ -37,6 +37,7 @@
 
 <script lang="ts">
   import { appStore } from '$lib/stores/appStore.svelte'
+  import { MAJOR_ARCANA_NAMES } from '$contracts/PromptGeneration'
 
   // ========================================================================
   // PROPS
@@ -135,11 +136,12 @@
   /**
    * Status icon for current card
    */
-  const statusIcon = $derived(() => {
-    if (isComplete) return '✓'
-    if (isGenerating) return '⟳'
-    return '○'
-  })
+  /** Cards are processed in order, so everything before `processed` has been seen. */
+  const processed = $derived(completedCount + failedCount)
+
+  const currentName = $derived(
+    currentCardNumber !== undefined ? (MAJOR_ARCANA_NAMES[currentCardNumber] ?? '') : ''
+  )
 
   // ========================================================================
   // EVENT HANDLERS
@@ -169,74 +171,66 @@
      ======================================================================== -->
 
 <div class="progress-container" role="region" aria-label="Image generation progress">
-  <!-- Progress Bar Section -->
-  <div class="progress-section">
-    <h2 class="sr-only">Generation Progress</h2>
+  <h2 class="sr-only">Generation progress</h2>
 
-    <!-- Progress Bar -->
-    <div
-      class="progress-bar-wrapper"
-      role="progressbar"
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={percentComplete}
-      aria-label="Generation progress: {percentComplete}% complete"
-    >
-      <div class="progress-bar-track">
-        <div
-          class="progress-bar-fill"
-          class:pulsing={isGenerating && !isComplete}
-          style="width: {percentComplete}%"
-        ></div>
-      </div>
+  <div class="board">
+    <div class="board-main">
+      <span class="board-label">Now serving</span>
+      <span class="board-number" aria-hidden="true">
+        {currentCardNumber !== undefined ? String(currentCardNumber).padStart(2, '0') : '--'}
+      </span>
+      <span class="board-name">{currentName || 'Please wait'}</span>
     </div>
-
-    <!-- Stats Display -->
-    <div class="stats-display" aria-live="polite">
-      <p class="stats-text">
+    <div class="board-side">
+      <div
+        class="progress-bar-wrapper"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={percentComplete}
+        aria-label="Generation progress: {percentComplete}% complete"
+      >
+        <ol class="slots" aria-hidden="true">
+          {#each MAJOR_ARCANA_NAMES as name, i (name)}
+            <li
+              class="slot"
+              class:done={i < processed}
+              class:active={isGenerating && i === currentCardNumber}
+              title={name}
+            >
+              {String(i).padStart(2, '0')}
+            </li>
+          {/each}
+        </ol>
+      </div>
+      <p class="stats-text" aria-live="polite">
         <span class="stats-count">{completedCount}/{totalCards}</span>
-        cards completed
-        <span class="stats-percent">({percentComplete}%)</span>
+        illustrated · {percentComplete}%
+        {#if formattedTimeRemaining()}
+          · {formattedTimeRemaining()}
+        {/if}
       </p>
+      <p class="clerk-status">{statusMessage}</p>
     </div>
   </div>
 
-  <!-- Current Card Section -->
-  {#if isGenerating && !isComplete && currentCardNumber !== undefined}
-    <div class="current-card-section">
-      <div class="current-card">
-        <span class="spinner" aria-hidden="true">{statusIcon}</span>
-        <div class="current-card-info">
-          <p class="current-card-label">Currently generating:</p>
-          <p class="current-card-name">{statusMessage}</p>
-        </div>
-      </div>
-    </div>
-  {/if}
+  <p class="hold-music">
+    Please hold. Your fate is important to us. Cards are illustrated one at a time, in order.
+  </p>
 
-  <!-- Time Estimate -->
-  {#if isGenerating && !isComplete && formattedTimeRemaining()}
-    <div class="time-estimate">
-      <p aria-live="polite">
-        <span class="clock-icon" aria-hidden="true">🕐</span>
-        {formattedTimeRemaining()}
-      </p>
-    </div>
-  {/if}
-
-  <!-- Failed Cards Section -->
   {#if failedCount > 0}
     <div class="failed-cards-section" role="alert">
       <h3 class="failed-cards-title">
-        <span class="warning-icon" aria-hidden="true">⚠️</span>
-        {failedCount}
-        {failedCount === 1 ? 'card' : 'cards'} failed
+        Returned: {failedCount}
+        {failedCount === 1 ? 'card' : 'cards'}
       </h3>
       <div class="failed-cards-list">
-        {#each failedCards as card}
+        {#each failedCards as card (card.cardNumber)}
           <div class="failed-card-item">
             <div class="failed-card-info">
-              <p class="failed-card-name">{card.cardNumber}. {card.cardName}</p>
+              <p class="failed-card-name">
+                MA-{String(card.cardNumber).padStart(2, '0')} · {card.cardName}
+              </p>
               {#if card.error}
                 <p class="failed-card-error">{card.error}</p>
               {/if}
@@ -245,9 +239,9 @@
               <button
                 class="retry-button"
                 onclick={() => handleRetry(card.cardNumber)}
-                aria-label="Retry generating {card.cardName}"
+                aria-label="Resubmit {card.cardName}"
               >
-                Retry
+                Resubmit
               </button>
             {/if}
           </div>
@@ -256,67 +250,26 @@
     </div>
   {/if}
 
-  <!-- Completion Message -->
   {#if isComplete}
     <div class="completion-section" role="status" aria-live="polite">
-      <div class="completion-message">
-        <span class="completion-icon" aria-hidden="true">🎉</span>
-        <h3 class="completion-title">All cards generated!</h3>
-        <p class="completion-subtitle">
-          {failedCount > 0
-            ? `${completedCount} cards completed successfully. ${failedCount} cards need retry.`
-            : 'Your complete 22-card Major Arcana deck is ready!'}
-        </p>
-      </div>
+      <h3 class="completion-title">All 22 cards illustrated</h3>
+      <p class="completion-subtitle">Proceed to Window 3 to collect your deck.</p>
     </div>
   {/if}
 
-  <!-- Cancel Button -->
   {#if isGenerating && !isComplete && onCancel}
     <div class="actions-section">
-      <button class="cancel-button" onclick={handleCancel} aria-label="Cancel generation">
-        Cancel Generation
-      </button>
+      <button class="cancel-button" onclick={handleCancel}>Withdraw from the queue</button>
     </div>
   {/if}
 </div>
 
-<!-- ========================================================================
-     COMPONENT STYLES
-     ======================================================================== -->
-
 <style>
-  /* ======================================================================
-     CSS CUSTOM PROPERTIES (THEME)
-     ====================================================================== */
-
-  :root {
-    --color-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --color-success: #48bb78;
-    --color-warning: #ed8936;
-    --color-danger: #f56565;
-    --color-text-primary: #1a1a1a;
-    --color-text-secondary: #666;
-    --color-border: #e2e8f0;
-    --color-bg-light: #f7fafc;
-  }
-
-  /* ======================================================================
-     CONTAINER
-     ====================================================================== */
-
   .progress-container {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    max-width: 800px;
-    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
   }
-
-  /* ======================================================================
-     SCREEN READER ONLY
-     ====================================================================== */
 
   .sr-only {
     position: absolute;
@@ -326,353 +279,209 @@
     margin: -1px;
     overflow: hidden;
     clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
+    border: 0;
   }
 
-  /* ======================================================================
-     PROGRESS BAR SECTION
-     ====================================================================== */
-
-  .progress-section {
-    margin-bottom: 2rem;
+  /* The lobby's LED "Now Serving" board. */
+  .board {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 1.25rem;
+    padding: 1rem 1.25rem;
+    background: #0b0b0b;
+    border: 6px solid #2b2b2b;
+    border-radius: 6px;
+    color: var(--led);
+    box-shadow: inset 0 0 30px rgba(255, 75, 43, 0.08);
   }
 
-  .progress-bar-wrapper {
-    margin-bottom: 1rem;
+  .board-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 9rem;
   }
 
-  .progress-bar-track {
-    width: 100%;
-    height: 40px;
-    background: var(--color-bg-light);
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  .board-label {
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #9a9a9a;
   }
 
-  .progress-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    border-radius: 20px;
-    transition: width 0.5s ease-in-out;
-    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.4);
+  .board-number {
+    font-family: var(--font-led);
+    font-size: 6rem;
+    line-height: 0.9;
+    text-shadow: 0 0 14px rgba(255, 75, 43, 0.75);
+    animation: flicker 2.4s steps(1) infinite;
   }
 
-  .progress-bar-fill.pulsing {
-    animation: pulse 2s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
+  @keyframes flicker {
     0%,
+    92%,
     100% {
       opacity: 1;
     }
-    50% {
-      opacity: 0.8;
+    94% {
+      opacity: 0.6;
     }
   }
 
-  .stats-display {
+  .board-name {
+    font-family: var(--font-led);
+    font-size: 1.6rem;
+    line-height: 1;
     text-align: center;
+    color: #ffb199;
+  }
+
+  .board-side {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.6rem;
+    min-width: 0;
+  }
+
+  .slots {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(11, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .slot {
+    padding: 0.15rem 0;
+    text-align: center;
+    font-family: var(--font-led);
+    font-size: 1.1rem;
+    color: #3a1a14;
+    background: #1a1a1a;
+    border: 1px solid #2c2c2c;
+  }
+
+  .slot.done {
+    color: var(--led);
+    background: #2a0f0a;
+  }
+
+  .slot.active {
+    color: #0b0b0b;
+    background: var(--led);
   }
 
   .stats-text {
-    font-size: 1.5rem;
-    color: var(--color-text-primary);
-    font-weight: 600;
-    margin: 0;
+    font-family: var(--font-led);
+    font-size: 1.35rem;
+    color: #ffb199;
   }
 
   .stats-count {
-    color: #667eea;
-    font-weight: 700;
-    font-size: 1.75rem;
+    color: var(--led);
   }
 
-  .stats-percent {
-    color: var(--color-text-secondary);
-    font-size: 1.25rem;
-    font-weight: 500;
+  .clerk-status {
+    font-family: var(--font-led);
+    font-size: 1.1rem;
+    color: #8a8a8a;
   }
 
-  /* ======================================================================
-     CURRENT CARD SECTION
-     ====================================================================== */
-
-  .current-card-section {
-    margin-bottom: 1.5rem;
+  .hold-music {
+    font-size: 0.85rem;
+    font-style: italic;
+    color: var(--ink-soft);
   }
-
-  .current-card {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    background: var(--color-bg-light);
-    padding: 1.5rem;
-    border-radius: 8px;
-    border-left: 4px solid #667eea;
-  }
-
-  .spinner {
-    font-size: 2rem;
-    animation: spin 2s linear infinite;
-    display: block;
-    flex-shrink: 0;
-  }
-
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  .current-card-info {
-    flex: 1;
-  }
-
-  .current-card-label {
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
-    margin: 0 0 0.25rem 0;
-    font-weight: 500;
-  }
-
-  .current-card-name {
-    font-size: 1.25rem;
-    color: var(--color-text-primary);
-    margin: 0;
-    font-weight: 600;
-  }
-
-  /* ======================================================================
-     TIME ESTIMATE
-     ====================================================================== */
-
-  .time-estimate {
-    text-align: center;
-    margin-bottom: 1.5rem;
-  }
-
-  .time-estimate p {
-    font-size: 1.125rem;
-    color: var(--color-text-secondary);
-    margin: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-  }
-
-  .clock-icon {
-    font-size: 1.25rem;
-  }
-
-  /* ======================================================================
-     FAILED CARDS SECTION
-     ====================================================================== */
 
   .failed-cards-section {
-    background: #fff5f5;
-    border: 2px solid #fc8181;
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
+    padding: 0.8rem 1rem;
+    background: var(--carbon-pink);
+    border: 2px solid var(--stamp-red);
   }
 
   .failed-cards-title {
-    font-size: 1.25rem;
-    color: #c53030;
-    margin: 0 0 1rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .warning-icon {
-    font-size: 1.5rem;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--stamp-red);
+    margin-bottom: 0.4rem;
   }
 
   .failed-cards-list {
-    display: grid;
-    gap: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
   }
 
   .failed-card-item {
-    background: white;
-    padding: 1rem;
-    border-radius: 6px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 1rem;
-  }
-
-  .failed-card-info {
-    flex: 1;
+    gap: 0.75rem;
   }
 
   .failed-card-name {
-    font-size: 1rem;
-    color: var(--color-text-primary);
-    margin: 0 0 0.25rem 0;
-    font-weight: 600;
+    font-family: var(--font-typed);
   }
 
   .failed-card-error {
-    font-size: 0.875rem;
-    color: #e53e3e;
-    margin: 0;
+    font-size: 0.78rem;
+    color: #7d1f1c;
   }
 
-  .retry-button {
-    padding: 0.5rem 1rem;
-    background: #667eea;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 0.875rem;
+  .retry-button,
+  .cancel-button {
+    padding: 0.35rem 0.8rem;
+    background: transparent;
+    border: 2px solid var(--stamp-red);
+    color: var(--stamp-red);
+    font-family: var(--font-heading);
+    font-size: 0.8rem;
     font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     cursor: pointer;
-    transition:
-      background 0.2s,
-      transform 0.1s;
   }
 
-  .retry-button:hover {
-    background: #5a67d8;
-    transform: translateY(-1px);
+  .retry-button:hover,
+  .cancel-button:hover {
+    background: var(--stamp-red);
+    color: #fff;
   }
-
-  .retry-button:active {
-    transform: translateY(0);
-  }
-
-  /* ======================================================================
-     COMPLETION SECTION
-     ====================================================================== */
 
   .completion-section {
-    margin-bottom: 1.5rem;
-  }
-
-  .completion-message {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 2rem;
-    border-radius: 12px;
-    text-align: center;
-  }
-
-  .completion-icon {
-    font-size: 3rem;
-    display: block;
-    margin-bottom: 1rem;
-    animation: celebrate 0.6s ease-in-out;
-  }
-
-  @keyframes celebrate {
-    0%,
-    100% {
-      transform: scale(1) rotate(0deg);
-    }
-    25% {
-      transform: scale(1.2) rotate(-10deg);
-    }
-    75% {
-      transform: scale(1.2) rotate(10deg);
-    }
+    padding: 0.8rem 1rem;
+    border: 2px solid #2f6b3d;
+    background: #e3efdd;
+    color: #24542f;
   }
 
   .completion-title {
-    font-size: 2rem;
-    margin: 0 0 0.5rem 0;
-    font-weight: 700;
+    font-size: 1rem;
+    text-transform: uppercase;
   }
-
-  .completion-subtitle {
-    font-size: 1.125rem;
-    margin: 0;
-    opacity: 0.95;
-  }
-
-  /* ======================================================================
-     ACTIONS SECTION
-     ====================================================================== */
 
   .actions-section {
-    text-align: center;
+    display: flex;
+    justify-content: center;
   }
 
-  .cancel-button {
-    padding: 0.75rem 2rem;
-    background: transparent;
-    color: #e53e3e;
-    border: 2px solid #e53e3e;
-    border-radius: 6px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .cancel-button:hover {
-    background: #e53e3e;
-    color: white;
-  }
-
-  /* ======================================================================
-     RESPONSIVE DESIGN
-     ====================================================================== */
-
-  @media (max-width: 768px) {
-    .progress-container {
-      padding: 1.5rem;
+  @media (max-width: 640px) {
+    .board {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+      padding: 0.8rem;
     }
 
-    .stats-text {
-      font-size: 1.25rem;
+    .board-number {
+      font-size: 4.5rem;
     }
 
-    .stats-count {
-      font-size: 1.5rem;
-    }
-
-    .stats-percent {
-      font-size: 1rem;
-    }
-
-    .current-card {
-      flex-direction: column;
-      text-align: center;
-    }
-
-    .current-card-name {
-      font-size: 1.125rem;
-    }
-
-    .failed-card-item {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .retry-button {
-      width: 100%;
-    }
-
-    .completion-icon {
-      font-size: 2.5rem;
-    }
-
-    .completion-title {
-      font-size: 1.75rem;
-    }
-
-    .completion-subtitle {
-      font-size: 1rem;
+    .slots {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
     }
   }
 </style>

@@ -262,7 +262,8 @@
           appStore.setUploadedImages([...uploadedImages, ...newImages])
 
           // Show success message
-          successMessage = `Successfully uploaded ${totalUploaded} image(s)`
+          successMessage =
+            totalUploaded === 1 ? `1 exhibit received.` : `${totalUploaded} exhibits received.`
 
           // Auto-hide success message after 3 seconds
           setTimeout(() => {
@@ -316,18 +317,18 @@
 <div class="upload-container">
   <!-- Header with count -->
   <div class="upload-header">
-    <h2 class="upload-title">Reference Images</h2>
-    <div class="image-counter">
+    <h2 class="upload-title"><span class="section-tag">Section A</span> Supporting evidence</h2>
+    <div class="image-counter" aria-label="{imageCount} of {appStore.MAX_IMAGES} exhibits">
+      <span class="count-label">Exhibits</span>
       <span class="count-current">{imageCount}</span>
       <span class="count-separator">/</span>
       <span class="count-max">{appStore.MAX_IMAGES}</span>
-      <span class="count-label">images</span>
     </div>
   </div>
 
   <p class="upload-description">
-    Upload 1-{appStore.MAX_IMAGES} reference images to define your deck's visual style. JPEG or PNG,
-    max 10MB each.
+    Attach 1 to {appStore.MAX_IMAGES} photos of the look you want your deck to have. Each one is filed
+    as an exhibit and shown to the clerk. JPEG or PNG, 10 MB max each.
   </p>
 
   <!-- Success Message -->
@@ -372,19 +373,17 @@
       {#if isUploading}
         <div class="drop-zone-content">
           <div class="upload-spinner" aria-label="Uploading"></div>
-          <p class="drop-zone-title">Uploading...</p>
+          <p class="drop-zone-title">Stamping received…</p>
         </div>
       {:else}
         <div class="drop-zone-content">
-          <div class="drop-zone-icon" aria-hidden="true">
-            {isDragOver ? '⬇' : '📁'}
-          </div>
+          <div class="drop-zone-icon" aria-hidden="true">IN</div>
           <p class="drop-zone-title">
-            {isDragOver ? 'Drop images here' : 'Drag and drop images'}
+            {isDragOver ? 'Let go. The tray has it.' : 'Drop photos in the tray'}
           </p>
-          <p class="drop-zone-subtitle">or click to browse</p>
+          <p class="drop-zone-subtitle">or click to choose files</p>
           <p class="drop-zone-details">
-            JPEG or PNG • Max 10MB each • {remainingSlots} slot{remainingSlots !== 1 ? 's' : ''} remaining
+            {remainingSlots} exhibit slot{remainingSlots !== 1 ? 's' : ''} open
           </p>
         </div>
       {/if}
@@ -406,15 +405,16 @@
   {#if uploadedImages.length > 0}
     <div class="preview-section">
       <div class="preview-header">
-        <h3 class="preview-title">Uploaded Images</h3>
+        <h3 class="preview-title">Exhibits on file</h3>
         <button class="clear-all-btn" onclick={clearAllImages} aria-label="Clear all images">
-          Clear All
+          Withdraw all
         </button>
       </div>
 
       <div class="preview-grid">
-        {#each uploadedImages as image (image.id)}
-          <div class="preview-card">
+        {#each uploadedImages as image, i (image.id)}
+          <div class="preview-card" style="--tilt: {(i % 2 === 0 ? -1 : 1) * (1 + (i % 3))}deg">
+            <span class="exhibit-tag">Exhibit {String.fromCharCode(65 + i)}</span>
             <!-- Image preview -->
             <div class="preview-image-wrapper">
               <img
@@ -450,7 +450,7 @@
   <!-- Empty state -->
   {#if uploadedImages.length === 0 && !isUploading}
     <div class="empty-state">
-      <p class="empty-state-text">No images uploaded yet. Add your first reference image above.</p>
+      <p class="empty-state-text">No exhibits on file. The clerk can't work from nothing.</p>
     </div>
   {/if}
 
@@ -459,245 +459,176 @@
     <div class="message message-info" role="status">
       <span class="message-icon">ℹ</span>
       <span class="message-text">
-        Maximum of {appStore.MAX_IMAGES} images reached. Remove an image to upload more.
+        All {appStore.MAX_IMAGES} exhibit slots are full. Withdraw one to add another.
       </span>
     </div>
   {/if}
 </div>
 
 <style>
-  /* ===============================================
-	   CONTAINER & LAYOUT
-	   =============================================== */
   .upload-container {
-    width: 100%;
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-lg);
+    gap: 1rem;
   }
 
-  /* ===============================================
-	   HEADER SECTION
-	   =============================================== */
   .upload-header {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
-    gap: var(--spacing-md);
-    flex-wrap: wrap;
+    gap: 1rem;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 0.4rem;
   }
 
   .upload-title {
-    margin: 0;
-    font-size: var(--text-2xl);
-    font-weight: 600;
-    color: var(--color-text);
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .section-tag {
+    font-size: 0.75rem;
+    padding: 0.1rem 0.4rem;
+    background: var(--ink);
+    color: var(--paper);
+    letter-spacing: 0.1em;
   }
 
   .image-counter {
     display: flex;
     align-items: baseline;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-sm) var(--spacing-md);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-  }
-
-  .count-current {
-    font-size: var(--text-2xl);
-    font-weight: 700;
-    color: var(--color-secondary);
-    font-family: var(--font-heading);
-  }
-
-  .count-separator {
-    font-size: var(--text-lg);
-    color: var(--color-text-muted);
-  }
-
-  .count-max {
-    font-size: var(--text-lg);
-    color: var(--color-text-secondary);
+    gap: 0.25rem;
+    font-family: var(--font-typed);
+    white-space: nowrap;
   }
 
   .count-label {
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-    margin-left: var(--spacing-xs);
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-right: 0.3rem;
+    color: var(--ink-soft);
+  }
+
+  .count-current {
+    font-size: 1.5rem;
+    color: var(--stamp-red);
+  }
+
+  .count-separator,
+  .count-max {
+    font-size: 1rem;
   }
 
   .upload-description {
-    margin: 0;
-    font-size: var(--text-base);
-    color: var(--color-text-secondary);
-    line-height: 1.6;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
   }
 
-  /* ===============================================
-	   MESSAGES (Success, Error, Info)
-	   =============================================== */
   .message {
     display: flex;
+    gap: 0.6rem;
     align-items: flex-start;
-    gap: var(--spacing-md);
-    padding: var(--spacing-md) var(--spacing-lg);
-    border-radius: var(--radius-md);
-    font-size: var(--text-base);
-    line-height: 1.5;
-    animation: slideIn var(--transition-normal);
-  }
-
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    padding: 0.6rem 0.8rem;
+    border: 2px solid;
+    font-size: 0.9rem;
   }
 
   .message-icon {
-    font-size: var(--text-xl);
-    flex-shrink: 0;
+    font-weight: 700;
   }
 
   .message-content {
-    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
-  }
-
-  .message-text {
-    flex: 1;
+    gap: 0.25rem;
   }
 
   .message-success {
-    background: rgba(72, 187, 120, 0.1);
-    border: 1px solid rgba(72, 187, 120, 0.3);
-    color: #9ae6b4;
+    border-color: #2f6b3d;
+    color: #24542f;
+    background: #e3efdd;
   }
 
   .message-error {
-    background: rgba(245, 101, 101, 0.1);
-    border: 1px solid rgba(245, 101, 101, 0.3);
-    color: #fc8181;
+    border-color: var(--stamp-red);
+    color: #7d1f1c;
+    background: var(--carbon-pink);
   }
 
   .message-info {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    color: var(--color-text-secondary);
+    border-color: var(--stamp-blue);
+    color: #173d78;
+    background: #e3eaf6;
   }
 
-  .error-item {
-    margin-bottom: var(--spacing-xs);
-  }
-
-  .error-item:last-child {
-    margin-bottom: 0;
-  }
-
-  /* ===============================================
-	   DROP ZONE
-	   =============================================== */
+  /* The in-tray. */
   .drop-zone {
     position: relative;
-    min-height: 280px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--spacing-xxl);
-    background: var(--glass-bg);
-    border: 2px dashed var(--glass-border);
-    border-radius: var(--radius-lg);
+    padding: 1.5rem 1rem 1.25rem;
+    border: 3px dashed #8f8670;
+    background:
+      repeating-linear-gradient(135deg, transparent 0 14px, rgba(0, 0, 0, 0.03) 14px 15px), #ece4cd;
+    text-align: center;
     cursor: pointer;
-    transition: all var(--transition-normal);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    outline: none;
+    transition:
+      background var(--transition-fast),
+      border-color var(--transition-fast);
   }
 
-  .drop-zone:hover:not(.uploading) {
-    border-color: var(--color-primary-light);
-    background: rgba(139, 92, 246, 0.15);
-    transform: scale(1.01);
-  }
-
-  .drop-zone:focus-visible {
-    border-color: var(--color-secondary);
-    box-shadow: 0 0 0 3px rgba(246, 173, 85, 0.2);
-  }
-
+  .drop-zone:hover:not(.uploading),
   .drop-zone.drag-over {
-    border-color: var(--color-secondary);
-    background: rgba(246, 173, 85, 0.1);
-    border-style: solid;
-    transform: scale(1.02);
+    border-color: var(--stamp-blue);
+    background-color: #e3eaf6;
   }
 
   .drop-zone.uploading {
-    cursor: wait;
-    opacity: 0.8;
+    cursor: progress;
   }
 
   .drop-zone-content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--spacing-md);
-    text-align: center;
-    pointer-events: none;
+    gap: 0.3rem;
   }
 
   .drop-zone-icon {
-    font-size: 4rem;
-    filter: drop-shadow(0 0 12px rgba(139, 92, 246, 0.4));
-    animation: float 3s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
+    padding: 0.2rem 0.7rem;
+    border: 3px solid var(--ink);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    font-size: 1.1rem;
+    margin-bottom: 0.3rem;
   }
 
   .drop-zone-title {
-    margin: 0;
-    font-size: var(--text-xl);
-    font-weight: 600;
-    color: var(--color-text);
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
-  .drop-zone-subtitle {
-    margin: 0;
-    font-size: var(--text-base);
-    color: var(--color-text-secondary);
-  }
-
+  .drop-zone-subtitle,
   .drop-zone-details {
-    margin: 0;
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    color: var(--ink-soft);
   }
 
-  /* Upload spinner */
   .upload-spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid var(--glass-border);
-    border-top-color: var(--color-secondary);
+    width: 36px;
+    height: 36px;
+    border: 4px solid #c9bfa5;
+    border-top-color: var(--stamp-red);
     border-radius: 50%;
-    animation: spin 1s linear infinite;
+    animation: spin 0.8s linear infinite;
   }
 
   @keyframes spin {
@@ -706,7 +637,6 @@
     }
   }
 
-  /* Hidden file input */
   .file-input {
     position: absolute;
     width: 1px;
@@ -716,120 +646,94 @@
     overflow: hidden;
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
-    border-width: 0;
+    border: 0;
   }
 
-  /* ===============================================
-	   PREVIEW SECTION
-	   =============================================== */
   .preview-section {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: 0.75rem;
   }
 
   .preview-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    gap: var(--spacing-md);
+    align-items: center;
   }
 
   .preview-title {
-    margin: 0;
-    font-size: var(--text-lg);
-    font-weight: 600;
-    color: var(--color-text);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
   }
 
   .clear-all-btn {
-    padding: var(--spacing-sm) var(--spacing-md);
-    font-size: var(--text-sm);
-    font-weight: 500;
-    color: var(--color-text-secondary);
+    padding: 0.3rem 0.7rem;
     background: transparent;
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
+    border: 1px solid var(--ink-soft);
+    color: var(--ink);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
     cursor: pointer;
-    transition: all var(--transition-fast);
   }
 
   .clear-all-btn:hover {
-    color: var(--color-text);
-    border-color: var(--color-primary-light);
-    background: var(--glass-bg);
+    border-color: var(--stamp-red);
+    color: var(--stamp-red);
   }
 
-  .clear-all-btn:focus-visible {
-    outline: 2px solid var(--color-secondary);
-    outline-offset: 2px;
-  }
-
-  /* Preview Grid */
   .preview-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: var(--spacing-md);
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 1.25rem 1rem;
+    padding: 0.5rem 0.25rem;
   }
 
-  @media (max-width: 640px) {
-    .preview-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (min-width: 641px) and (max-width: 1024px) {
-    .preview-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (min-width: 1025px) {
-    .preview-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-
-  /* Preview Card */
+  /* Each exhibit is a photo paper-clipped to the form. */
   .preview-card {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-md);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-lg);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    transition: all var(--transition-normal);
-    animation: fadeIn var(--transition-normal);
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
+    padding: 8px 8px 6px;
+    background: #fff;
+    box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.45);
+    transform: rotate(var(--tilt, 0deg));
+    transition: transform var(--transition-fast);
   }
 
   .preview-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(31, 38, 135, 0.3);
-    border-color: var(--color-primary-light);
+    transform: rotate(0deg) scale(1.03);
+  }
+
+  .preview-card::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 18px;
+    width: 12px;
+    height: 30px;
+    border: 2px solid #8d949b;
+    border-radius: 6px;
+  }
+
+  .exhibit-tag {
+    position: absolute;
+    top: 12px;
+    right: -6px;
+    z-index: 2;
+    padding: 0.1rem 0.4rem;
+    background: var(--carbon-yellow);
+    border: 1px solid #c6b14e;
+    font-family: var(--font-heading);
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
 
   .preview-image-wrapper {
     position: relative;
-    width: 100%;
     aspect-ratio: 1;
-    border-radius: var(--radius-md);
+    background: #ddd;
     overflow: hidden;
-    background: var(--color-bg-tertiary);
   }
 
   .preview-image {
@@ -839,108 +743,46 @@
     display: block;
   }
 
-  /* Remove button */
   .remove-btn {
     position: absolute;
-    top: var(--spacing-sm);
-    right: var(--spacing-sm);
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    bottom: 6px;
+    right: 6px;
+    width: 30px;
+    height: 30px;
+    border: 2px solid #fff;
     border-radius: 50%;
+    background: var(--stamp-red);
+    color: #fff;
+    font-size: 1.1rem;
+    line-height: 1;
     cursor: pointer;
-    opacity: 0;
-    transition: all var(--transition-fast);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-  }
-
-  .preview-card:hover .remove-btn {
-    opacity: 1;
-  }
-
-  .remove-btn:hover {
-    background: rgba(245, 101, 101, 0.9);
-    border-color: rgba(245, 101, 101, 1);
-    transform: scale(1.1);
-  }
-
-  .remove-btn:focus-visible {
-    opacity: 1;
-    outline: 2px solid var(--color-secondary);
-    outline-offset: 2px;
   }
 
   .remove-icon {
-    font-size: var(--text-2xl);
+    display: block;
     line-height: 1;
-    color: white;
-    font-weight: 300;
   }
 
-  /* Preview info */
   .preview-info {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
+    padding-top: 0.35rem;
   }
 
   .preview-filename {
-    margin: 0;
-    font-size: var(--text-sm);
-    font-weight: 500;
-    color: var(--color-text);
-    white-space: nowrap;
+    font-family: var(--font-typed);
+    font-size: 0.8rem;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .preview-filesize {
-    margin: 0;
-    font-size: var(--text-xs);
-    color: var(--color-text-muted);
-  }
-
-  /* ===============================================
-	   EMPTY STATE
-	   =============================================== */
-  .empty-state {
-    padding: var(--spacing-xl);
-    text-align: center;
-    color: var(--color-text-muted);
+    font-size: 0.7rem;
+    color: var(--ink-soft);
   }
 
   .empty-state-text {
-    margin: 0;
-    font-size: var(--text-base);
+    font-size: 0.9rem;
     font-style: italic;
-  }
-
-  /* ===============================================
-	   RESPONSIVE ADJUSTMENTS
-	   =============================================== */
-  @media (max-width: 640px) {
-    .drop-zone {
-      min-height: 200px;
-      padding: var(--spacing-lg);
-    }
-
-    .drop-zone-icon {
-      font-size: 3rem;
-    }
-
-    .upload-header {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .image-counter {
-      width: 100%;
-      justify-content: center;
-    }
+    color: var(--ink-soft);
   }
 </style>

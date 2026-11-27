@@ -229,194 +229,141 @@
   }
 </script>
 
-<!-- ============================================================================ -->
-<!-- TEMPLATE -->
-<!-- ============================================================================ -->
+<svelte:head>
+  <title>Window 2 · Processing · Bureau of Fate</title>
+</svelte:head>
 
 <div class="generate-page">
-  <header>
-    <h1>Generate Your Tarot Deck</h1>
-    <p class="subtitle">Step 2 of 3: Review Prompts & Generate Images</p>
+  <header class="window-head">
+    <span class="window-plate">Window 2</span>
+    <h1>Processing</h1>
+    <p class="subtitle">
+      The clerk drafts a case file for every card. Amend what you like, then send the deck to be
+      illustrated.
+    </p>
   </header>
 
-  <div class="content">
-    <!-- Prompt List Section -->
-    <section class="prompts-section">
-      <PromptListComponent />
-    </section>
+  <section class="prompts-section sheet">
+    <PromptListComponent />
+  </section>
 
-    <!-- Generation Controls -->
-    <section class="generation-section">
-      {#if !isGenerating && !hasGeneratedCards}
-        <!-- Initial State: Ready to Generate -->
-        <div class="start-generation">
-          <h2>Ready to Generate?</h2>
+  <section class="generation-section sheet">
+    {#if !isGenerating && !hasGeneratedCards}
+      <div class="start-generation">
+        <h2>Send to illustration</h2>
+        <p class="description">
+          All 22 case files go to the illustrator, one card at a time. It takes a couple of minutes.
+          Anything that comes back rejected can be resubmitted.
+        </p>
+        <button class="stamp-btn" disabled={!hasPrompts} onclick={startGeneration}>
+          Approve all 22 for illustration
+        </button>
+        {#if !hasPrompts}
+          <p class="warning">The clerk needs all 22 case files drafted first.</p>
+        {/if}
+      </div>
+    {:else if isGenerating}
+      <GenerationProgressComponent onCancel={handleCancel} onRetryFailed={handleRetryFailed} />
+    {:else}
+      <div class="generation-complete">
+        {#if failedCards.length === 0}
+          <span class="approved-stamp" aria-hidden="true">Approved</span>
+          <h2>All 22 cards illustrated</h2>
+          <p class="description">Your deck is waiting at Window 3.</p>
+        {:else}
+          <h2>{22 - failedCards.length} of 22 cards illustrated</h2>
           <p class="description">
-            Review your prompts above. Once satisfied, click the button below to generate all 22
-            Major Arcana cards.
+            {failedCards.length === 1 ? 'One card was' : `${failedCards.length} cards were`} returned
+            unillustrated. Resubmit {failedCards.length === 1 ? 'it' : 'them'}, or collect the deck
+            as it is.
           </p>
-          <button class="btn-primary" disabled={!hasPrompts} onclick={startGeneration}>
-            Generate All 22 Cards
-          </button>
-          {#if !hasPrompts}
-            <p class="warning">Generate prompts first using the button above</p>
+          <ul class="failed-list">
+            {#each failedCards as card (card.cardNumber)}
+              <li>
+                <span class="returned-stamp" aria-hidden="true">Returned</span>
+                <span class="failed-name">{card.cardName}</span>
+                <button
+                  class="btn-retry"
+                  disabled={retrying.includes(card.cardNumber)}
+                  aria-label={`Resubmit ${card.cardName}`}
+                  onclick={() => handleRetryFailed(card.cardNumber)}
+                >
+                  {retrying.includes(card.cardNumber) ? 'Resubmitting…' : 'Resubmit'}
+                </button>
+              </li>
+            {/each}
+          </ul>
+          {#if failedCards.length > 1}
+            <button class="btn-retry all" disabled={retrying.length > 0} onclick={retryAllFailed}>
+              Resubmit all returned
+            </button>
           {/if}
-        </div>
-      {:else if isGenerating}
-        <!-- Generating State: Show Progress -->
-        <GenerationProgressComponent onCancel={handleCancel} onRetryFailed={handleRetryFailed} />
-      {:else}
-        <!-- Complete State: Navigation to Gallery -->
-        <div class="generation-complete">
-          {#if failedCards.length === 0}
-            <h2>Generation Complete!</h2>
-            <p class="description">Your tarot deck is ready to view.</p>
-          {:else}
-            <h2 class="partial">{22 - failedCards.length} of 22 Cards Ready</h2>
-            <p class="description">
-              {failedCards.length === 1 ? 'One card' : `${failedCards.length} cards`} didn't generate.
-              Retry {failedCards.length === 1 ? 'it' : 'them'}, or view the deck as it is.
-            </p>
-            <ul class="failed-list">
-              {#each failedCards as card (card.cardNumber)}
-                <li>
-                  <span>{card.cardName}</span>
-                  <button
-                    class="btn-retry"
-                    disabled={retrying.includes(card.cardNumber)}
-                    aria-label={`Retry ${card.cardName}`}
-                    onclick={() => handleRetryFailed(card.cardNumber)}
-                  >
-                    {retrying.includes(card.cardNumber) ? 'Retrying…' : 'Retry'}
-                  </button>
-                </li>
-              {/each}
-            </ul>
-            {#if failedCards.length > 1}
-              <button class="btn-secondary" disabled={retrying.length > 0} onclick={retryAllFailed}>
-                Retry All Failed
-              </button>
-            {/if}
-          {/if}
-          <button class="btn-primary" onclick={goToGallery}>View Gallery →</button>
-        </div>
-      {/if}
-    </section>
-  </div>
+        {/if}
+        <button class="stamp-btn" onclick={goToGallery}>Proceed to Window 3 →</button>
+      </div>
+    {/if}
+  </section>
 </div>
 
-<!-- ============================================================================ -->
-<!-- STYLES -->
-<!-- ============================================================================ -->
-
 <style>
-  /* ==========================================================================
-	   LAYOUT
-	   ========================================================================== */
-
   .generate-page {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
-  }
-
-  header {
-    text-align: center;
-    margin-bottom: 3rem;
-  }
-
-  header h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 0.5rem;
-  }
-
-  .subtitle {
-    font-size: 1.125rem;
-    color: #b9b2c8;
-    margin: 0;
-  }
-
-  .content {
     display: flex;
     flex-direction: column;
-    gap: 3rem;
+    gap: 2rem;
   }
 
-  /* ==========================================================================
-	   SECTIONS
-	   ========================================================================== */
-
+  .prompts-section,
   .generation-section {
-    background: rgba(139, 92, 246, 0.05);
-    border: 1px solid rgba(139, 92, 246, 0.2);
-    border-radius: 12px;
-    padding: 2rem;
+    padding: 1.5rem;
   }
 
-  /* ==========================================================================
-	   START GENERATION STATE
-	   ========================================================================== */
-
-  .start-generation {
+  .start-generation,
+  .generation-complete {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
+    gap: 0.9rem;
   }
 
-  .start-generation h2 {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #f3e9d2;
-    margin-bottom: 1rem;
+  .start-generation h2,
+  .generation-complete h2 {
+    font-size: 1.6rem;
+    text-transform: uppercase;
   }
 
-  .start-generation .description {
-    font-size: 1.125rem;
-    color: #b9b2c8;
-    margin-bottom: 2rem;
-    line-height: 1.6;
+  .description {
+    max-width: 56ch;
+    color: var(--ink-soft);
   }
 
   .warning {
-    color: #f6ad55;
-    margin-top: 1rem;
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--stamp-red);
   }
 
-  /* ==========================================================================
-	   COMPLETE STATE
-	   ========================================================================== */
-
-  .generation-complete {
-    text-align: center;
-  }
-
-  .generation-complete h2 {
-    font-size: 2rem;
+  .approved-stamp {
+    position: absolute;
+    top: -0.5rem;
+    right: 1rem;
+    padding: 0.15rem 0.6rem;
+    border: 4px solid #2f6b3d;
+    border-radius: 6px;
+    color: #2f6b3d;
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
     font-weight: 700;
-    color: #f3e9d2;
-    margin-bottom: 1rem;
-  }
-
-  .generation-complete h2::before {
-    content: '🎉 ';
-    font-size: 2.5rem;
-    display: block;
-    margin-bottom: 0.5rem;
-  }
-
-  .generation-complete h2.partial::before {
-    content: none;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    transform: rotate(10deg);
+    opacity: 0.8;
   }
 
   .failed-list {
     list-style: none;
-    max-width: 420px;
-    margin: 0 auto 1.5rem;
+    width: min(100%, 460px);
+    margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
@@ -426,133 +373,56 @@
   .failed-list li {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.6rem 0.9rem;
-    border: 1px solid rgba(248, 113, 113, 0.4);
-    border-radius: 8px;
-    background: rgba(60, 14, 20, 0.45);
-    color: #f3e9d2;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--carbon-pink);
+    border: 1px solid #d89aa0;
+    text-align: left;
   }
 
-  .btn-retry,
-  .btn-secondary {
-    padding: 0.5rem 1rem;
-    border: 1px solid rgba(223, 168, 69, 0.6);
-    border-radius: 6px;
+  .returned-stamp {
+    padding: 0 0.35rem;
+    border: 2px solid var(--stamp-red);
+    color: var(--stamp-red);
+    font-family: var(--font-heading);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transform: rotate(-6deg);
+  }
+
+  .failed-name {
+    flex: 1;
+    font-family: var(--font-tarot);
+  }
+
+  .btn-retry {
+    padding: 0.35rem 0.8rem;
+    border: 2px solid var(--stamp-blue);
     background: transparent;
-    color: #dfa845;
+    color: var(--stamp-blue);
+    font-family: var(--font-heading);
     font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     cursor: pointer;
   }
 
-  .btn-secondary {
-    display: block;
-    margin: 0 auto 1.25rem;
+  .btn-retry:hover:not(:disabled) {
+    background: var(--stamp-blue);
+    color: #fff;
   }
 
-  .btn-retry:disabled,
-  .btn-secondary:disabled {
+  .btn-retry:disabled {
     opacity: 0.5;
     cursor: wait;
   }
 
-  .generation-complete .description {
-    font-size: 1.125rem;
-    color: #b9b2c8;
-    margin-bottom: 2rem;
-  }
-
-  /* ==========================================================================
-	   BUTTONS
-	   ========================================================================== */
-
-  .btn-primary {
-    padding: 1rem 2rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition:
-      transform 0.2s,
-      box-shadow 0.2s;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  }
-
-  .btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
-  }
-
-  .btn-primary:active:not(:disabled) {
-    transform: translateY(0);
-  }
-
-  .btn-primary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  /* ==========================================================================
-	   RESPONSIVE DESIGN
-	   ========================================================================== */
-
-  @media (max-width: 768px) {
-    .generate-page {
-      padding: 1rem;
-    }
-
-    header h1 {
-      font-size: 2rem;
-    }
-
-    .subtitle {
-      font-size: 1rem;
-    }
-
+  @media (max-width: 640px) {
+    .prompts-section,
     .generation-section {
-      padding: 1.5rem;
-    }
-
-    .start-generation h2,
-    .generation-complete h2 {
-      font-size: 1.5rem;
-    }
-
-    .start-generation .description,
-    .generation-complete .description {
-      font-size: 1rem;
-    }
-
-    .btn-primary {
-      width: 100%;
-      padding: 0.875rem 1.5rem;
-      font-size: 1rem;
-    }
-  }
-
-  /* ==========================================================================
-	   ACCESSIBILITY
-	   ========================================================================== */
-
-  @media (prefers-reduced-motion: reduce) {
-    .btn-primary,
-    header h1 {
-      transition: none;
-    }
-  }
-
-  @media (prefers-contrast: high) {
-    .generation-section {
-      border-width: 2px;
-    }
-
-    .btn-primary {
-      border: 2px solid white;
+      padding: 1rem 0.8rem;
     }
   }
 </style>

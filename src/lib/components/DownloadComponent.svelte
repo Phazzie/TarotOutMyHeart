@@ -40,6 +40,13 @@
    */
   const downloadService = downloadServiceFactory
 
+  interface Props {
+    /** Show the per-card download grid. The gallery hides it because its lightbox has one. */
+    showIndividual?: boolean
+  }
+
+  const { showIndividual = true }: Props = $props()
+
   // ============================================================================
   // COMPONENT STATE (Svelte 5 $state runes)
   // ============================================================================
@@ -270,13 +277,16 @@
 <div class="download-component">
   <!-- Download Options Panel -->
   <div class="options-panel">
-    <h3 class="panel-title">Download Options</h3>
+    <div class="slip-head">
+      <span class="slip-code">Form BF-9</span>
+      <h3 class="panel-title">Request for certified copies</h3>
+    </div>
 
     <!-- Deck Name Input -->
     <div class="form-group">
       <label for="deck-name" class="form-label">
-        Deck Name
-        <span class="label-hint">(for ZIP filename)</span>
+        Name on the folder
+        <span class="label-hint">(becomes the .zip filename)</span>
       </label>
       <input
         id="deck-name"
@@ -298,8 +308,8 @@
           disabled={isDownloading}
           aria-label="Include metadata JSON file in ZIP"
         />
-        <span>Include metadata JSON</span>
-        <span class="label-hint"> (style inputs, generation date, card list) </span>
+        <span>Attach the paperwork (metadata.json)</span>
+        <span class="label-hint">: your declaration, the issue date and the card list</span>
       </label>
     </div>
   </div>
@@ -313,12 +323,11 @@
       aria-label="Download all 22 cards as ZIP file"
       aria-busy={isDownloading}
     >
-      <span class="button-icon" aria-hidden="true">⬇️</span>
       <span class="button-text">
         {#if isDownloading}
-          Preparing Download...
+          Photocopying…
         {:else}
-          Download All as ZIP
+          Collect all 22 certified copies (.zip)
         {/if}
       </span>
     </button>
@@ -326,9 +335,9 @@
     {#if !canDownloadDeck && !isDownloading}
       <p class="download-hint">
         {#if appStore.generatedCards.length < 22}
-          Generate all 22 cards to enable download
+          The full set of 22 must be issued before copies can be collected.
         {:else if !appStore.hasAllCards}
-          Wait for all cards to complete generation
+          Some cards were returned. Resubmit them at Window 2 first.
         {/if}
       </p>
     {/if}
@@ -374,9 +383,9 @@
   {/if}
 
   <!-- Individual Card Downloads -->
-  {#if appStore.generatedCards.length > 0}
+  {#if showIndividual && appStore.generatedCards.length > 0}
     <div class="individual-downloads">
-      <h3 class="section-title">Download Individual Cards</h3>
+      <h3 class="section-title">Single copies</h3>
       <div class="card-grid">
         {#each appStore.generatedCards as card (card.cardNumber)}
           <div class="card-item">
@@ -394,7 +403,7 @@
             <!-- Card Info -->
             <div class="card-info">
               <h4 class="card-name">{card.cardName}</h4>
-              <p class="card-number-text">Card #{card.cardNumber}</p>
+              <p class="card-number-text">MA-{String(card.cardNumber).padStart(2, '0')}</p>
             </div>
 
             <!-- Download Button -->
@@ -405,11 +414,9 @@
               aria-label="Download {card.cardName}"
             >
               {#if downloadingCardNumber === card.cardNumber}
-                <span class="button-spinner" aria-hidden="true">⏳</span>
-                Downloading...
+                Copying…
               {:else}
-                <span class="button-icon" aria-hidden="true">⬇️</span>
-                Download
+                Take a copy
               {/if}
             </button>
           </div>
@@ -419,272 +426,226 @@
   {/if}
 </div>
 
-<!-- ============================================================================
-     STYLES
-     ============================================================================ -->
-
 <style>
   .download-component {
-    display: grid;
-    gap: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    color: var(--ink);
   }
 
-  /* Options Panel */
   .options-panel {
-    background: #ffffff;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 1rem 1.1rem;
+    background: var(--carbon-yellow);
+    border: 2px solid var(--ink);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .slip-head {
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 0.4rem;
+  }
+
+  .slip-code {
+    font-family: var(--font-heading);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
   }
 
   .panel-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    color: #1a1a1a;
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
   }
 
   .form-group {
-    margin-bottom: 1.5rem;
-  }
-
-  .form-group:last-child {
-    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
   }
 
   .form-label {
-    display: block;
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-    color: #4a5568;
-    font-size: 0.875rem;
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
 
   .label-hint {
-    font-weight: 400;
-    color: #718096;
-    font-size: 0.8125rem;
+    font-family: var(--font-body);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
   }
 
   .form-input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #cbd5e0;
-    border-radius: 4px;
+    min-height: 44px;
+    padding: 0.4rem 0.6rem;
+    font-family: var(--font-typed);
     font-size: 1rem;
-    transition: border-color 0.2s;
+    color: var(--ink);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--ink);
   }
 
   .form-input:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-  }
-
-  .form-input:disabled {
-    background: #f7fafc;
-    cursor: not-allowed;
-    opacity: 0.6;
+    outline: 3px solid var(--stamp-blue);
+    outline-offset: 2px;
   }
 
   .checkbox-label {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    font-size: 0.875rem;
-    color: #4a5568;
-  }
-
-  .checkbox-label input[type='checkbox'] {
-    width: 1.125rem;
-    height: 1.125rem;
+    gap: 0.4rem;
+    font-size: 0.9rem;
     cursor: pointer;
   }
 
-  .checkbox-label input[type='checkbox']:disabled {
-    cursor: not-allowed;
-    opacity: 0.6;
+  .checkbox-label input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--ink);
   }
 
-  /* Download All Section */
   .download-all-section {
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .download-all-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1.25rem 2.5rem;
-    font-size: 1.125rem;
-    font-weight: 600;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
+    min-height: 52px;
+    padding: 0.6rem 1rem;
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--paper);
+    background: var(--stamp-blue);
+    border: 2px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
-  }
-
-  .download-all-button:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+    transition:
+      transform 0.08s,
+      box-shadow 0.08s;
   }
 
   .download-all-button:active:not(:disabled) {
-    transform: translateY(0);
+    transform: translate(3px, 3px);
+    box-shadow: 1px 1px 0 var(--ink);
   }
 
   .download-all-button:disabled {
-    opacity: 0.5;
+    background: var(--ink-soft);
     cursor: not-allowed;
-    transform: none;
-  }
-
-  .button-icon {
-    font-size: 1.5rem;
-  }
-
-  .button-text {
-    font-size: 1.125rem;
+    box-shadow: none;
   }
 
   .download-hint {
-    margin-top: 1rem;
-    color: #718096;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
+    color: #d9d2b6;
   }
 
-  /* Progress Section */
   .progress-section {
-    background: #ffffff;
-    padding: 1.5rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 0.75rem;
+    background: var(--paper);
+    border: 2px solid var(--ink);
   }
 
   .progress-bar {
-    width: 100%;
-    height: 2rem;
-    background: #e2e8f0;
-    border-radius: 1rem;
-    overflow: hidden;
-    margin-bottom: 1rem;
+    height: 14px;
+    border: 2px solid var(--ink);
+    background: var(--paper-rule);
   }
 
   .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #667eea, #764ba2);
-    transition: width 0.3s ease;
-    border-radius: 1rem;
+    background: var(--stamp-blue);
+    transition: width 0.2s;
   }
 
-  .progress-text {
-    font-size: 1rem;
-    color: #4a5568;
-    margin-bottom: 0.5rem;
-    text-align: center;
-  }
-
+  .progress-text,
   .progress-percent {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #667eea;
-    text-align: center;
+    font-size: 0.85rem;
+    margin-top: 0.3rem;
   }
 
-  /* Messages */
   .message {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    font-size: 0.875rem;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    border: 2px solid var(--ink);
+    background: var(--paper);
   }
 
   .success-message {
-    background: #f0fdf4;
-    border: 1px solid #86efac;
-    color: #166534;
+    border-color: var(--stamp-blue);
   }
 
   .error-message {
-    background: #fef2f2;
-    border: 1px solid #fca5a5;
-    color: #991b1b;
-  }
-
-  .message-icon {
-    font-size: 1.25rem;
-    flex-shrink: 0;
+    background: var(--carbon-pink);
+    border-color: var(--stamp-red);
   }
 
   .message-text {
     flex: 1;
+    font-size: 0.9rem;
   }
 
   .message-close {
-    background: transparent;
+    width: 36px;
+    height: 36px;
     border: none;
-    font-size: 1.5rem;
-    color: currentColor;
+    background: transparent;
+    font-size: 1.2rem;
     cursor: pointer;
-    padding: 0;
-    width: 1.5rem;
-    height: 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0.7;
-    transition: opacity 0.2s;
+    color: var(--ink);
   }
 
-  .message-close:hover {
-    opacity: 1;
-  }
-
-  /* Individual Downloads */
   .individual-downloads {
-    background: #ffffff;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+    background: var(--paper);
+    border: 2px solid var(--ink);
   }
 
   .section-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 1.5rem;
-    color: #1a1a1a;
+    font-family: var(--font-heading);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.75rem;
   }
 
   .card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.75rem;
   }
 
   .card-item {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    background: #f7fafc;
-    padding: 1rem;
-    border-radius: 8px;
-    transition: box-shadow 0.2s;
+    gap: 0.35rem;
+    padding: 0.4rem;
+    border: 1px solid var(--ink);
   }
 
-  .card-item:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  .card-image-container {
+  .card-image-container,
+  .card-placeholder {
     aspect-ratio: 2 / 3;
-    border-radius: 4px;
     overflow: hidden;
+    background: var(--paper-rule);
+    display: grid;
+    place-items: center;
   }
 
   .card-image {
@@ -693,102 +654,36 @@
     object-fit: cover;
   }
 
-  .card-placeholder {
-    aspect-ratio: 2 / 3;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
+  .card-number {
+    font-family: var(--font-led);
     font-size: 2rem;
-  }
-
-  .card-info {
-    flex: 1;
+    color: var(--stamp-red);
   }
 
   .card-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #2d3748;
-    margin-bottom: 0.25rem;
+    font-family: var(--font-typed);
+    font-size: 0.85rem;
   }
 
   .card-number-text {
-    font-size: 0.8125rem;
-    color: #718096;
+    font-family: var(--font-led);
+    color: var(--stamp-red);
   }
 
   .card-download-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.625rem 1rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    background: #4299e1;
-    color: white;
-    border: none;
-    border-radius: 4px;
+    min-height: 40px;
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: var(--paper);
+    border: 2px solid var(--ink);
     cursor: pointer;
-    transition: background 0.2s;
-  }
-
-  .card-download-button:hover:not(:disabled) {
-    background: #3182ce;
+    color: var(--ink);
   }
 
   .card-download-button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-  }
-
-  .button-spinner {
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  /* Responsive Design */
-  @media (max-width: 768px) {
-    .download-component {
-      gap: 1.5rem;
-    }
-
-    .options-panel,
-    .individual-downloads {
-      padding: 1rem;
-    }
-
-    .download-all-button {
-      width: 100%;
-      padding: 1rem 1.5rem;
-      font-size: 1rem;
-    }
-
-    .card-grid {
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 1rem;
-    }
-
-    .card-item {
-      padding: 0.75rem;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .card-grid {
-      grid-template-columns: 1fr 1fr;
-    }
   }
 </style>

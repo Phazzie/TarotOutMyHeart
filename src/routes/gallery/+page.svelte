@@ -42,6 +42,12 @@
   const cardCount = $derived(appStore.generatedCards.length)
   const completedCount = $derived(appStore.completedCardCount)
   const failedCount = $derived(appStore.failedCardCount)
+  const issuedOn = new Date().toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+  const certNo = `MA-${String(Math.floor(Math.random() * 9000) + 1000)}-${new Date().getFullYear()}`
 
   /**
    * Navigate to generate page
@@ -55,7 +61,11 @@
    * Confirms with user before clearing all work
    */
   async function startOver() {
-    if (confirm('Are you sure you want to start over? This will clear all your work.')) {
+    if (
+      confirm(
+        'Withdraw your application? Every exhibit, declaration and issued card will be shredded. This cannot be undone.'
+      )
+    ) {
       // The upload service keeps its own image list (and enforces the 5-image limit
       // against it), so clear it too or the old deck's images count against the new one.
       await imageUploadService.clearAllImages()
@@ -65,246 +75,307 @@
   }
 </script>
 
+<svelte:head>
+  <title>Window 3 · Issuance · Bureau of Fate</title>
+</svelte:head>
+
 <div class="gallery-page">
-  <header>
-    <div class="header-content">
-      <div>
-        <h1>Your Tarot Deck</h1>
-        <p>Step 3 of 3: View & Download Your Cards</p>
-      </div>
-      <div class="header-actions">
-        <button class="btn-secondary" onclick={startOver}> Start Over </button>
-      </div>
+  <header class="window-head head-row">
+    <div>
+      <span class="window-plate">Window 3</span>
+      <h1>Issuance</h1>
+      <p class="subtitle">
+        Your deck has cleared processing. Inspect each card, then collect your certified copies.
+      </p>
     </div>
+    <button class="stamp-btn withdraw" onclick={startOver}>Withdraw application</button>
   </header>
 
   {#if hasCards}
-    <!-- Deck Statistics -->
-    <section class="stats-section">
-      <div class="stat-card">
-        <span class="stat-label">Total Cards</span>
-        <span class="stat-value">{cardCount}/22</span>
+    <section class="certificate" aria-label="Certificate of issuance">
+      <div class="cert-inner">
+        <p class="cert-kicker">Bureau of Fate · Office of Major Arcana Issuance</p>
+        <h2 class="cert-title">Certificate of Issuance</h2>
+        <p class="cert-body">
+          This certifies that the bearer has been issued
+          <strong>{completedCount} of 22</strong> Major Arcana on {issuedOn}.
+          {#if failedCount > 0}
+            <span class="cert-returned"
+              >{failedCount} returned unillustrated and may be resubmitted at Window 2.</span
+            >
+          {:else if cardCount === 22}
+            The deck is complete and valid for any purpose not involving the future.
+          {/if}
+        </p>
+        <dl class="cert-stats">
+          <div>
+            <dt>On file</dt>
+            <dd>{cardCount}/22</dd>
+          </div>
+          <div>
+            <dt>Issued</dt>
+            <dd class="ok">{completedCount}</dd>
+          </div>
+          <div>
+            <dt>Returned</dt>
+            <dd class:bad={failedCount > 0}>{failedCount}</dd>
+          </div>
+          <div>
+            <dt>Certificate no.</dt>
+            <dd class="certno">{certNo}</dd>
+          </div>
+        </dl>
+        <span class="cert-stamp" class:partial={failedCount > 0} aria-hidden="true">
+          {failedCount > 0 ? 'Partial' : 'Issued'}
+        </span>
       </div>
-      <div class="stat-card">
-        <span class="stat-label">Completed</span>
-        <span class="stat-value completed">{completedCount}</span>
-      </div>
-      {#if failedCount > 0}
-        <div class="stat-card">
-          <span class="stat-label">Failed</span>
-          <span class="stat-value failed">{failedCount}</span>
-        </div>
-      {/if}
     </section>
 
-    <!-- Download Section -->
-    <section class="download-section">
-      <DownloadComponent />
-    </section>
+    <div class="issuance-grid">
+      <section class="gallery-section" aria-label="Your cards">
+        <h2 class="pigeon-label">Pigeonholes · click a card to inspect it</h2>
+        <DeckGalleryComponent cards={appStore.generatedCards} />
+      </section>
 
-    <!-- Gallery Section -->
-    <section class="gallery-section">
-      <DeckGalleryComponent cards={appStore.generatedCards} />
-    </section>
+      <aside class="download-section">
+        <DownloadComponent showIndividual={false} />
+      </aside>
+    </div>
   {:else}
-    <!-- Empty State -->
-    <div class="empty-state">
-      <div class="empty-icon">🎴</div>
-      <h2>No Cards Generated Yet</h2>
-      <p>Generate your tarot deck to see it here.</p>
-      <button class="btn-primary" onclick={goToGenerate}> Go to Generate → </button>
+    <div class="empty-state sheet">
+      <p class="empty-code">Records search · Window 3</p>
+      <h2>No record found</h2>
+      <p>
+        The clerk checked every drawer. No cards have been issued under your name yet. Window 2
+        drafts and illustrates them once your application is on file.
+      </p>
+      <span class="void-stamp" aria-hidden="true">No record</span>
+      <button class="stamp-btn" onclick={goToGenerate}>Go to Window 2 →</button>
     </div>
   {/if}
 </div>
 
 <style>
   .gallery-page {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
   }
 
-  header {
-    margin-bottom: 2rem;
-  }
-
-  .header-content {
+  .head-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-  }
-
-  .header-actions {
-    display: flex;
+    align-items: flex-end;
     gap: 1rem;
+    flex-wrap: wrap;
   }
 
-  h1 {
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  .withdraw {
+    background: var(--paper);
+    font-size: 0.85rem;
   }
 
-  header p {
-    color: var(--color-text-secondary, #a0aec0);
-    font-size: 1.125rem;
+  /* ---------- Certificate ---------- */
+  .certificate {
+    padding: 10px;
+    background:
+      repeating-linear-gradient(45deg, #1f4f9a 0 2px, transparent 2px 7px),
+      repeating-linear-gradient(-45deg, #b8312f 0 2px, transparent 2px 7px), var(--paper);
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.35);
   }
 
-  /* Statistics */
-  .stats-section {
+  .cert-inner {
+    position: relative;
+    padding: 1.4rem 1.5rem 1.2rem;
+    background: var(--paper);
+    border: 3px double var(--ink);
+    color: var(--ink);
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .cert-kicker {
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .cert-title {
+    font-family: var(--font-tarot);
+    font-size: clamp(1.5rem, 4vw, 2.4rem);
+    margin: 0.3rem 0 0.6rem;
+  }
+
+  .cert-body {
+    max-width: 62ch;
+    margin: 0 auto;
+    font-size: 0.95rem;
+  }
+
+  .cert-returned {
+    color: var(--stamp-red);
+  }
+
+  .cert-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin: 1rem auto 0;
+    max-width: 720px;
+    border-top: 1px solid var(--ink);
+    padding-top: 0.8rem;
   }
 
-  .stat-card {
-    background: rgba(139, 92, 246, 0.1);
-    border: 1px solid rgba(139, 92, 246, 0.2);
-    border-radius: 12px;
-    padding: 1.5rem;
-    text-align: center;
+  .cert-stats dt {
+    font-family: var(--font-heading);
+    font-size: 0.65rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
   }
 
-  .stat-label {
-    display: block;
-    font-size: 0.9rem;
-    color: var(--color-text-secondary, #a0aec0);
-    margin-bottom: 0.5rem;
+  .cert-stats dd {
+    font-family: var(--font-led);
+    font-size: 1.9rem;
+    line-height: 1;
   }
 
-  .stat-value {
-    display: block;
-    font-size: 2rem;
-    font-weight: bold;
-    color: var(--color-primary, #7c3aed);
+  .cert-stats dd.ok {
+    color: var(--stamp-blue);
   }
 
-  .stat-value.completed {
-    color: #10b981;
+  .cert-stats dd.bad {
+    color: var(--stamp-red);
   }
 
-  .stat-value.failed {
-    color: #ef4444;
+  .cert-stats dd.certno {
+    font-size: 1.2rem;
+    padding-top: 0.35rem;
   }
 
-  /* Sections */
+  .cert-stamp {
+    position: absolute;
+    right: 1.2rem;
+    top: 1rem;
+    padding: 0.15rem 0.7rem;
+    border: 4px solid var(--stamp-blue);
+    border-radius: 6px;
+    color: var(--stamp-blue);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 1.4rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    transform: rotate(12deg);
+    opacity: 0.8;
+    mix-blend-mode: multiply;
+  }
+
+  .cert-stamp.partial {
+    border-color: var(--stamp-red);
+    color: var(--stamp-red);
+  }
+
+  /* ---------- Layout ---------- */
+  .issuance-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 1.75rem;
+    align-items: start;
+  }
+
+  .pigeon-label {
+    font-family: var(--font-heading);
+    font-size: 0.8rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #d9d2b6;
+    margin-bottom: 0.6rem;
+  }
+
   .download-section {
-    margin-bottom: 3rem;
+    position: sticky;
+    top: 9rem;
   }
 
-  /* Gallery component has its own styling */
-
-  /* Empty State */
+  /* ---------- Empty ---------- */
   .empty-state {
+    position: relative;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 2rem 1.75rem;
     text-align: center;
-    padding: 4rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+    overflow: hidden;
   }
 
-  .empty-icon {
-    font-size: 5rem;
-    margin-bottom: 1rem;
+  .empty-code {
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
   }
 
   .empty-state h2 {
+    font-family: var(--font-heading);
     font-size: 2rem;
-    margin-bottom: 1rem;
-    color: var(--color-text-primary, #2d3748);
+    text-transform: uppercase;
   }
 
   .empty-state p {
-    font-size: 1.125rem;
-    color: var(--color-text-secondary, #a0aec0);
-    margin-bottom: 2rem;
+    max-width: 48ch;
   }
 
-  /* Buttons */
-  .btn-primary,
-  .btn-secondary {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition:
-      transform 0.2s,
-      box-shadow 0.2s;
+  .void-stamp {
+    position: absolute;
+    top: 1.2rem;
+    right: -0.5rem;
+    padding: 0.1rem 0.8rem;
+    border: 4px solid var(--stamp-red);
+    color: var(--stamp-red);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    transform: rotate(18deg);
+    opacity: 0.55;
+    mix-blend-mode: multiply;
   }
 
-  .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
+  @media (max-width: 960px) {
+    .issuance-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .download-section {
+      position: static;
+      order: -1;
+    }
   }
 
-  .btn-secondary {
-    background: rgba(139, 92, 246, 0.1);
-    border: 1px solid rgba(139, 92, 246, 0.3);
-    color: var(--color-primary, #7c3aed);
-  }
-
-  .btn-primary:hover,
-  .btn-secondary:hover {
-    transform: translateY(-2px);
-  }
-
-  .btn-primary:hover {
-    box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
-  }
-
-  .btn-secondary:hover {
-    background: rgba(139, 92, 246, 0.15);
-  }
-
-  /* Responsive */
-  @media (max-width: 768px) {
-    .gallery-page {
-      padding: 1rem;
+  @media (max-width: 640px) {
+    .cert-inner {
+      padding: 2.6rem 0.9rem 1rem;
     }
 
-    .header-content {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 1rem;
+    .cert-stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    h1 {
-      font-size: 2rem;
+    .cert-stamp {
+      font-size: 0.95rem;
+      right: 0.4rem;
+      top: 0.4rem;
     }
 
-    header p {
-      font-size: 1rem;
-    }
-
-    .header-actions {
-      width: 100%;
-    }
-
-    .btn-secondary {
-      flex: 1;
-    }
-
-    .stats-section {
-      grid-template-columns: 1fr;
-    }
-
-    .empty-state {
-      padding: 2rem 1rem;
-    }
-
-    .empty-icon {
-      font-size: 4rem;
-    }
-
-    .empty-state h2 {
-      font-size: 1.5rem;
-    }
-
-    .empty-state p {
-      font-size: 1rem;
+    .void-stamp {
+      font-size: 0.8rem;
     }
   }
 </style>

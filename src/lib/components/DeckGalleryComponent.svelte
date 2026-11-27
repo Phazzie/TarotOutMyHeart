@@ -31,7 +31,8 @@
 
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { deckDisplayService } from '$services/factory'
+  import { deckDisplayService, downloadService } from '$services/factory'
+  import { GROK_IMAGE_MODEL } from '$contracts/ImageGeneration'
   import type {
     GeneratedCard,
     DisplayCard,
@@ -399,8 +400,24 @@
   /**
    * Get card image URL (with fallback)
    */
-  function getCardImageUrl(card: GeneratedCard): string {
-    return card.imageUrl || card.imageDataUrl || 'https://via.placeholder.com/400x600?text=Loading'
+  function getCardImageUrl(card: GeneratedCard): string | null {
+    return card.imageUrl || card.imageDataUrl || null
+  }
+
+  /** Download the card shown in the inspection view as a single PNG. */
+  let takingCard = $state(false)
+  let takeError = $state<string | null>(null)
+  async function takeCard(card: GeneratedCard): Promise<void> {
+    takingCard = true
+    takeError = null
+    try {
+      const response = await downloadService.downloadCard({ card })
+      if (!response.success) takeError = response.error?.message ?? 'The copy could not be made.'
+    } catch {
+      takeError = 'The copy could not be made.'
+    } finally {
+      takingCard = false
+    }
   }
 
   /**
@@ -409,13 +426,13 @@
   function getStatusColor(status: GeneratedCard['generationStatus']): string {
     switch (status) {
       case 'completed':
-        return 'var(--color-secondary)'
+        return 'var(--stamp-blue)'
       case 'failed':
-        return '#f56565'
+        return 'var(--stamp-red)'
       case 'generating':
-        return 'var(--color-primary)'
+        return 'var(--ink)'
       default:
-        return 'var(--color-text-muted)'
+        return 'var(--ink-soft)'
     }
   }
 
@@ -425,15 +442,15 @@
   function getStatusText(status: GeneratedCard['generationStatus']): string {
     switch (status) {
       case 'completed':
-        return 'Complete'
+        return 'Issued'
       case 'failed':
-        return 'Failed'
+        return 'Returned'
       case 'generating':
-        return 'Generating...'
+        return 'Illustrating…'
       case 'queued':
         return 'Queued'
       case 'retrying':
-        return 'Retrying...'
+        return 'Resubmitted…'
       default:
         return 'Unknown'
     }
@@ -455,7 +472,7 @@
           type="text"
           bind:value={filterTerm}
           onkeydown={e => e.key === 'Enter' && applyFilter()}
-          placeholder="Search cards..."
+          placeholder="Look up a card by name or number"
           class="search-input"
           aria-label="Search cards by name or number"
         />
@@ -466,7 +483,7 @@
 
       <!-- Status Filter -->
       <div class="filter-group">
-        <label for="status-filter" class="filter-label">Status:</label>
+        <label for="status-filter" class="filter-label">Status</label>
         <select
           id="status-filter"
           bind:value={statusFilter}
@@ -474,14 +491,14 @@
           aria-label="Filter by status"
         >
           <option value="all">All ({displayCards.length})</option>
-          <option value="completed">Completed ({completedCount})</option>
-          <option value="failed">Failed ({failedCount})</option>
+          <option value="completed">Issued ({completedCount})</option>
+          <option value="failed">Returned ({failedCount})</option>
         </select>
       </div>
 
       <!-- Sort Options -->
       <div class="filter-group">
-        <label for="sort-by" class="filter-label">Sort by:</label>
+        <label for="sort-by" class="filter-label">File by</label>
         <select
           id="sort-by"
           bind:value={sortBy}
@@ -489,9 +506,9 @@
           class="filter-select"
           aria-label="Sort cards"
         >
-          <option value="number">Card Number</option>
-          <option value="name">Card Name</option>
-          <option value="generated-date">Generation Date</option>
+          <option value="number">Case number</option>
+          <option value="name">Name</option>
+          <option value="generated-date">Date issued</option>
         </select>
         <button
           onclick={toggleSortDirection}
@@ -507,7 +524,7 @@
     <!-- Info Bar -->
     <div class="info-bar">
       <span class="info-text">
-        Showing {visibleCount} of {displayCards.length} cards
+        {visibleCount} of {displayCards.length} on file
       </span>
     </div>
   </div>
@@ -516,7 +533,7 @@
   {#if loading}
     <div class="loading-container">
       <div class="spinner" aria-label="Loading gallery"></div>
-      <p>Loading gallery...</p>
+      <p>Pulling your file…</p>
     </div>
   {/if}
 
@@ -531,9 +548,7 @@
   <!-- Empty State -->
   {#if !loading && !error && displayCards.length === 0}
     <div class="empty-container">
-      <div class="empty-icon">🎴</div>
-      <p class="empty-message">No cards to display</p>
-      <p class="empty-hint">Generate some cards to see them here!</p>
+      <p class="empty-message">No cards on file</p>
     </div>
   {/if}
 
@@ -556,13 +571,15 @@
               <div class="card-skeleton" aria-label="Loading card image">
                 <div class="skeleton-shimmer"></div>
               </div>
-            {:else}
+            {:else if getCardImageUrl(displayCard.card)}
               <img
                 src={getCardImageUrl(displayCard.card)}
                 alt={displayCard.card.cardName}
                 class="card-image"
                 loading="lazy"
               />
+            {:else}
+              <div class="card-missing">Returned unillustrated</div>
             {/if}
 
             <!-- Status Badge -->
@@ -576,7 +593,7 @@
 
           <!-- Card Info Overlay -->
           <div class="card-overlay">
-            <div class="card-number">Card #{displayCard.card.cardNumber}</div>
+            <div class="card-number">MA-{String(displayCard.card.cardNumber).padStart(2, '0')}</div>
             <div class="card-name">{displayCard.card.cardName}</div>
           </div>
 
@@ -590,8 +607,8 @@
   <!-- No Results Message -->
   {#if !loading && !error && displayCards.length > 0 && visibleCount === 0}
     <div class="no-results">
-      <p>No cards match your filters</p>
-      <button onclick={clearFilter} class="clear-filters-button"> Clear Filters </button>
+      <p>No cards on file match that lookup.</p>
+      <button onclick={clearFilter} class="clear-filters-button">Clear lookup</button>
     </div>
   {/if}
 </div>
@@ -645,13 +662,17 @@
         <!-- Card Image Column -->
         <div class="lightbox-image-column">
           <div class="lightbox-image-container" class:zoomed={isHighResZoomed}>
-            <img
-              src={getCardImageUrl(lightboxCard.card)}
-              alt={lightboxCard.card.cardName}
-              class="lightbox-image"
-            />
+            {#if getCardImageUrl(lightboxCard.card)}
+              <img
+                src={getCardImageUrl(lightboxCard.card)}
+                alt={lightboxCard.card.cardName}
+                class="lightbox-image"
+              />
+            {:else}
+              <div class="card-missing large">Returned unillustrated</div>
+            {/if}
             {#if isHighResZoomed}
-              <div class="high-res-badge">1024×1024 High-Res View</div>
+              <div class="high-res-badge">Full size</div>
             {/if}
           </div>
 
@@ -664,16 +685,28 @@
               onclick={() => (isHighResZoomed = !isHighResZoomed)}
               aria-label={isHighResZoomed ? 'Exit High-Res view' : 'Toggle High-Res view'}
             >
-              {isHighResZoomed ? '🔍 Reset Scale' : '🔍 High-Res View'}
+              {isHighResZoomed ? 'Back to normal size' : 'Inspect at full size'}
+            </button>
+            <button
+              type="button"
+              class="high-res-toggle-btn take"
+              disabled={takingCard || !getCardImageUrl(lightboxCard.card)}
+              onclick={() => lightboxCard && takeCard(lightboxCard.card)}
+              aria-label="Download {lightboxCard.card.cardName}"
+            >
+              {takingCard ? 'Copying…' : 'Take this card (.png)'}
             </button>
           </div>
+          {#if takeError}
+            <p class="take-error" role="alert">{takeError}</p>
+          {/if}
         </div>
 
         <!-- Card Details Column -->
         <div class="lightbox-details">
           <div class="lightbox-header">
             <div class="header-top-row">
-              <span class="card-arcana-badge">Major Arcana</span>
+              <span class="card-arcana-badge">Certificate of Arcana</span>
               <div
                 class="lightbox-status-badge"
                 style="background-color: {getStatusColor(lightboxCard.card.generationStatus)}"
@@ -682,14 +715,16 @@
               </div>
             </div>
             <h2 class="lightbox-title">
-              <span class="card-num-prefix">Card #{lightboxCard.card.cardNumber}</span>
+              <span class="card-num-prefix"
+                >Case MA-{String(lightboxCard.card.cardNumber).padStart(2, '0')}</span
+              >
               {lightboxCard.card.cardName}
             </h2>
           </div>
 
           {#if lightboxCard.card.error}
             <div class="lightbox-section error-section">
-              <h3 class="section-title text-error">Generation Error</h3>
+              <h3 class="section-title text-error">Reason returned</h3>
               <p class="error-detail">{lightboxCard.card.error}</p>
             </div>
           {/if}
@@ -697,14 +732,14 @@
           {#if lightboxState?.showPrompt}
             <div class="lightbox-section prompt-section">
               <div class="section-header">
-                <h3 class="section-title">Generation Prompt</h3>
+                <h3 class="section-title">Case file</h3>
                 <button
                   type="button"
                   class="copy-prompt-button"
                   onclick={() => copyPromptToClipboard(lightboxCard?.card.prompt ?? '')}
                   aria-label="Copy prompt to clipboard"
                 >
-                  {copiedPrompt ? '✓ Copied' : '📋 Copy Prompt'}
+                  {copiedPrompt ? 'Copied' : 'Copy text'}
                 </button>
               </div>
               <p class="prompt-text">{lightboxCard.card.prompt}</p>
@@ -713,31 +748,27 @@
 
           {#if lightboxState?.showMetadata}
             <div class="lightbox-section metadata-section">
-              <h3 class="section-title">Card Metadata</h3>
+              <h3 class="section-title">Record</h3>
               <div class="metadata-grid">
                 <div class="metadata-item">
-                  <span class="metadata-label">Card ID</span>
+                  <span class="metadata-label">Record no.</span>
                   <span class="metadata-value font-mono">{lightboxCard.card.id}</span>
                 </div>
                 {#if lightboxCard.card.generatedAt}
                   <div class="metadata-item">
-                    <span class="metadata-label">Generated</span>
+                    <span class="metadata-label">Issued</span>
                     <span class="metadata-value">
                       {new Date(lightboxCard.card.generatedAt).toLocaleString()}
                     </span>
                   </div>
                 {/if}
                 <div class="metadata-item">
-                  <span class="metadata-label">Resolution</span>
-                  <span class="metadata-value">1024 × 1024 px (PNG)</span>
-                </div>
-                <div class="metadata-item">
-                  <span class="metadata-label">Engine</span>
-                  <span class="metadata-value">Grok 2 Image Alpha</span>
+                  <span class="metadata-label">Illustrator</span>
+                  <span class="metadata-value">{GROK_IMAGE_MODEL}</span>
                 </div>
                 {#if lightboxCard.card.retryCount > 0}
                   <div class="metadata-item">
-                    <span class="metadata-label">Retry Attempts</span>
+                    <span class="metadata-label">Resubmissions</span>
                     <span class="metadata-value">{lightboxCard.card.retryCount}</span>
                   </div>
                 {/if}
@@ -766,159 +797,119 @@
      ============================================================================ -->
 
 <style>
-  /* ========================================================================
-     GALLERY CONTAINER
-     ======================================================================== */
-
   .deck-gallery {
     width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
   }
 
-  /* ========================================================================
-     CONTROLS
-     ======================================================================== */
-
+  /* ---------- Lookup counter ---------- */
   .gallery-controls {
-    margin-bottom: var(--spacing-xl);
-    padding: var(--spacing-lg);
-    background: var(--glass-bg);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-lg);
+    margin-bottom: 1.5rem;
+    padding: 0.9rem 1rem;
+    background: var(--manila);
+    border: 2px solid var(--ink);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
   }
 
   .controls-row {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--spacing-md);
-    align-items: center;
-    margin-bottom: var(--spacing-md);
+    gap: 0.75rem 1.25rem;
+    align-items: end;
   }
 
   .search-box {
     position: relative;
-    flex: 1 1 300px;
+    flex: 1 1 240px;
   }
 
-  .search-input {
+  .search-input,
+  .filter-select {
     width: 100%;
-    padding: var(--spacing-sm) var(--spacing-md);
-    padding-right: 2.5rem;
-    background: var(--color-bg-secondary);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    color: var(--color-text);
-    font-size: var(--text-base);
-    transition: all var(--transition-fast);
+    min-height: 44px;
+    padding: 0.5rem 2.2rem 0.5rem 0.7rem;
+    font-family: var(--font-typed);
+    font-size: 1rem;
+    color: var(--ink);
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 0;
   }
 
-  .search-input:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(107, 70, 193, 0.1);
+  .filter-select {
+    padding-right: 0.7rem;
+    width: auto;
+  }
+
+  .search-input:focus,
+  .filter-select:focus {
+    outline: 3px solid var(--stamp-blue);
+    outline-offset: 1px;
   }
 
   .clear-button {
     position: absolute;
-    right: var(--spacing-sm);
+    right: 0.3rem;
     top: 50%;
     transform: translateY(-50%);
-    padding: var(--spacing-xs);
+    width: 34px;
+    height: 34px;
+    border: none;
     background: transparent;
-    color: var(--color-text-muted);
-    font-size: var(--text-lg);
+    color: var(--ink);
+    font-size: 1rem;
     cursor: pointer;
-    transition: color var(--transition-fast);
-  }
-
-  .clear-button:hover {
-    color: var(--color-text);
   }
 
   .filter-group {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: 0.5rem;
   }
 
   .filter-label {
-    font-size: var(--text-sm);
-    color: var(--color-text-secondary);
-    font-weight: 600;
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .filter-select {
-    padding: var(--spacing-sm) var(--spacing-md);
-    background: var(--color-bg-secondary);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    color: var(--color-text);
-    font-size: var(--text-base);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-  }
-
-  .filter-select:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(107, 70, 193, 0.1);
+    color: var(--ink);
   }
 
   .sort-direction-button {
-    padding: var(--spacing-sm);
-    background: var(--color-bg-secondary);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    color: var(--color-text);
-    font-size: var(--text-lg);
+    min-width: 44px;
+    min-height: 44px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 1.1rem;
     cursor: pointer;
-    transition: all var(--transition-fast);
-    min-width: 2.5rem;
-  }
-
-  .sort-direction-button:hover {
-    background: var(--color-bg-tertiary);
-    border-color: var(--color-primary);
   }
 
   .info-bar {
-    padding-top: var(--spacing-md);
-    border-top: 1px solid var(--glass-border);
+    margin-top: 0.6rem;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
   }
 
-  .info-text {
-    font-size: var(--text-sm);
-    color: var(--color-text-secondary);
-  }
-
-  /* ========================================================================
-     LOADING / ERROR / EMPTY STATES
-     ======================================================================== */
-
+  /* ---------- States ---------- */
   .loading-container,
   .error-container,
   .empty-container,
   .no-results {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: var(--spacing-xxl);
+    padding: 2.5rem 1rem;
     text-align: center;
+    background: var(--paper);
+    border: 2px dashed var(--ink);
+    color: var(--ink);
   }
 
   .spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid var(--glass-border);
-    border-top-color: var(--color-primary);
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 0.75rem;
+    border: 4px solid var(--paper-rule);
+    border-top-color: var(--stamp-red);
     border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: var(--spacing-md);
+    animation: spin 0.9s linear infinite;
   }
 
   @keyframes spin {
@@ -927,103 +918,84 @@
     }
   }
 
-  .error-container {
-    background: rgba(245, 101, 101, 0.1);
-    border: 1px solid rgba(245, 101, 101, 0.3);
-    border-radius: var(--radius-lg);
+  .error-message {
+    color: var(--stamp-red);
+    margin-bottom: 0.75rem;
   }
 
-  .error-message {
-    color: #f56565;
-    margin-bottom: var(--spacing-md);
-    font-size: var(--text-lg);
+  .empty-message {
+    font-family: var(--font-heading);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
   }
 
   .retry-button,
   .clear-filters-button {
-    padding: var(--spacing-sm) var(--spacing-lg);
-    background: var(--color-primary);
-    color: var(--color-text);
-    border-radius: var(--radius-md);
-    font-size: var(--text-base);
-    font-weight: 600;
+    margin-top: 0.5rem;
+    min-height: 44px;
+    padding: 0.4rem 1rem;
+    font-family: var(--font-heading);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    background: var(--paper);
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
     cursor: pointer;
-    transition: all var(--transition-fast);
   }
 
-  .retry-button:hover,
-  .clear-filters-button:hover {
-    background: var(--color-primary-light);
-    transform: translateY(-2px);
-  }
-
-  .empty-icon {
-    font-size: 4rem;
-    margin-bottom: var(--spacing-md);
-    opacity: 0.5;
-  }
-
-  .empty-message {
-    font-size: var(--text-xl);
-    font-weight: 600;
-    color: var(--color-text-secondary);
-    margin-bottom: var(--spacing-sm);
-  }
-
-  .empty-hint {
-    font-size: var(--text-base);
-    color: var(--color-text-muted);
-  }
-
-  /* ========================================================================
-     CARD GRID
-     ======================================================================== */
-
+  /* ---------- Pigeonholes ---------- */
   .card-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-lg);
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--wall-dark);
+    border: 6px solid #5b4426;
+    box-shadow:
+      inset 0 0 0 2px #3c2c17,
+      6px 6px 0 rgba(0, 0, 0, 0.35);
   }
-
-  @media (min-width: 640px) {
-    .card-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .card-grid {
-      grid-template-columns: repeat(4, 1fr);
-    }
-  }
-
-  /* ========================================================================
-     CARD TILE
-     ======================================================================== */
 
   .card-tile {
     position: relative;
-    aspect-ratio: 2/3;
-    border-radius: var(--radius-lg);
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: var(--paper);
+    padding: 0.4rem 0.4rem 0;
+    border: 1px solid var(--ink);
     cursor: pointer;
-    transition: all var(--transition-normal);
-    outline: none;
+    transition:
+      transform 0.15s ease-out,
+      box-shadow 0.15s ease-out;
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.4);
+  }
+
+  .card-tile:nth-child(3n + 1) {
+    transform: rotate(-0.6deg);
+  }
+
+  .card-tile:nth-child(3n + 2) {
+    transform: rotate(0.5deg);
   }
 
   .card-tile:hover,
-  .card-tile:focus {
-    transform: translateY(-8px) scale(1.02);
+  .card-tile:focus-visible {
+    transform: translateY(-4px) rotate(0deg);
+    box-shadow: 0 10px 0 rgba(0, 0, 0, 0.35);
+    outline: none;
   }
 
-  .card-tile:focus {
-    box-shadow: 0 0 0 3px var(--color-primary);
+  .card-tile:focus-visible {
+    outline: 3px solid var(--carbon-yellow);
+    outline-offset: 2px;
   }
 
   .card-image-container {
     position: relative;
-    width: 100%;
-    height: 100%;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    background: var(--paper-rule);
   }
 
   .card-image {
@@ -1033,496 +1005,482 @@
     display: block;
   }
 
-  .card-skeleton {
-    width: 100%;
+  .card-missing {
+    display: grid;
+    place-items: center;
     height: 100%;
-    background: var(--color-bg-secondary);
-    position: relative;
+    padding: 1rem;
+    text-align: center;
+    font-family: var(--font-heading);
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--stamp-red);
+    background: repeating-linear-gradient(
+      45deg,
+      var(--paper),
+      var(--paper) 10px,
+      var(--carbon-pink) 10px,
+      var(--carbon-pink) 20px
+    );
+  }
+
+  .card-missing.large {
+    min-height: 420px;
+    font-size: 1.2rem;
+  }
+
+  .card-skeleton {
+    position: absolute;
+    inset: 0;
+    background: var(--paper-rule);
     overflow: hidden;
   }
 
   .skeleton-shimmer {
     position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.1), transparent);
-    animation: shimmer 2s infinite;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+    animation: shimmer 1.4s infinite;
   }
 
   @keyframes shimmer {
+    from {
+      transform: translateX(-100%);
+    }
     to {
-      left: 100%;
+      transform: translateX(100%);
     }
   }
 
   .status-badge {
     position: absolute;
-    top: var(--spacing-sm);
-    right: var(--spacing-sm);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-radius: var(--radius-sm);
-    font-size: var(--text-xs);
-    font-weight: 600;
+    top: 0.5rem;
+    right: 0.4rem;
+    padding: 0.1rem 0.45rem;
+    font-family: var(--font-heading);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--color-text);
-    backdrop-filter: blur(4px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    color: var(--paper);
+    transform: rotate(6deg);
+    box-shadow: 0 0 0 2px var(--paper);
   }
 
   .card-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: var(--spacing-md);
-    background: linear-gradient(to top, rgba(15, 14, 23, 0.95), rgba(15, 14, 23, 0.7), transparent);
-    color: var(--color-text);
-    transform: translateY(100%);
-    transition: transform var(--transition-normal);
-  }
-
-  .card-tile:hover .card-overlay,
-  .card-tile:focus .card-overlay {
-    transform: translateY(0);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.4rem;
+    padding: 0.4rem 0.15rem 0.45rem;
+    border-top: 1px dashed var(--ink-soft);
+    margin-top: 0.4rem;
   }
 
   .card-number {
-    font-size: var(--text-sm);
-    font-weight: 600;
-    color: var(--color-secondary);
-    margin-bottom: var(--spacing-xs);
+    font-family: var(--font-led);
+    font-size: 1rem;
+    color: var(--stamp-red);
+    flex-shrink: 0;
   }
 
   .card-name {
-    font-family: var(--font-heading);
-    font-size: var(--text-lg);
-    font-weight: 600;
+    font-family: var(--font-typed);
+    font-size: 0.8rem;
+    text-align: right;
+    color: var(--ink);
+    line-height: 1.15;
   }
 
   .card-border {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border: 2px solid transparent;
-    border-radius: var(--radius-lg);
-    pointer-events: none;
-    transition: border-color var(--transition-fast);
+    display: none;
   }
 
-  .card-tile:hover .card-border,
-  .card-tile:focus .card-border {
-    border-color: var(--color-primary);
-  }
-
-  /* ========================================================================
-     LIGHTBOX MODAL & ENHANCEMENTS
-     ======================================================================== */
-
+  /* ---------- Inspection desk (lightbox) ---------- */
   .lightbox {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(10, 9, 15, 0.85);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    padding: var(--spacing-lg);
-    animation: lightboxFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    outline: none;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgba(12, 18, 14, 0.88);
+    animation: fadeIn 0.15s ease-out;
+    overflow-y: auto;
   }
 
-  @keyframes lightboxFadeIn {
+  @keyframes fadeIn {
     from {
       opacity: 0;
-    }
-    to {
-      opacity: 1;
     }
   }
 
   .lightbox-content {
     position: relative;
-    width: 100%;
-    max-width: 1200px;
-    max-height: 90vh;
-    animation: lightboxSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  @keyframes lightboxSlideUp {
-    from {
-      opacity: 0;
-      transform: translateY(24px) scale(0.98);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
+    width: min(1100px, 100%);
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.45);
   }
 
   .lightbox-close {
     position: absolute;
-    top: -12px;
-    right: -12px;
-    z-index: 20;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-bg-secondary);
-    border: 1px solid var(--glass-border);
-    border-radius: 50%;
-    color: var(--color-text);
-    font-size: var(--text-xl);
-    line-height: 1;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 3;
+    width: 44px;
+    height: 44px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 1.1rem;
     cursor: pointer;
-    transition: all var(--transition-fast);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  }
-
-  .lightbox-close:hover {
-    background: var(--color-primary);
-    transform: rotate(90deg) scale(1.1);
   }
 
   .lightbox-nav {
     position: absolute;
     top: 50%;
+    z-index: 3;
+    width: 44px;
+    height: 64px;
     transform: translateY(-50%);
-    padding: var(--spacing-lg) var(--spacing-md);
-    background: var(--glass-bg);
-    backdrop-filter: blur(12px);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    color: var(--color-text);
-    font-size: var(--text-3xl);
+    border: 2px solid var(--ink);
+    background: var(--carbon-yellow);
+    color: var(--ink);
+    font-size: 2rem;
     line-height: 1;
     cursor: pointer;
-    transition: all var(--transition-fast);
-    z-index: 15;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  }
-
-  .lightbox-nav:hover {
-    background: var(--color-primary);
-    transform: translateY(-50%) scale(1.1);
   }
 
   .lightbox-nav-prev {
-    left: -20px;
+    left: 0.5rem;
   }
 
   .lightbox-nav-next {
-    right: -20px;
+    right: 0.5rem;
   }
 
   .lightbox-card {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--spacing-xl);
-    background: var(--color-bg-secondary);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-xl);
-    max-height: 85vh;
-    overflow-y: auto;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
-  }
-
-  @media (min-width: 768px) {
-    .lightbox-card {
-      grid-template-columns: 1fr 1fr;
-    }
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .lightbox-image-column {
+    padding: 1.25rem 3.5rem;
+    background: var(--wall-dark);
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    gap: 0.75rem;
   }
 
   .lightbox-image-container {
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    width: min(380px, 100%);
+    padding: 0.5rem;
+    background: var(--paper);
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.4);
+    transition: width 0.2s ease-out;
   }
 
   .lightbox-image-container.zoomed {
-    transform: scale(1.12);
-    z-index: 5;
+    width: min(760px, 100%);
   }
 
   .lightbox-image {
-    max-width: 100%;
-    max-height: 65vh;
-    object-fit: contain;
-    border-radius: var(--radius-md);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-    transition: all 0.3s ease;
+    display: block;
+    width: 100%;
+    height: auto;
   }
 
   .high-res-badge {
     position: absolute;
-    top: var(--spacing-sm);
-    left: var(--spacing-sm);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    background: rgba(107, 70, 193, 0.85);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius-sm);
-    color: #ffffff;
-    font-size: var(--text-xs);
-    font-weight: 600;
-    letter-spacing: 0.05em;
+    top: 0.9rem;
+    left: 0.9rem;
+    padding: 0.1rem 0.5rem;
+    font-family: var(--font-heading);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--paper);
   }
 
   .image-controls {
-    margin-top: var(--spacing-md);
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
+    gap: 0.6rem;
   }
 
   .high-res-toggle-btn {
-    padding: var(--spacing-xs) var(--spacing-md);
-    background: var(--color-bg-tertiary);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    color: var(--color-text);
-    font-size: var(--text-xs);
-    font-weight: 600;
+    min-height: 44px;
+    padding: 0.4rem 0.9rem;
+    font-family: var(--font-heading);
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--paper);
+    background: transparent;
+    border: 2px solid var(--paper);
     cursor: pointer;
-    transition: all var(--transition-fast);
-  }
-
-  .high-res-toggle-btn:hover {
-    background: var(--color-primary);
-    border-color: var(--color-primary-light);
   }
 
   .high-res-toggle-btn.active {
-    background: var(--color-primary);
-    border-color: var(--color-secondary);
-    color: #ffffff;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .high-res-toggle-btn.take {
+    background: var(--carbon-yellow);
+    color: var(--ink);
+    border-color: var(--carbon-yellow);
+  }
+
+  .high-res-toggle-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .take-error {
+    color: var(--carbon-pink);
+    font-size: 0.85rem;
+    text-align: center;
   }
 
   .lightbox-details {
+    padding: 1.25rem 1.25rem 1rem;
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-lg);
+    gap: 1rem;
+    color: var(--ink);
   }
 
   .lightbox-header {
-    padding-bottom: var(--spacing-md);
-    border-bottom: 1px solid var(--glass-border);
+    border-bottom: 3px double var(--ink);
+    padding-bottom: 0.6rem;
+    padding-right: 3rem;
   }
 
   .header-top-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: var(--spacing-xs);
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
   }
 
   .card-arcana-badge {
-    font-size: var(--text-xs);
-    font-weight: 700;
+    font-family: var(--font-heading);
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--color-secondary);
+    color: var(--ink-soft);
   }
 
   .lightbox-status-badge {
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-radius: var(--radius-sm);
-    font-size: var(--text-xs);
-    font-weight: 600;
+    padding: 0.05rem 0.5rem;
+    font-family: var(--font-heading);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #ffffff;
+    color: var(--paper);
+    transform: rotate(-3deg);
   }
 
   .lightbox-title {
-    font-family: var(--font-heading);
-    font-size: var(--text-2xl);
-    color: var(--color-text);
-    margin: 0;
+    font-family: var(--font-tarot);
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    line-height: 1.1;
+    display: flex;
+    flex-direction: column;
   }
 
   .card-num-prefix {
-    color: var(--color-text-secondary);
-    font-size: var(--text-lg);
-    font-weight: normal;
-    margin-right: var(--spacing-xs);
+    font-family: var(--font-led);
+    font-size: 1.1rem;
+    color: var(--stamp-red);
+    letter-spacing: 0.05em;
   }
 
   .lightbox-section {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--ink);
+    background:
+      repeating-linear-gradient(
+        transparent,
+        transparent 23px,
+        var(--paper-rule) 23px,
+        var(--paper-rule) 24px
+      ),
+      var(--paper);
   }
 
   .error-section {
-    padding: var(--spacing-sm);
-    background: rgba(245, 101, 101, 0.1);
-    border: 1px solid rgba(245, 101, 101, 0.3);
-    border-radius: var(--radius-md);
-  }
-
-  .text-error {
-    color: #f56565 !important;
-  }
-
-  .error-detail {
-    font-size: var(--text-sm);
-    color: #feb2b2;
+    background: var(--carbon-pink);
   }
 
   .section-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
   }
 
   .section-title {
     font-family: var(--font-heading);
-    font-size: var(--text-base);
-    color: var(--color-secondary);
-    margin: 0;
+    font-size: 0.8rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+
+  .section-header .section-title {
+    margin-bottom: 0;
+  }
+
+  .text-error {
+    color: var(--stamp-red);
+  }
+
+  .error-detail {
+    font-size: 0.9rem;
   }
 
   .copy-prompt-button {
-    padding: 2px var(--spacing-sm);
-    background: var(--color-bg-tertiary);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-sm);
-    color: var(--color-text-secondary);
-    font-size: var(--text-xs);
+    min-height: 36px;
+    padding: 0.2rem 0.7rem;
+    font-family: var(--font-heading);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: var(--paper);
+    color: var(--ink);
+    border: 1px solid var(--ink);
     cursor: pointer;
-    transition: all var(--transition-fast);
-  }
-
-  .copy-prompt-button:hover {
-    color: var(--color-text);
-    border-color: var(--color-primary);
   }
 
   .prompt-text {
-    line-height: 1.6;
-    font-size: var(--text-sm);
-    color: var(--color-text-secondary);
-    background: var(--color-bg-tertiary);
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--glass-border);
+    font-family: var(--font-typed);
+    font-size: 0.9rem;
+    line-height: 24px;
+    max-height: 12rem;
+    overflow-y: auto;
+    white-space: pre-wrap;
   }
 
   .metadata-grid {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.5rem 1rem;
   }
 
   .metadata-item {
     display: flex;
-    justify-content: space-between;
-    padding: var(--spacing-xs) var(--spacing-sm);
-    background: var(--color-bg-tertiary);
-    border-radius: var(--radius-sm);
-    font-size: var(--text-xs);
+    flex-direction: column;
   }
 
   .metadata-label {
-    font-weight: 600;
-    color: var(--color-text-secondary);
+    font-family: var(--font-heading);
+    font-size: 0.65rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
   }
 
   .metadata-value {
-    color: var(--color-text);
-  }
-
-  .font-mono {
-    font-family: monospace;
+    font-family: var(--font-typed);
+    font-size: 0.85rem;
+    word-break: break-all;
   }
 
   .keyboard-hint {
-    margin-top: auto;
-    padding: var(--spacing-sm);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-md);
-    display: flex;
-    justify-content: center;
+    font-size: 0.75rem;
+    color: var(--ink-soft);
   }
 
   .hint-pills {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: var(--spacing-xs);
-    font-size: var(--text-xs);
-    color: var(--color-text-muted);
+    gap: 0.35rem;
   }
 
   .key-pill {
-    display: inline-block;
-    padding: 2px 6px;
-    background: var(--color-bg-secondary);
-    border: 1px solid var(--glass-border);
-    border-radius: 4px;
-    font-family: monospace;
-    font-size: var(--text-xs);
-    font-weight: bold;
-    color: var(--color-secondary);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    padding: 0 0.4rem;
+    font-family: var(--font-body);
+    border: 1px solid var(--ink-soft);
+    background: var(--paper);
   }
 
-  /* ========================================================================
-     RESPONSIVE
-     ======================================================================== */
+  @media (min-width: 900px) {
+    .lightbox-card {
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    }
+
+    .lightbox-image-column {
+      padding: 1.5rem 3.75rem;
+      justify-content: center;
+    }
+
+    .lightbox-image-container.zoomed {
+      width: 100%;
+    }
+
+    /* Leave a gutter so the next-card arrow never sits on the case file. */
+    .lightbox-details {
+      padding-right: 4rem;
+    }
+  }
 
   @media (max-width: 640px) {
-    .controls-row {
-      flex-direction: column;
-      align-items: stretch;
+    .card-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+      padding: 0.6rem;
+      border-width: 4px;
     }
 
     .filter-group {
-      flex-direction: column;
-      align-items: stretch;
+      flex: 1 1 100%;
+    }
+
+    .filter-select {
+      flex: 1;
     }
 
     .lightbox {
-      padding: var(--spacing-md);
+      padding: 0;
     }
 
-    .lightbox-card {
-      padding: var(--spacing-md);
+    .lightbox-content {
+      max-height: 100dvh;
+      height: 100dvh;
+      box-shadow: none;
+      border: none;
     }
 
-    .lightbox-nav {
-      padding: var(--spacing-md) var(--spacing-sm);
-      font-size: var(--text-2xl);
+    .lightbox-image-column {
+      padding: 3.5rem 3.25rem 1rem;
     }
 
-    .lightbox-nav-prev {
-      left: -10px;
+    .keyboard-hint {
+      display: none;
     }
+  }
 
-    .lightbox-nav-next {
-      right: -10px;
+  @media (prefers-reduced-motion: reduce) {
+    .card-tile,
+    .lightbox,
+    .skeleton-shimmer,
+    .spinner {
+      animation: none;
+      transition: none;
     }
   }
 </style>
