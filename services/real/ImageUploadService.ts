@@ -106,6 +106,9 @@ function isUploadApiResponse(obj: unknown): obj is UploadApiResponse {
 
 export class ImageUploadService implements IImageUploadService {
   private uploadedImages: Map<ImageId, UploadedImage> = new Map()
+  // Bumped by clearAllImages(). An upload that started before a clear must not
+  // write its images into the next deck.
+  private clearGeneration = 0
   private createdObjectUrls: Set<string> = new Set()
 
   private generateId(): ImageId {
@@ -215,8 +218,10 @@ export class ImageUploadService implements IImageUploadService {
 
     const uploadedList: UploadedImage[] = []
     const failedList: ImageValidationError[] = []
+    const generation = this.clearGeneration
 
     for (const file of files) {
+      if (generation !== this.clearGeneration) break
       const isDuplicate =
         Array.from(this.uploadedImages.values()).some(img => {
           const sameName = img.fileName === file.name
@@ -282,6 +287,8 @@ export class ImageUploadService implements IImageUploadService {
         clearTimeout(timeoutId)
         // Fallback to local ObjectURL if upload proxy fails or times out
       }
+
+      if (generation !== this.clearGeneration) break
 
       const imageId = this.generateId()
       const previewUrl = remoteUrl ?? this.createTrackedObjectURL(file)
@@ -427,6 +434,7 @@ export class ImageUploadService implements IImageUploadService {
   }
 
   async clearAllImages(): Promise<ServiceResponse<void>> {
+    this.clearGeneration += 1
     for (const image of this.uploadedImages.values()) {
       this.revokeTrackedObjectURL(image.previewUrl)
     }

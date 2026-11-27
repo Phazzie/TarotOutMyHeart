@@ -34,6 +34,8 @@ import {
  */
 export class ImageUploadMockService implements IImageUploadService {
   private uploadedImages: Map<ImageId, UploadedImage> = new Map()
+  // Mirrors the real service: a clear invalidates uploads still in flight.
+  private clearGeneration = 0
 
   /**
    * Generate a unique ImageId
@@ -77,7 +79,14 @@ export class ImageUploadMockService implements IImageUploadService {
   }
 
   async uploadImages(input: UploadImagesInput): Promise<ServiceResponse<UploadImagesOutput>> {
+    const generation = this.clearGeneration
     await this.delay(500) // Simulate network latency
+    if (generation !== this.clearGeneration) {
+      return {
+        success: true,
+        data: { uploadedImages: [], failedImages: [], totalUploaded: 0, totalFailed: 0 },
+      }
+    }
 
     const { files } = input
 
@@ -290,6 +299,7 @@ export class ImageUploadMockService implements IImageUploadService {
   }
 
   async clearAllImages(): Promise<ServiceResponse<void>> {
+    this.clearGeneration += 1
     await this.delay(100)
 
     // Revoke all preview URLs
