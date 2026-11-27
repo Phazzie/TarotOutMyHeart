@@ -1,7 +1,7 @@
 <!--
 /**
  * @fileoverview Image Upload Component - Drag-and-drop interface for reference images
- * @purpose Collect 1-10 reference images to define tarot deck visual style
+ * @purpose Collect 1-5 reference images to define tarot deck visual style
  * @dataFlow User selects/drops files → Validation → ImageUploadMock → appStore.uploadedImages
  * @boundary Seam #1: ImageUploadSeam - UI for browser file upload and preview
  * @updated 2025-11-15
@@ -10,9 +10,9 @@
  * - Drag-and-drop zone with visual feedback on dragover
  * - File browser fallback (hidden input)
  * - Image preview thumbnails with filename, size, and remove button
- * - Validation: max 10 images, max 10MB each, JPEG/PNG only
+ * - Validation: max 5 images, max 10MB each, JPEG/PNG only
  * - Upload progress indicators
- * - Display upload count (X/10 images)
+ * - Display upload count (X/5 images)
  * - Inline error messages
  * - Glassmorphism card design matching mystical theme
  * - Fully accessible (ARIA labels, keyboard navigation)

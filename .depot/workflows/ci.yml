@@ -31,6 +31,28 @@ jobs:
       - name: AI review unit tests
         run: node --test scripts/ai-review.test.mjs
 
+  e2e:
+    name: End-to-end (Playwright)
+    runs-on: depot-ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Locked install
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright tests (real client services, stubbed API routes)
+        run: npm run test:e2e
+        env:
+          CI: 'true'
+
   sdd-compliance:
     name: SDD compliance
     runs-on: depot-ubuntu-24.04

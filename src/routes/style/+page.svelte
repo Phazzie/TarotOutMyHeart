@@ -15,14 +15,16 @@
 <script lang="ts">
   import StyleInputComponent from '$lib/components/StyleInputComponent.svelte'
   import { appStore } from '$lib/stores/appStore.svelte'
+  import { goto } from '$app/navigation'
 
   /**
-   * Navigate to prompts page after style is saved
+   * Move on once the style is saved. Prompts are generated on /generate, which needs
+   * reference images too, so send the user back to /upload if they have none yet.
    */
   function handleContinue() {
-    if (appStore.styleInputs) {
-      appStore.setCurrentPage('prompts')
-    }
+    if (!appStore.styleInputs) return
+    appStore.setCurrentPage('prompts')
+    goto(appStore.uploadedImages.length > 0 ? '/generate' : '/upload')
   }
 </script>
 

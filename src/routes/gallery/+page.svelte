@@ -35,6 +35,7 @@
   import DownloadComponent from '$lib/components/DownloadComponent.svelte'
   import { appStore } from '$lib/stores/appStore.svelte'
   import { goto } from '$app/navigation'
+  import { imageUploadService } from '$services/factory'
 
   // Derived state from appStore
   const hasCards = $derived(appStore.generatedCards.length > 0)
@@ -53,8 +54,11 @@
    * Reset entire app state and return to home
    * Confirms with user before clearing all work
    */
-  function startOver() {
+  async function startOver() {
     if (confirm('Are you sure you want to start over? This will clear all your work.')) {
+      // The upload service keeps its own image list (and enforces the 5-image limit
+      // against it), so clear it too or the old deck's images count against the new one.
+      await imageUploadService.clearAllImages()
       appStore.reset()
       goto('/')
     }

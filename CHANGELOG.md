@@ -7,12 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Shakedown fixes** (2026-11-27), found by driving the app in a real browser:
+  - Errors were never shown. Pages called `appStore.setError()` but nothing rendered `currentError`, so a failed prompt or image request looked like a button that did nothing. New `ErrorBanner` in the layout shows it with a Dismiss button, and it clears on navigation.
+  - Cards that failed could not be retried once generation ended (the retry buttons lived in the progress panel, which disappears). The generate page now lists failed cards with Retry and Retry All Failed.
+  - The upload UI allowed 10 images while the real upload service and contract cap at 5, so images 6 to 10 failed. `appStore.MAX_IMAGES` now reads the contract's `MAX_IMAGES`.
+  - Start Over cleared the store but not the upload service's own image list. It now clears both.
+  - `/style` "Continue to Prompts" did nothing (it only set an unused store field). It now goes to `/generate`, or `/upload` when no images exist.
+  - Footer links to `/docs` and `/about` were 404s and are removed. GitHub links pointed at `TarotUpMyHeart`; they now point at `TarotOutMyHeart`.
+  - "Ready to Generate?" and "Generation Complete!" text was near-black on the dark background. Now readable.
+
 ### Changed
 
 - **Dependency audit** (2026-11-12): Upgraded the toolchain so `npm audit --audit-level=moderate` passes. Direct majors: `@sveltejs/kit` 3, `@sveltejs/adapter-vercel` 7, `@sveltejs/vite-plugin-svelte` 7, `svelte` 5.57, `vite` 8, `vitest` 5, `typescript` 6.0, `svelte-check` 4, `@typescript-eslint/*` 8, `@vercel/blob` 2, `openai` 7. `overrides` pin patched `zod`, `glob`, `minimatch`, and `@vercel/oidc`. Node engine is `>=22.17` (`.nvmrc` and Depot CI are Node 22). Kit config moved from `svelte.config.js` into `vite.config.ts`. The Vercel adapter runtime is `nodejs22.x`.
 - **ZIP downloads** (2026-11-12): `DownloadService` packs images from `arrayBuffer` and builds the archive as a `uint8array` wrapped in a `Blob`, so ZIP generation works in jsdom. The two stress cases that failed on `main` now pass.
 
 ### Added
+
+- **End-to-end tests** (2026-11-27): Playwright suite in `e2e/` (`npm run test:e2e`). It builds with `VITE_USE_MOCKS=false`, so the real client services run, and stubs `/api/upload`, `/api/prompts` and `/api/generate/card` in the browser, so nothing calls xAI or Vercel Blob. Covers the full upload → prompts → 22 cards → gallery → ZIP flow, error display, retrying failed cards, the 5-image limit, Start Over, empty states, broken links, and phone layout. Depot CI gets an `e2e` job.
 
 - **Depot CI** (2026-11-12): Added `.depot/workflows/ci.yml` for Cursor Origin (Depot app on `depot-ubuntu-24.04`). Pull requests and pushes to `main` run `npm ci` and `npm run ci`, the SDD compliance checks from `.github/workflows/sdd-compliance.yml`, and `npm audit --audit-level=moderate`. Pull requests also run `scripts/ai-review.mjs`, which posts a Grok review with `origin pr comment` when `XAI_API_KEY` is set and prints a skip line (exit 0) when the key or the `origin` CLI is missing. GitHub Actions workflows stay in place. Mapping, dropped GitHub-only jobs, and Depot secrets are in `docs/origin-ci.md`.
 - **Prettier** (2026-11-12): Reformatted four files that already failed `prettier --check`, so `npm run ci` can pass: `services/real/PromptGenerationService.ts`, `tests/challenger_hardening.test.ts`, `tests/real/DownloadService.test.ts`, `tests/stress/EmpiricalChallenger.test.ts`.

@@ -218,7 +218,11 @@
       Arcana showcase and component integration active.
     </p>
     <div class="links">
-      <a href="https://github.com/Phazzie/TarotUpMyHeart" target="_blank" rel="noopener noreferrer">
+      <a
+        href="https://github.com/Phazzie/TarotOutMyHeart"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         GitHub Repository
       </a>
       <span class="separator">•</span>

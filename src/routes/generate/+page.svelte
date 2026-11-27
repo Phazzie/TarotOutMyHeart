@@ -82,6 +82,17 @@
    */
   const hasGeneratedCards = $derived(appStore.generatedCards.length > 0)
 
+  /**
+   * Cards whose image failed. Shown after generation ends so they can be retried;
+   * the progress component (which also offers retry) is gone by then.
+   */
+  const failedCards = $derived(
+    appStore.generatedCards.filter(card => card.generationStatus === 'failed')
+  )
+
+  /** Card numbers with a retry in flight, so their buttons can't be double-clicked. */
+  let retrying = $state<number[]>([])
+
   // ============================================================================
   // IMAGE GENERATION HANDLERS
   // ============================================================================
@@ -173,6 +184,7 @@
       return
     }
 
+    retrying = [...retrying, cardNumber]
     try {
       const response = await generationService.regenerateImage({
         cardNumber,
@@ -197,6 +209,15 @@
       appStore.setError(
         error instanceof Error ? error.message : `Error retrying card ${cardNumber}`
       )
+    } finally {
+      retrying = retrying.filter(n => n !== cardNumber)
+    }
+  }
+
+  /** Retry every failed card, one at a time. */
+  async function retryAllFailed(): Promise<void> {
+    for (const card of failedCards) {
+      await handleRetryFailed(card.cardNumber)
     }
   }
 
@@ -247,8 +268,36 @@
       {:else}
         <!-- Complete State: Navigation to Gallery -->
         <div class="generation-complete">
-          <h2>Generation Complete!</h2>
-          <p class="description">Your tarot deck is ready to view.</p>
+          {#if failedCards.length === 0}
+            <h2>Generation Complete!</h2>
+            <p class="description">Your tarot deck is ready to view.</p>
+          {:else}
+            <h2 class="partial">{22 - failedCards.length} of 22 Cards Ready</h2>
+            <p class="description">
+              {failedCards.length === 1 ? 'One card' : `${failedCards.length} cards`} didn't generate.
+              Retry {failedCards.length === 1 ? 'it' : 'them'}, or view the deck as it is.
+            </p>
+            <ul class="failed-list">
+              {#each failedCards as card (card.cardNumber)}
+                <li>
+                  <span>{card.cardName}</span>
+                  <button
+                    class="btn-retry"
+                    disabled={retrying.includes(card.cardNumber)}
+                    aria-label={`Retry ${card.cardName}`}
+                    onclick={() => handleRetryFailed(card.cardNumber)}
+                  >
+                    {retrying.includes(card.cardNumber) ? 'Retrying…' : 'Retry'}
+                  </button>
+                </li>
+              {/each}
+            </ul>
+            {#if failedCards.length > 1}
+              <button class="btn-secondary" disabled={retrying.length > 0} onclick={retryAllFailed}>
+                Retry All Failed
+              </button>
+            {/if}
+          {/if}
           <button class="btn-primary" onclick={goToGallery}>View Gallery →</button>
         </div>
       {/if}
@@ -288,7 +337,7 @@
 
   .subtitle {
     font-size: 1.125rem;
-    color: #666;
+    color: #b9b2c8;
     margin: 0;
   }
 
@@ -320,13 +369,13 @@
   .start-generation h2 {
     font-size: 2rem;
     font-weight: 700;
-    color: #1a1a1a;
+    color: #f3e9d2;
     margin-bottom: 1rem;
   }
 
   .start-generation .description {
     font-size: 1.125rem;
-    color: #666;
+    color: #b9b2c8;
     margin-bottom: 2rem;
     line-height: 1.6;
   }
@@ -349,7 +398,7 @@
   .generation-complete h2 {
     font-size: 2rem;
     font-weight: 700;
-    color: #1a1a1a;
+    color: #f3e9d2;
     margin-bottom: 1rem;
   }
 
@@ -360,9 +409,57 @@
     margin-bottom: 0.5rem;
   }
 
+  .generation-complete h2.partial::before {
+    content: none;
+  }
+
+  .failed-list {
+    list-style: none;
+    max-width: 420px;
+    margin: 0 auto 1.5rem;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .failed-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid rgba(248, 113, 113, 0.4);
+    border-radius: 8px;
+    background: rgba(60, 14, 20, 0.45);
+    color: #f3e9d2;
+  }
+
+  .btn-retry,
+  .btn-secondary {
+    padding: 0.5rem 1rem;
+    border: 1px solid rgba(223, 168, 69, 0.6);
+    border-radius: 6px;
+    background: transparent;
+    color: #dfa845;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-secondary {
+    display: block;
+    margin: 0 auto 1.25rem;
+  }
+
+  .btn-retry:disabled,
+  .btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: wait;
+  }
+
   .generation-complete .description {
     font-size: 1.125rem;
-    color: #666;
+    color: #b9b2c8;
     margin-bottom: 2rem;
   }
 

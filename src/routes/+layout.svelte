@@ -17,6 +17,9 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
   import { page } from '$app/state'
+  import { afterNavigate } from '$app/navigation'
+  import ErrorBanner from '$lib/components/ErrorBanner.svelte'
+  import { appStore } from '$lib/stores/appStore.svelte'
 
   const { children }: { children: Snippet } = $props()
 
@@ -39,6 +42,11 @@
     }
     return pathname.startsWith(href)
   }
+
+  // An error belongs to the page it happened on; drop it when the user moves on.
+  afterNavigate(({ from, to }) => {
+    if (from && to && from.url.pathname !== to.url.pathname) appStore.clearError()
+  })
 
   // Close mobile menu when route changes
   function toggleMobileMenu() {
@@ -200,6 +208,8 @@
         </div>
       {/if}
     </nav>
+    <!-- Inside the sticky header so an error stays on screen wherever the page is scrolled. -->
+    <ErrorBanner />
   </header>
 
   <main>
@@ -213,12 +223,8 @@
           &copy; {new Date().getFullYear()} TarotOutMyHeart. All rights reserved.
         </p>
         <div class="footer-links">
-          <a href="/docs" class="footer-link">Documentation</a>
-          <span class="separator">•</span>
-          <a href="/about" class="footer-link">About</a>
-          <span class="separator">•</span>
           <a
-            href="https://github.com/Phazzie/TarotUpMyHeart"
+            href="https://github.com/Phazzie/TarotOutMyHeart"
             target="_blank"
             rel="noopener noreferrer"
             class="footer-link"
@@ -968,11 +974,6 @@
 
   .footer-link:hover {
     color: var(--color-secondary);
-  }
-
-  .separator {
-    color: var(--color-text-muted);
-    user-select: none;
   }
 
   @media (min-width: 768px) {

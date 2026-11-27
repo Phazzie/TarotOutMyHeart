@@ -1269,6 +1269,13 @@ _Lighten the mood - development has humor too_
 
 - [Funny bugs, interesting edge cases, etc.]
 
+### Shakedown lessons (2026-11-27)
+
+- **665 passing unit tests did not catch that errors were invisible.** `appStore.setError()` was called in 22 places and rendered nowhere. Unit tests checked that the store was set, not that a user could see it. Only clicking through in a browser found it. Keep `e2e/` green alongside the unit suites.
+- **Run e2e against the real client services, not the mocks.** Build with `VITE_USE_MOCKS=false` and stub the `/api/*` routes with `page.route`. That exercises the code production users run without spending xAI credits.
+- **One limit, one source.** The UI said 10 images and the contract said 5. Read limits from the contract instead of restating them.
+- **Wait for hydration before `setInputFiles`.** Setting files right after `page.goto` can land before Svelte attaches the change handler, and the upload silently does nothing. `gotoReady()` in `e2e/fixtures.ts` waits for network idle.
+
 ---
 
 ## Metrics Summary
