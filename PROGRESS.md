@@ -38,6 +38,11 @@ world explains the flow instead of decorating it.
   services.
 - Card art in my screenshots is placeholder purple from the test stubs, not real Grok art,
   so I have not seen how real cards sit in the pigeonholes.
+- Three narrow edge cases from PR review, logged rather than fixed:
+  - A resubmit or upload still in flight during "Withdraw application" can land in the
+    next deck. The fix is a deck/session id that late responses are checked against.
+  - After Cancel, cards that were never attempted aren't listed as Returned, so they can
+    only be redone with "Approve all 22", not one at a time.
 
 **Weakest / boldest:** only one site in this thread. Boldest part: the lobby ticket
 dispenser and the Certificate of Issuance. Weakest part: the processing page is long on a
