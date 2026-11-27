@@ -57,7 +57,7 @@ phone (22 case files before the Approve button).
   That's true today but advertises the cost to anyone.
 - `/test-progress` now 404s outside `npm run dev` (it was a public button that spent real
   credits). The file is kept.
-- Not merged to main. PR #39 is open; merge it when you're happy.
+- Merged: PR #39 went to main on 27 Nov and is live at https://tarot-out-my-heart.vercel.app.
 
 **Blockers:** none. GitHub Actions does run on this repo (I had wrongly assumed it was
 billing-locked). Its Build and "No 'any'" checks were red for two real reasons, now fixed:
