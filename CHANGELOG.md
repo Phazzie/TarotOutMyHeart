@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Lightbox showed a wrong model name and resolution, and fell back to a dead placeholder
   image service.
 - Upload page scrolled sideways on phones (hidden RECEIVED stamp).
+- "Resubmit all" no longer lets single resubmits run alongside it (duplicate paid
+  generations); a resubmit after Cancel is no longer silently refused; a resubmit clears the
+  previous error and records its real retry count.
+- GitHub Actions workflows use Node 22 (SvelteKit's build failed on Node 20).
 
 
 ### Fixed

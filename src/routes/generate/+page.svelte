@@ -93,6 +93,12 @@
   /** Card numbers with a retry in flight, so their buttons can't be double-clicked. */
   let retrying = $state<number[]>([])
 
+  /**
+   * True while "Resubmit all" works through the list. Single resubmit buttons are disabled
+   * meanwhile so a queued card can't be generated (and billed) twice.
+   */
+  let retryingAll = $state(false)
+
   // ============================================================================
   // IMAGE GENERATION HANDLERS
   // ============================================================================
@@ -184,12 +190,16 @@
       return
     }
 
+    const current = appStore.generatedCards.find(card => card.cardNumber === cardNumber)
+
     retrying = [...retrying, cardNumber]
+    // An earlier failure's banner would contradict this new attempt.
+    appStore.clearError()
     try {
       const response = await generationService.regenerateImage({
         cardNumber,
         prompt: prompt.generatedPrompt,
-        previousAttempts: 1,
+        previousAttempts: current?.retryCount ?? 0,
       })
 
       if (response.success && response.data?.generatedCard) {
@@ -216,8 +226,16 @@
 
   /** Retry every failed card, one at a time. */
   async function retryAllFailed(): Promise<void> {
-    for (const card of failedCards) {
-      await handleRetryFailed(card.cardNumber)
+    retryingAll = true
+    try {
+      for (const cardNumber of failedCards.map(card => card.cardNumber)) {
+        // Skip anything that stopped being failed since the list was taken.
+        const card = appStore.generatedCards.find(c => c.cardNumber === cardNumber)
+        if (card?.generationStatus !== 'failed' || retrying.includes(cardNumber)) continue
+        await handleRetryFailed(cardNumber)
+      }
+    } finally {
+      retryingAll = false
     }
   }
 
@@ -284,7 +302,7 @@
                 <span class="failed-name">{card.cardName}</span>
                 <button
                   class="btn-retry"
-                  disabled={retrying.includes(card.cardNumber)}
+                  disabled={retryingAll || retrying.includes(card.cardNumber)}
                   aria-label={`Resubmit ${card.cardName}`}
                   onclick={() => handleRetryFailed(card.cardNumber)}
                 >
@@ -294,7 +312,11 @@
             {/each}
           </ul>
           {#if failedCards.length > 1}
-            <button class="btn-retry all" disabled={retrying.length > 0} onclick={retryAllFailed}>
+            <button
+              class="btn-retry all"
+              disabled={retryingAll || retrying.length > 0}
+              onclick={retryAllFailed}
+            >
               Resubmit all returned
             </button>
           {/if}

@@ -20,6 +20,13 @@ Things that failed silently or lied. Check this list before every deploy.
    (Fixed: shows the real model id; resolution line removed.)
 9. **Broken image fallback.** Cards with no image pointed at via.placeholder.com, a dead
    service. (Fixed: a "Returned unillustrated" slip.)
-10. **GitHub Actions CI is billing-locked** and reports failure on every push regardless of the
-    code. Depot CI only runs after the repo moves. Run `npm run ci` and `npm run test:e2e`
-    locally; the Vercel preview check is the only reliable PR check.
+10. **I believed GitHub Actions was billing-locked. It wasn't.** The red checks were real:
+    every workflow pinned Node 20 while SvelteKit's prerender needs Node 22
+    (`Promise.withResolvers is not a function`), and the "No 'any'" grep for `: any` matched
+    the CSS `overflow-wrap: anywhere`. Both fixed. Read the job log before blaming the
+    platform.
+11. **Retry-all could bill twice.** While "Resubmit all" ran, single Resubmit buttons stayed
+    enabled, so a queued card could be generated twice. A Cancel also left a service-wide flag
+    set that silently blocked every later resubmit. (Fixed, from PR review.)
+12. **The Start Over e2e test proved nothing.** It used full page loads, which reset memory
+    anyway. It now navigates inside the app and fails if the clear is removed (checked).

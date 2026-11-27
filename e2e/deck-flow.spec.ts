@@ -150,11 +150,15 @@ test('start over clears the deck and lets a new deck be uploaded', async ({ page
   await page.getByRole('button', { name: 'Withdraw application' }).click()
   await expect(page).toHaveURL(/\/$/)
 
-  await gotoReady(page, '/gallery')
+  // Navigate inside the app (no page reload), so in-memory state from the old deck would
+  // still be here if Withdraw failed to clear it.
+  const nav = page.locator('.desktop-nav')
+  await nav.getByRole('link', { name: /Issuance/ }).click()
   await expect(page.getByRole('heading', { name: 'No record found' })).toBeVisible()
 
-  // Five fresh images must be accepted: the old deck's images must not count against the limit.
-  await gotoReady(page, '/upload')
+  // Five fresh images must be accepted: the old deck's image must not count against the limit.
+  await nav.getByRole('link', { name: /Intake/ }).click()
+  await expect(page.getByText('reference.png')).toHaveCount(0)
   await page.locator('input[type=file]').setInputFiles(
     Array.from({ length: 5 }, (_, i) => ({
       name: `fresh-${i}.png`,

@@ -156,7 +156,15 @@ async function installStubs(page: Page, api: ApiStub): Promise<void> {
   const attempts = new Map<number, number>()
   await page.route('**/api/generate/card', async route => {
     api.calls.card++
-    const body = route.request().postDataJSON() as { cardNumber: number }
+    const body: unknown = route.request().postDataJSON()
+    // Reject what the real endpoint would reject, so a malformed client request fails the test.
+    if (!isCardRequest(body)) {
+      await route.fulfill({
+        status: 400,
+        json: { success: false, error: { code: 'INVALID_REQUEST', message: 'Bad card request.' } },
+      })
+      return
+    }
     const n = body.cardNumber
     const attempt = (attempts.get(n) ?? 0) + 1
     attempts.set(n, attempt)
@@ -208,6 +216,24 @@ export async function gotoReady(page: Page, path: string): Promise<void> {
 }
 
 /** Upload one reference image and save a preset style on /upload. */
+/** Type guard for the body the client posts to /api/generate/card. */
+function isCardRequest(
+  value: unknown
+): value is { cardNumber: number; cardName: string; generatedPrompt: string } {
+  if (typeof value !== 'object' || value === null) return false
+  const obj = value as Record<string, unknown>
+  return (
+    typeof obj['cardNumber'] === 'number' &&
+    Number.isInteger(obj['cardNumber']) &&
+    obj['cardNumber'] >= 0 &&
+    obj['cardNumber'] <= 21 &&
+    typeof obj['cardName'] === 'string' &&
+    obj['cardName'].length > 0 &&
+    typeof obj['generatedPrompt'] === 'string' &&
+    obj['generatedPrompt'].length > 0
+  )
+}
+
 export async function completeUploadStep(page: Page): Promise<void> {
   await gotoReady(page, '/upload')
   await page.locator('input[type=file]').setInputFiles({

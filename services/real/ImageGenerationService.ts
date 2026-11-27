@@ -342,7 +342,10 @@ export class ImageGenerationService implements IImageGenerationService {
   async regenerateImage(
     input: RegenerateImageInput
   ): Promise<ServiceResponse<RegenerateImageOutput>> {
-    const { cardNumber, prompt } = input
+    const { cardNumber, prompt, previousAttempts = 0 } = input
+    // A resubmission is a fresh request from the user. A Cancel pressed during an earlier
+    // batch must not block it (the flag is service-wide and otherwise stays set).
+    this.cancelRequested = false
     // Keep the real card name: it is shown in the gallery and used in download filenames.
     const cardName = MAJOR_ARCANA_NAMES[cardNumber] ?? `Card ${cardNumber}`
 
@@ -361,7 +364,7 @@ export class ImageGenerationService implements IImageGenerationService {
       return {
         success: true,
         data: {
-          generatedCard: res.card,
+          generatedCard: { ...res.card, retryCount: previousAttempts + 1 },
           usage: {
             cardNumber,
             model: GROK_IMAGE_MODEL,

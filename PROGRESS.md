@@ -52,8 +52,10 @@ phone (22 case files before the Approve button).
   credits). The file is kept.
 - Not merged to main. PR #39 is open; merge it when you're happy.
 
-**Blockers:** none. GitHub Actions is billing-locked, so the only PR checks that run are
-Vercel and SonarCloud; I ran the full CI and e2e suites locally instead.
+**Blockers:** none. GitHub Actions does run on this repo (I had wrongly assumed it was
+billing-locked). Its Build and "No 'any'" checks were red for two real reasons, now fixed:
+the workflows pinned Node 20 while SvelteKit needs Node 22, and the any-check matched the
+CSS `overflow-wrap: anywhere`.
 
 ### Definition of done
 
