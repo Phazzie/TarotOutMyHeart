@@ -24,9 +24,11 @@
     "validate:seams": "echo '✅ Seams documentation validation - to be implemented'",
     "validate:all": "npm run validate:contracts && npm run validate:mocks && npm run validate:seams",
     "ci": "npm run lint && npm run check && npm run test:all && npm run build",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@sveltejs/adapter-vercel": "^7.0.3",
     "@sveltejs/kit": "^3.2.0",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",

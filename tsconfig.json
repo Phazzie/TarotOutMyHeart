@@ -41,6 +41,8 @@
     "contracts/**/*.ts",
     "services/**/*.ts",
     "tests/**/*.ts",
+    "e2e/**/*.ts",
+    "playwright.config.ts",
     "vite.config.ts"
   ],
   "exclude": ["node_modules", ".svelte-kit", "build", "dist", ".vercel"]

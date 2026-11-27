@@ -26,6 +26,7 @@ import type {
 } from '$contracts/ImageGeneration'
 import { ImageGenerationErrorCode, GROK_IMAGE_MODEL } from '$contracts/ImageGeneration'
 import type { CardPrompt } from '$contracts/PromptGeneration'
+import { MAJOR_ARCANA_NAMES, MAJOR_ARCANA_MEANINGS } from '$contracts/PromptGeneration'
 
 const CARD_TIMEOUT_MS = 55_000
 const MAX_RETRIES = 2
@@ -341,14 +342,18 @@ export class ImageGenerationService implements IImageGenerationService {
   async regenerateImage(
     input: RegenerateImageInput
   ): Promise<ServiceResponse<RegenerateImageOutput>> {
-    const { cardNumber, prompt } = input
-    const cardName = `Card ${cardNumber}`
+    const { cardNumber, prompt, previousAttempts = 0 } = input
+    // A resubmission is a fresh request from the user. A Cancel pressed during an earlier
+    // batch must not block it (the flag is service-wide and otherwise stays set).
+    this.cancelRequested = false
+    // Keep the real card name: it is shown in the gallery and used in download filenames.
+    const cardName = MAJOR_ARCANA_NAMES[cardNumber] ?? `Card ${cardNumber}`
 
     const fakePromptObj: CardPrompt = {
       id: createPromptId(crypto.randomUUID()),
       cardNumber,
       cardName,
-      traditionalMeaning: '',
+      traditionalMeaning: MAJOR_ARCANA_MEANINGS[cardNumber] ?? '',
       generatedPrompt: prompt,
       confidence: 1,
       generatedAt: new Date(),
@@ -359,7 +364,7 @@ export class ImageGenerationService implements IImageGenerationService {
       return {
         success: true,
         data: {
-          generatedCard: res.card,
+          generatedCard: { ...res.card, retryCount: previousAttempts + 1 },
           usage: {
             cardNumber,
             model: GROK_IMAGE_MODEL,

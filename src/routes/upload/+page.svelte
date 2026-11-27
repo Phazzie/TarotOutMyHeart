@@ -42,89 +42,134 @@
   }
 </script>
 
+<svelte:head>
+  <title>Window 1 · Intake · Bureau of Fate</title>
+</svelte:head>
+
 <div class="upload-page">
-  <header>
-    <h1>Create Your Tarot Deck</h1>
-    <p>Step 1 of 3: Upload Reference Images & Define Style</p>
-  </header>
-
-  <div class="content">
-    <!-- Left column: Image upload + Style input -->
-    <div class="main-column">
-      <section class="upload-section">
-        <ImageUploadComponent />
-      </section>
-
-      <section class="style-section">
-        <StyleInputComponent />
-      </section>
-    </div>
-
-    <!-- Right column (sidebar): Cost display + navigation -->
-    <aside class="sidebar">
-      <CostDisplayComponent />
-
-      <div class="navigation">
-        <button class="btn-primary" disabled={!canProceed} onclick={handleContinue}>
-          Continue to Generate Prompts →
-        </button>
-        <p class="help-text">
-          {#if !canProceed}
-            Upload images and define your style to continue
-          {:else}
-            Ready to generate your tarot prompts!
-          {/if}
-        </p>
+  <div class="form-sheet sheet">
+    <header class="form-head">
+      <div class="form-id">
+        <span class="form-code">Form MA-22</span>
+        <span class="form-rev">Rev. 11/2026</span>
       </div>
-    </aside>
+      <h1>Application for issuance of a Major Arcana deck</h1>
+      <p class="form-instr">
+        Window 1 · Intake. Type or print clearly. Fields marked <span class="req">*</span> are required.
+      </p>
+      <span class="received-stamp" class:visible={canProceed} aria-hidden="true">Received</span>
+    </header>
+
+    <section class="upload-section">
+      <ImageUploadComponent />
+    </section>
+
+    <section class="style-section">
+      <StyleInputComponent />
+    </section>
   </div>
+
+  <aside class="sidebar">
+    <CostDisplayComponent />
+
+    <div class="navigation">
+      <button class="stamp-btn submit" disabled={!canProceed} onclick={handleContinue}>
+        Submit to Window 2 →
+      </button>
+      <p class="help-text">
+        {#if !canProceed}
+          The clerk needs at least one exhibit (Section A) and a filed declaration (Section B).
+        {:else}
+          Application complete. Window 2 will see you now.
+        {/if}
+      </p>
+    </div>
+  </aside>
 </div>
 
 <style>
   .upload-page {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 2rem;
-  }
-
-  header {
-    text-align: center;
-    margin-bottom: 3rem;
-  }
-
-  header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  header p {
-    font-size: 1.125rem;
-    color: var(--color-text-secondary, #718096);
-  }
-
-  .content {
     display: grid;
-    grid-template-columns: 1fr 350px;
+    grid-template-columns: minmax(0, 1fr) 300px;
     gap: 2rem;
     align-items: start;
   }
 
-  .main-column {
+  .form-sheet {
+    padding: 1.75rem 2rem 2rem;
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 2.25rem;
   }
 
-  /* No additional styles needed - components handle their own styling */
+  .form-head {
+    position: relative;
+    overflow: hidden;
+    border: 3px double var(--ink);
+    padding: 0.9rem 1rem;
+  }
+
+  .form-id {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+  }
+
+  .form-code {
+    font-weight: 700;
+  }
+
+  .form-head h1 {
+    font-size: clamp(1.4rem, 2.6vw, 2.1rem);
+    line-height: 1.1;
+    text-transform: uppercase;
+    max-width: 22ch;
+  }
+
+  .form-instr {
+    margin-top: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+
+  .req {
+    color: var(--stamp-red);
+  }
+
+  .received-stamp {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    padding: 0.2rem 0.7rem;
+    border: 4px solid var(--stamp-blue);
+    border-radius: 6px;
+    color: var(--stamp-blue);
+    font-family: var(--font-heading);
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0;
+    transform: translateY(-50%) rotate(-14deg) scale(1.6);
+    transition:
+      opacity 0.2s ease-out,
+      transform 0.25s cubic-bezier(0.3, 1.6, 0.6, 1);
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
+
+  .received-stamp.visible {
+    opacity: 0.85;
+    transform: translateY(-50%) rotate(-14deg) scale(1);
+  }
 
   .sidebar {
     position: sticky;
-    top: 2rem;
-    height: fit-content;
+    top: 9rem;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
@@ -133,79 +178,40 @@
   .navigation {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    align-items: center;
+    gap: 0.75rem;
   }
 
-  .btn-primary {
+  .submit {
     width: 100%;
-    padding: 1rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition:
-      transform 0.2s,
-      box-shadow 0.2s;
-  }
-
-  .btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
-  }
-
-  .btn-primary:active:not(:disabled) {
-    transform: translateY(0);
-    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.2);
-  }
-
-  .btn-primary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+    background: var(--paper);
   }
 
   .help-text {
     text-align: center;
-    font-size: 0.9rem;
-    color: var(--color-text-secondary, #a0aec0);
-    margin: 0;
+    font-size: 0.85rem;
+    color: #d9d2b6;
   }
 
-  /* Responsive layout */
-  @media (max-width: 1024px) {
-    .content {
-      grid-template-columns: 1fr;
+  @media (max-width: 960px) {
+    .upload-page {
+      grid-template-columns: minmax(0, 1fr);
     }
 
     .sidebar {
       position: static;
-      order: -1; /* Move cost display to top on mobile */
     }
   }
 
-  @media (max-width: 768px) {
-    .upload-page {
-      padding: 1rem;
+  @media (max-width: 640px) {
+    .form-sheet {
+      padding: 1rem 0.9rem 1.25rem;
+      gap: 1.75rem;
     }
 
-    header h1 {
-      font-size: 2rem;
-    }
-
-    header p {
-      font-size: 1rem;
-    }
-
-    .main-column {
-      gap: 1.5rem;
-    }
-
-    .btn-primary {
-      padding: 0.875rem;
-      font-size: 0.95rem;
+    .received-stamp {
+      font-size: 1.1rem;
+      right: 0.5rem;
     }
   }
 </style>

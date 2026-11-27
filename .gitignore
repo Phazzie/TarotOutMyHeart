@@ -80,3 +80,7 @@ pnpm-lock.yaml
 SESSION-NOTES.md
 .notes/
 scratch/
+
+# Playwright
+test-results/
+playwright-report/

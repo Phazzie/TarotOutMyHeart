@@ -27,7 +27,7 @@ module.exports = {
       },
     },
     {
-      files: ['tests/**/*.ts', 'coordination-server/**/*.ts'],
+      files: ['tests/**/*.ts', 'e2e/**/*.ts', 'coordination-server/**/*.ts'],
       rules: {
         '@typescript-eslint/no-explicit-any': 'warn',
         '@typescript-eslint/consistent-type-assertions': 'off',

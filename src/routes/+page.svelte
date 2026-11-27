@@ -1,788 +1,606 @@
 <script lang="ts">
   /**
-   * @fileoverview Home Page - Welcome and Interactive Altar Showcase
-   * @purpose Landing page that introduces TarotOutMyHeart with an interactive 3D Major Arcana showcase card
-   * @dataFlow User clicks "Begin Your Deck Creation" → navigate to /upload
-   * @updated 2026-08-08
+   * @fileoverview Lobby of the Bureau of Fate (home page)
+   * @purpose Explain the service as a government office would, and hand the applicant a
+   *   ticket. The ticket dispenser is the call to action: pulling it goes to Window 1.
+   * @dataFlow Ticket pull → short tear animation → goto('/upload'). Works as a plain link
+   *   without JavaScript.
+   * @updated 2026-11-27
    */
+  import { goto } from '$app/navigation'
   import TarotCardFrame from '$lib/components/TarotCardFrame.svelte'
 
-  interface ArcanaShowcase {
-    number: string
-    title: string
-    fullName: string
-    arcana: string
-    element: string
-    keywords: string
-    quote: string
-    symbol: string
+  let isFlipped = $state(false)
+  let ticket = $state<string | null>(null)
+
+  // The specimen's back carries a serial number, like any document worth forging.
+  const serial = 'MA-0000-' + String(new Date().getFullYear())
+
+  function takeNumber(event: MouseEvent) {
+    if (ticket) return
+    event.preventDefault()
+    ticket = String(Math.floor(Math.random() * 90) + 10)
+    setTimeout(() => goto('/upload'), 900)
   }
-
-  // Interactive 3D Showcase Card State
-  let isFlipped = $state<boolean>(false)
-  let cardIndex = $state<number>(0)
-
-  const foolCard: ArcanaShowcase = {
-    number: '0',
-    title: 'The Fool',
-    fullName: '0. The Fool',
-    arcana: 'Major Arcana',
-    element: 'Air 💨',
-    keywords: 'Innocence • Beginnings • Pure Potential',
-    quote: 'A leap into the cosmic unknown, trusting the universe to guide your spirit.',
-    symbol: '🃏',
-  }
-
-  const worldCard: ArcanaShowcase = {
-    number: 'XXI',
-    title: 'The World',
-    fullName: 'XXI. The World',
-    arcana: 'Major Arcana',
-    element: 'Earth 🌍',
-    keywords: 'Completion • Integration • Cosmic Harmony',
-    quote: 'The grand cycle reaches full realization, uniting all elements in divine wholeness.',
-    symbol: '✨',
-  }
-
-  function toggleFlip() {
-    isFlipped = !isFlipped
-  }
-
-  function switchCard(event: MouseEvent) {
-    event.stopPropagation()
-    cardIndex = cardIndex === 0 ? 1 : 0
-  }
-
-  const activeCard = $derived<ArcanaShowcase>(cardIndex === 0 ? foolCard : worldCard)
-  const nextCardTitle = $derived<string>(cardIndex === 0 ? worldCard.title : foolCard.title)
 </script>
 
-<div class="page-container">
-  <!-- Hero Section with Altar Showcase & Arcane Floating Badges -->
-  <header class="hero glass-panel">
-    <div class="hero-content">
-      <!-- Floating Glowing Arcane Symbol Badges -->
-      <div class="arcane-badges" aria-label="Arcane Symbol Badges">
-        <span class="arcane-badge badge-1" title="Orb of Sight">🔮</span>
-        <span class="arcane-badge badge-2" title="Arcana Card">🃏</span>
-        <span class="arcane-badge badge-3" title="Ancient Scroll">📜</span>
-        <span class="arcane-badge badge-4" title="Celestial Spark">✨</span>
-        <span class="arcane-badge badge-5" title="Lunar Energy">🌙</span>
-      </div>
+<svelte:head>
+  <title>Bureau of Fate · Tarot deck issuance</title>
+  <meta
+    name="description"
+    content="Apply for your own 22-card Major Arcana tarot deck. Submit photos of the look you want; the Bureau's clerk drafts and illustrates every card."
+  />
+</svelte:head>
 
-      <h1 class="title font-tarot text-gold-gradient">TarotOutMyHeart</h1>
-      <p class="subtitle font-tarot">AI-Powered Major Arcana Deck Generator</p>
-      <p class="description">
-        Forge your bespoke 22-card Major Arcana tarot deck. Harness AI generation, upload reference
-        aesthetics, and bring your mystical vision to physical reality.
-      </p>
-
-      <div class="cta">
-        <a href="/upload" class="gold-cta-button"> ✨ Begin Your Deck Creation → </a>
-      </div>
-    </div>
-
-    <!-- Altar Showcase with Interactive 3D Tarot Card -->
-    <div class="altar-showcase glass-panel">
-      <div class="altar-header">
-        <span class="altar-tag font-tarot">Altar Showcase</span>
-        <button type="button" class="switch-card-btn" onclick={switchCard}>
-          Switch to {nextCardTitle} ↻
-        </button>
-      </div>
-
-      <div class="card-display-container">
-        <TarotCardFrame
-          {isFlipped}
-          cardName={activeCard.fullName}
-          onClick={toggleFlip}
-          class="hero-card-frame"
-        >
-          {#snippet front()}
-            <div class="card-face-content front-face">
-              <div class="card-corner top-left font-tarot">{activeCard.number}</div>
-              <div class="card-corner top-right">{activeCard.symbol}</div>
-
-              <div class="card-illustration">
-                <div class="mystic-orb">
-                  <span class="center-symbol">{activeCard.symbol}</span>
-                  <span class="orb-glow"></span>
-                </div>
-                <div class="illustration-details">
-                  <span class="arcane-tag">{activeCard.arcana}</span>
-                  <span class="element-tag">{activeCard.element}</span>
-                </div>
-              </div>
-
-              <div class="card-footer-info">
-                <h3 class="card-face-title font-tarot">{activeCard.fullName}</h3>
-                <p class="card-keywords">{activeCard.keywords}</p>
-              </div>
-            </div>
-          {/snippet}
-
-          {#snippet back()}
-            <div class="card-face-content back-face">
-              <div class="back-pattern-inner">
-                <div class="mystic-emblem">✦</div>
-                <p class="back-title font-tarot">TarotOutMyHeart</p>
-                <p class="back-quote">"{activeCard.quote}"</p>
-                <span class="back-flip-hint font-tarot">Click to flip face</span>
-              </div>
-            </div>
-          {/snippet}
-        </TarotCardFrame>
-      </div>
-
-      <div class="altar-footer">
-        <p class="altar-hint">
-          <span class="sparkle">✨</span> Hover to tilt in 3D • Click to flip card
-        </p>
-      </div>
-    </div>
-  </header>
-
-  <!-- How It Works Section with Glass Panel Cards -->
-  <section class="how-it-works">
-    <h2 class="font-tarot text-gold-gradient">How It Works</h2>
-    <div class="steps">
-      <div class="step glass-panel">
-        <div class="step-number font-tarot">1</div>
-        <h3 class="font-tarot">Upload & Style</h3>
-        <p>
-          Upload 1-5 reference images and define your deck's visual style (theme, tone, concept, and
-          description).
-        </p>
-      </div>
-      <div class="step glass-panel">
-        <div class="step-number font-tarot">2</div>
-        <h3 class="font-tarot">Generate</h3>
-        <p>
-          AI generates unique prompts for all 22 Major Arcana cards, then creates high-quality
-          images based on your style.
-        </p>
-      </div>
-      <div class="step glass-panel">
-        <div class="step-number font-tarot">3</div>
-        <h3 class="font-tarot">Download</h3>
-        <p>
-          View your complete deck in a gallery and download individual cards or the entire deck as a
-          ZIP file.
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Features Section with Glass Panel Cards -->
-  <section class="features">
-    <h2 class="font-tarot text-gold-gradient">Features</h2>
-    <div class="feature-grid">
-      <div class="feature glass-panel">
-        <span class="feature-icon">🎨</span>
-        <h3 class="font-tarot">Custom Styling</h3>
-        <p>Define your unique visual style with detailed inputs and reference imagery</p>
-      </div>
-      <div class="feature glass-panel">
-        <span class="feature-icon">🤖</span>
-        <h3 class="font-tarot">AI-Powered</h3>
-        <p>Powered by advanced AI image generation for high-fidelity Arcana art</p>
-      </div>
-      <div class="feature glass-panel">
-        <span class="feature-icon">🃏</span>
-        <h3 class="font-tarot">22 Cards</h3>
-        <p>Complete Major Arcana deck covering 0. The Fool to XXI. The World</p>
-      </div>
-      <div class="feature glass-panel">
-        <span class="feature-icon">💰</span>
-        <h3 class="font-tarot">Cost Transparency</h3>
-        <p>See estimated generation costs before embarking on deck creation</p>
-      </div>
-      <div class="feature glass-panel">
-        <span class="feature-icon">📥</span>
-        <h3 class="font-tarot">Easy Download</h3>
-        <p>Download individual cards or entire deck bundle ready for print</p>
-      </div>
-      <div class="feature glass-panel">
-        <span class="feature-icon">✨</span>
-        <h3 class="font-tarot">High Quality</h3>
-        <p>Professional-grade 1:1.6 aspect ratio artwork with gold foil frames</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Development Status / Info Section -->
-  <section class="info glass-panel">
-    <h2 class="font-tarot text-gold-gradient">Development Status</h2>
-    <p class="status-text">
-      This application is built using Seam-Driven Development (SDD) methodology. Interactive Major
-      Arcana showcase and component integration active.
+<div class="lobby">
+  <section class="notice sheet" aria-labelledby="notice-title">
+    <span class="pin pin-l" aria-hidden="true"></span>
+    <span class="pin pin-r" aria-hidden="true"></span>
+    <p class="notice-kicker">Public notice · Effective immediately</p>
+    <h1 id="notice-title">Your fate is a 22-card deck.<br />You may now apply for one.</h1>
+    <p class="notice-body">
+      Show the Bureau a few photos of the look you want. A clerk drafts a case file for each of the
+      22 Major Arcana, from The Fool to The World, and has every card illustrated in your style. You
+      leave with a deck no one else has.
     </p>
-    <div class="links">
-      <a href="https://github.com/Phazzie/TarotUpMyHeart" target="_blank" rel="noopener noreferrer">
-        GitHub Repository
+    <p class="notice-sign">— The Office of Major Arcana Issuance</p>
+  </section>
+
+  <section class="dispenser-wrap" aria-label="Take a number">
+    <div class="dispenser">
+      <p class="dispenser-label">Please take a number</p>
+      <a href="/upload" class="dispenser-pull" onclick={takeNumber} aria-label="Take a number">
+        <span class="pull-text">{ticket ? 'Proceed to Window 1' : 'Pull'}</span>
       </a>
-      <span class="separator">•</span>
-      <a href="/upload" class="gold-link"> Get Started → </a>
+      <div class="slot" aria-hidden="true">
+        {#if ticket}
+          <div class="ticket">
+            <span class="ticket-head">Bureau of Fate</span>
+            <span class="ticket-no">{ticket}</span>
+            <span class="ticket-foot">Window 1 · Intake</span>
+          </div>
+        {/if}
+      </div>
     </div>
+    <p class="dispenser-note">Average wait: about two minutes. The clerk does not take breaks.</p>
+  </section>
+
+  <section class="instructions sheet" aria-labelledby="howto">
+    <h2 id="howto">Instructions to applicants</h2>
+    <ol>
+      <li>
+        <span class="step-no">Window 1</span>
+        <div>
+          <h3>Intake</h3>
+          <p>
+            Submit 1 to 5 photos as exhibits of the look you want: a painting, a room, a jacket,
+            your cat. Then file a Declaration of Aesthetic: theme, tone, and a few sentences in your
+            own words.
+          </p>
+        </div>
+      </li>
+      <li>
+        <span class="step-no">Window 2</span>
+        <div>
+          <h3>Processing</h3>
+          <p>
+            The clerk studies your exhibits and drafts a case file for each card. Read them, amend
+            any you like, then send all 22 to be illustrated. Cards are processed one at a time; any
+            that come back rejected can be resubmitted.
+          </p>
+        </div>
+      </li>
+      <li>
+        <span class="step-no">Window 3</span>
+        <div>
+          <h3>Issuance</h3>
+          <p>
+            Collect your deck: inspect each card, take them singly, or take certified copies of all
+            22 in one .zip.
+          </p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section class="specimen-wrap" aria-labelledby="specimen-title">
+    <h2 id="specimen-title" class="wall-label">Specimen on display</h2>
+    <div class="specimen">
+      <TarotCardFrame
+        {isFlipped}
+        cardName="Specimen: 0, The Fool"
+        onClick={() => (isFlipped = !isFlipped)}
+      >
+        {#snippet front()}
+          <div class="face front">
+            <span class="corner">0</span>
+            <svg class="fool-art" viewBox="0 0 200 240" aria-hidden="true">
+              <rect width="200" height="240" fill="#f3e6c4" />
+              <circle cx="150" cy="58" r="26" fill="#e7b14a" />
+              <path d="M0 190 L95 150 L120 240 L0 240 Z" fill="#6f7f5a" />
+              <path d="M95 150 L120 240 L200 240 L200 205 L140 175 Z" fill="#2f3b2a" />
+              <path d="M84 150 q-6 -26 4 -46 q6 -10 16 -6 q8 6 2 20 l-6 30 z" fill="#b8312f" />
+              <circle cx="98" cy="92" r="9" fill="#f1d3b3" />
+              <path d="M90 84 q8 -14 18 0" fill="#22201c" />
+              <path d="M104 112 l34 -22" stroke="#22201c" stroke-width="3" />
+              <circle cx="140" cy="88" r="7" fill="#c9ad6c" />
+              <path d="M66 166 q6 -12 14 -4 q4 -8 10 0 l-4 12 z" fill="#f5f0e1" />
+              <path d="M70 120 l-12 -10" stroke="#22201c" stroke-width="3" />
+              <circle cx="56" cy="108" r="5" fill="#f5f0e1" stroke="#22201c" />
+            </svg>
+            <span class="face-title">The Fool</span>
+            <span class="specimen-stamp" aria-hidden="true">Specimen</span>
+          </div>
+        {/snippet}
+        {#snippet back()}
+          <div class="face back">
+            <div class="guilloche" aria-hidden="true"></div>
+            <span class="back-title">Certificate of Arcana</span>
+            <span class="back-serial">No. {serial}</span>
+            <span class="back-small">Not valid for divination.<br />Issued for display only.</span>
+          </div>
+        {/snippet}
+      </TarotCardFrame>
+    </div>
+    <p class="placard">
+      <strong>0 · The Fool.</strong> Beginnings, a leap, trusting the drop. Every deck the Bureau issues
+      starts with this card. Click to see the back.
+    </p>
+  </section>
+
+  <section class="fees sheet" aria-labelledby="fees-title">
+    <h2 id="fees-title">Schedule of fees</h2>
+    <table>
+      <tbody>
+        <tr><td>Drafting 22 case files</td><td>about $0.10</td></tr>
+        <tr><td>Illustrating 22 cards ($0.10 each)</td><td>$2.20</td></tr>
+        <tr class="total"><td>Charged to applicant</td><td>$0.00</td></tr>
+      </tbody>
+    </table>
+    <p class="fees-note">
+      The Bureau pays the clerk in Grok credits and absorbs the cost, grudgingly. Please don't apply
+      400 times.
+    </p>
   </section>
 </div>
 
 <style>
-  .page-container {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 1rem 1rem 3rem;
-  }
-
-  /* Hero Section Split Layout */
-  .hero {
+  .lobby {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 2.5rem;
-    padding: 3rem 2rem;
-    margin-bottom: 4rem;
-    align-items: center;
-    position: relative;
-    overflow: hidden;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    grid-template-areas:
+      'notice dispenser'
+      'instructions specimen'
+      'fees specimen';
+    gap: 2rem;
+    align-items: start;
   }
 
-  @media (min-width: 900px) {
-    .hero {
-      grid-template-columns: 1.1fr 0.9fr;
-      padding: 4rem 3rem;
-    }
+  /* ---------- Notice ---------- */
+  .notice {
+    grid-area: notice;
+    padding: 2.25rem 2.25rem 1.75rem;
+    background:
+      repeating-linear-gradient(transparent 0 31px, var(--paper-rule) 31px 32px), var(--paper);
+    transform: rotate(-0.6deg);
   }
 
-  .hero-content {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  /* Floating Glowing Arcane Badges */
-  .arcane-badges {
-    display: flex;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-  }
-
-  .arcane-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    font-size: 1.4rem;
-    background: rgba(20, 18, 33, 0.85);
-    border: 1px solid rgba(212, 175, 55, 0.35);
+  .pin {
+    position: absolute;
+    top: 10px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    box-shadow:
-      0 0 12px rgba(212, 175, 55, 0.25),
-      inset 0 0 8px rgba(212, 175, 55, 0.15);
-    animation: floatBadge 4s ease-in-out infinite alternate;
-    transition:
-      transform 0.3s ease,
-      border-color 0.3s ease,
-      box-shadow 0.3s ease;
-    cursor: default;
+    background: radial-gradient(circle at 35% 35%, #ff8a7a, #9b1d14);
+    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.4);
   }
 
-  .arcane-badge:hover {
-    transform: scale(1.2) translateY(-4px) !important;
-    border-color: #ffd700;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+  .pin-l {
+    left: 14px;
   }
 
-  .badge-1 {
-    animation-delay: 0s;
-  }
-  .badge-2 {
-    animation-delay: 0.8s;
-  }
-  .badge-3 {
-    animation-delay: 1.6s;
-  }
-  .badge-4 {
-    animation-delay: 2.4s;
-  }
-  .badge-5 {
-    animation-delay: 3.2s;
+  .pin-r {
+    right: 14px;
   }
 
-  @keyframes floatBadge {
-    0% {
-      transform: translateY(0px) rotate(0deg);
-    }
-    100% {
-      transform: translateY(-8px) rotate(6deg);
-    }
-  }
-
-  .title {
-    font-size: 3.25rem;
-    line-height: 1.1;
+  .notice-kicker {
+    font-family: var(--font-heading);
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-size: 0.8rem;
+    color: var(--stamp-red);
     margin-bottom: 0.75rem;
-    letter-spacing: 0.02em;
   }
 
-  .subtitle {
-    font-size: 1.25rem;
-    color: var(--color-secondary-light, #fef08a);
-    margin-bottom: 1.25rem;
-    letter-spacing: 0.05em;
-    opacity: 0.9;
-  }
-
-  .description {
-    font-size: 1.125rem;
-    color: var(--color-text-secondary, #a7a9be);
-    line-height: 1.7;
-    margin-bottom: 2rem;
-    max-width: 580px;
-  }
-
-  .cta {
-    margin-top: 0.5rem;
-  }
-
-  /* Metallic Gold CTA Button */
-  .gold-cta-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 1.15rem 2.25rem;
-    font-family: var(--font-heading, serif);
-    font-size: 1.2rem;
+  .notice h1 {
+    font-size: clamp(2rem, 4.2vw, 3.4rem);
+    line-height: 1.02;
+    text-transform: uppercase;
     font-weight: 700;
-    letter-spacing: 0.04em;
-    color: #0b0a12;
-    background: linear-gradient(135deg, #ffe082 0%, #d4af37 40%, #aa771c 100%);
-    border: 1px solid #fff8dc;
-    border-radius: 9999px;
-    text-decoration: none;
-    box-shadow:
-      0 4px 20px rgba(212, 175, 55, 0.4),
-      0 0 10px rgba(255, 224, 130, 0.3),
-      inset 0 1px 1px rgba(255, 255, 255, 0.8);
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    position: relative;
-    overflow: hidden;
+    margin-bottom: 1.25rem;
   }
 
-  .gold-cta-button:hover {
-    color: #000;
-    transform: translateY(-3px) scale(1.03);
-    box-shadow:
-      0 8px 30px rgba(212, 175, 55, 0.7),
-      0 0 20px rgba(255, 224, 130, 0.6),
-      inset 0 1px 2px rgba(255, 255, 255, 1);
+  .notice-body {
+    font-family: var(--font-typed);
+    font-size: 1.1rem;
+    line-height: 2rem;
+    max-width: 52ch;
   }
 
-  /* Altar Showcase Container */
-  .altar-showcase {
+  .notice-sign {
+    margin-top: 1rem;
+    font-style: italic;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Ticket dispenser ---------- */
+  .dispenser-wrap {
+    grid-area: dispenser;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 1.5rem;
-    background: rgba(14, 12, 24, 0.85);
-    border: 1px solid rgba(212, 175, 55, 0.3);
-    box-shadow:
-      0 12px 40px rgba(0, 0, 0, 0.6),
-      inset 0 0 20px rgba(212, 175, 55, 0.08);
+    gap: 0.75rem;
   }
 
-  .altar-header {
-    width: 100%;
+  .dispenser {
+    position: relative;
+    width: 220px;
+    padding: 1.25rem 1rem 2.5rem;
+    background: linear-gradient(160deg, #d8392b, #a3241a);
+    border-radius: 22px 22px 40px 40px;
+    box-shadow:
+      inset 0 -8px 0 rgba(0, 0, 0, 0.2),
+      0 14px 24px -10px rgba(0, 0, 0, 0.6);
+    text-align: center;
+  }
+
+  .dispenser-label {
+    font-family: var(--font-heading);
+    color: #fff3dc;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .dispenser-pull {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1.25rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+    justify-content: center;
+    min-height: 84px;
+    padding: 0.5rem;
+    border-radius: 12px;
+    background: #fff3dc;
+    color: var(--stamp-red);
+    font-family: var(--font-heading);
+    font-size: 1.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    box-shadow: inset 0 -5px 0 #e2cfa7;
+    transition: transform var(--transition-fast);
   }
 
-  .altar-tag {
-    font-size: 0.95rem;
-    color: #ffd700;
-    letter-spacing: 0.08em;
+  .dispenser-pull:hover {
+    transform: translateY(2px);
+  }
+
+  .pull-text {
+    line-height: 1.05;
+  }
+
+  .slot {
+    position: absolute;
+    left: 50%;
+    bottom: -6px;
+    width: 120px;
+    height: 10px;
+    transform: translateX(-50%);
+    background: #4c0f0a;
+    border-radius: 4px;
+    overflow: visible;
+  }
+
+  .ticket {
+    position: absolute;
+    top: 4px;
+    left: 8px;
+    width: 104px;
+    padding: 0.4rem 0.3rem 0.5rem;
+    background: #fbf3df;
+    border: 1px dashed #b9a982;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: var(--font-heading);
+    color: var(--ink);
+    animation: dispense 0.6s ease-out both;
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .ticket-head,
+  .ticket-foot {
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
   }
 
-  .switch-card-btn {
-    font-family: var(--font-heading, serif);
-    font-size: 0.85rem;
-    color: var(--color-text-secondary, #a7a9be);
-    background: rgba(212, 175, 55, 0.1);
-    border: 1px solid rgba(212, 175, 55, 0.3);
-    border-radius: 9999px;
-    padding: 0.4rem 0.9rem;
-    transition: all 0.2s ease;
-  }
-
-  .switch-card-btn:hover {
-    color: #ffd700;
-    background: rgba(212, 175, 55, 0.2);
-    border-color: #ffd700;
-  }
-
-  .card-display-container {
-    width: 100%;
-    max-width: 270px;
-    margin: 0 auto;
-  }
-
-  /* Hero Card Inner Styles */
-  .card-face-content {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 0.85rem;
-    box-sizing: border-box;
-    position: relative;
-  }
-
-  .front-face {
-    background: radial-gradient(circle at center, #231a33 0%, #100b19 100%);
-    color: #fff;
-  }
-
-  .card-corner {
-    position: absolute;
-    font-size: 0.9rem;
-    font-weight: bold;
-    color: #ffd700;
-    text-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
-  }
-
-  .top-left {
-    top: 10px;
-    left: 12px;
-  }
-  .top-right {
-    top: 10px;
-    right: 12px;
-  }
-
-  .card-illustration {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin-top: 1.25rem;
-  }
-
-  .mystic-orb {
-    position: relative;
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #764ba2 0%, #2b1055 100%);
-    border: 2px solid #ffd700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 0 20px rgba(118, 75, 162, 0.7);
-  }
-
-  .center-symbol {
+  .ticket-no {
     font-size: 2.2rem;
-    z-index: 2;
+    font-weight: 700;
+    line-height: 1;
   }
 
-  .orb-glow {
-    position: absolute;
-    inset: -6px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 215, 0, 0.4) 0%, transparent 70%);
-    animation: pulseOrb 2.5s ease-in-out infinite alternate;
-  }
-
-  @keyframes pulseOrb {
-    0% {
-      transform: scale(0.95);
-      opacity: 0.5;
+  @keyframes dispense {
+    from {
+      transform: translateY(-80%);
+      opacity: 0;
     }
-    100% {
-      transform: scale(1.15);
+    to {
+      transform: translateY(0);
       opacity: 1;
     }
   }
 
-  .illustration-details {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.85rem;
-  }
-
-  .arcane-tag,
-  .element-tag {
-    font-size: 0.725rem;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    background: rgba(212, 175, 55, 0.15);
-    border: 1px solid rgba(212, 175, 55, 0.3);
-    color: #ffe082;
-  }
-
-  .card-footer-info {
+  .dispenser-note {
+    margin-top: 4.5rem;
+    color: #c9c3a8;
+    font-size: 0.85rem;
     text-align: center;
-    padding-top: 0.5rem;
-    border-top: 1px solid rgba(212, 175, 55, 0.25);
+    max-width: 24ch;
   }
 
-  .card-face-title {
-    font-size: 1.15rem;
-    color: #ffd700;
+  /* ---------- Instructions ---------- */
+  .instructions {
+    grid-area: instructions;
+    padding: 1.75rem 2rem;
+  }
+
+  .instructions h2,
+  .fees h2 {
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 0.4rem;
+    margin-bottom: 1rem;
+  }
+
+  .instructions ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .instructions li {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr;
+    gap: 1rem;
+  }
+
+  .step-no {
+    align-self: start;
+    padding: 0.3rem 0.4rem;
+    border: 2px solid var(--stamp-blue);
+    color: var(--stamp-blue);
+    font-family: var(--font-heading);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: center;
+    font-size: 0.85rem;
+  }
+
+  .instructions h3 {
+    font-size: 1.05rem;
+    text-transform: uppercase;
     margin-bottom: 0.25rem;
   }
 
-  .card-keywords {
-    font-size: 0.75rem;
-    color: #a7a9be;
-    line-height: 1.3;
+  .instructions p {
+    font-size: 0.95rem;
+    color: var(--ink-soft);
   }
 
-  /* Back Face Inner Styles */
-  .back-face {
-    background: radial-gradient(circle at center, #2e1a47 0%, #0d0614 100%);
-    padding: 1rem;
-  }
-
-  .back-pattern-inner {
-    width: 100%;
-    height: 100%;
-    border: 1px solid rgba(212, 175, 55, 0.4);
-    border-radius: 6px;
+  /* ---------- Specimen ---------- */
+  .specimen-wrap {
+    grid-area: specimen;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 1rem 0.75rem;
-    box-sizing: border-box;
-    background: repeating-linear-gradient(
-      45deg,
-      rgba(212, 175, 55, 0.03) 0px,
-      rgba(212, 175, 55, 0.03) 2px,
-      transparent 2px,
-      transparent 12px
-    );
+    gap: 1rem;
   }
 
-  .mystic-emblem {
-    font-size: 2rem;
-    color: #ffd700;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
-    margin-bottom: 0.5rem;
+  .wall-label {
+    color: #d9d2b6;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+  }
+
+  .specimen {
+    width: min(260px, 70vw);
+    padding: 14px;
+    background: #1a120c;
+    border: 6px solid #6b4a2a;
+    box-shadow: 0 16px 30px -10px rgba(0, 0, 0, 0.7);
+  }
+
+  .face {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .front {
+    background: #f3e6c4;
+    padding: 8% 7%;
+    gap: 6%;
+  }
+
+  .corner {
+    align-self: flex-start;
+    font-family: var(--font-tarot);
+    font-size: 1.1rem;
+  }
+
+  .fool-art {
+    width: 100%;
+    flex: 1;
+    border: 2px solid var(--ink);
+  }
+
+  .face-title {
+    font-family: var(--font-tarot);
+    font-size: 1.05rem;
+    letter-spacing: 0.04em;
+  }
+
+  .specimen-stamp {
+    position: absolute;
+    top: 42%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-24deg);
+    padding: 0.15rem 0.6rem;
+    border: 3px solid var(--stamp-red);
+    color: var(--stamp-red);
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.85;
+    mix-blend-mode: multiply;
+  }
+
+  .back {
+    justify-content: center;
+    gap: 0.5rem;
+    background: #e4ecdf;
+    color: #1f3a2b;
+    text-align: center;
+    padding: 10%;
+  }
+
+  .guilloche {
+    position: absolute;
+    inset: 6%;
+    border: 2px solid #1f3a2b;
+    background:
+      repeating-radial-gradient(
+        circle at 50% 50%,
+        transparent 0 6px,
+        rgba(31, 58, 43, 0.18) 6px 7px
+      ),
+      repeating-linear-gradient(45deg, transparent 0 9px, rgba(31, 58, 43, 0.12) 9px 10px);
+  }
+
+  .back-title,
+  .back-serial,
+  .back-small {
+    position: relative;
+    background: #e4ecdf;
+    padding: 0.1rem 0.4rem;
   }
 
   .back-title {
-    font-size: 1rem;
-    color: #ffd700;
-    margin-bottom: 0.75rem;
-  }
-
-  .back-quote {
-    font-size: 0.85rem;
-    font-style: italic;
-    color: #e2e8f0;
-    line-height: 1.4;
-    margin-bottom: 1rem;
-  }
-
-  .back-flip-hint {
-    font-size: 0.725rem;
-    color: #a7a9be;
+    font-family: var(--font-heading);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.12em;
+    font-weight: 700;
   }
 
-  .altar-footer {
-    margin-top: 1rem;
-  }
-
-  .altar-hint {
+  .back-serial {
+    font-family: var(--font-typed);
     font-size: 0.85rem;
-    color: var(--color-text-secondary, #a7a9be);
   }
 
-  .sparkle {
-    color: #ffd700;
+  .back-small {
+    font-size: 0.7rem;
   }
 
-  /* How It Works & Features Sections */
-  .how-it-works,
-  .features,
-  .info {
-    margin-bottom: 4rem;
+  .placard {
+    max-width: 30ch;
+    padding: 0.75rem 0.9rem;
+    background: #f2ecd9;
+    border: 1px solid #b8ab88;
+    font-size: 0.85rem;
+    color: var(--ink);
   }
 
-  h2 {
-    font-size: 2.25rem;
-    margin-bottom: 2rem;
-    text-align: center;
+  /* ---------- Fees ---------- */
+  .fees {
+    grid-area: fees;
+    padding: 1.5rem 2rem;
+    background: var(--carbon-yellow);
+    border-color: #d7c35c;
   }
 
-  .steps {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 2rem;
-  }
-
-  .step {
-    padding: 2rem;
-    text-align: center;
-    transition:
-      transform 0.3s ease,
-      border-color 0.3s ease;
-  }
-
-  .step:hover {
-    transform: translateY(-4px);
-    border-color: rgba(212, 175, 55, 0.4);
-  }
-
-  .step-number {
-    width: 52px;
-    height: 52px;
-    background: linear-gradient(135deg, #d4af37 0%, #aa771c 100%);
-    color: #0b0a12;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    font-weight: bold;
-    margin: 0 auto 1.25rem;
-    box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
-  }
-
-  .step h3 {
-    font-size: 1.35rem;
-    margin-bottom: 0.85rem;
-    color: #fff;
-  }
-
-  .step p {
-    color: var(--color-text-secondary, #a7a9be);
-    line-height: 1.6;
-  }
-
-  .feature-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
-  }
-
-  .feature {
-    padding: 2rem;
-    text-align: center;
-    transition:
-      transform 0.3s ease,
-      border-color 0.3s ease;
-  }
-
-  .feature:hover {
-    transform: translateY(-4px);
-    border-color: rgba(212, 175, 55, 0.4);
-  }
-
-  .feature-icon {
-    font-size: 2.75rem;
-    display: block;
-    margin-bottom: 1rem;
-  }
-
-  .feature h3 {
-    font-size: 1.25rem;
-    margin-bottom: 0.75rem;
-    color: #fff;
-  }
-
-  .feature p {
-    color: var(--color-text-secondary, #a7a9be);
+  .fees table {
+    width: 100%;
+    border-collapse: collapse;
     font-size: 0.95rem;
-    line-height: 1.5;
   }
 
-  .info {
-    text-align: center;
-    padding: 3rem 2rem;
+  .fees td {
+    padding: 0.35rem 0;
+    border-bottom: 1px dotted rgba(0, 0, 0, 0.35);
   }
 
-  .status-text {
-    color: var(--color-text-secondary, #a7a9be);
-    font-size: 1.125rem;
-    margin-bottom: 1.5rem;
-    max-width: 650px;
-    margin-left: auto;
-    margin-right: auto;
-    line-height: 1.6;
+  .fees td:last-child {
+    text-align: right;
+    font-family: var(--font-typed);
   }
 
-  .links {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-    flex-wrap: wrap;
+  .fees .total td {
+    font-weight: 700;
+    border-bottom: 3px double var(--ink);
   }
 
-  .links a {
-    color: var(--color-secondary, #d4af37);
-    text-decoration: none;
-    font-weight: 600;
-    transition: color 0.2s;
+  .fees-note {
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    color: #4a3f13;
   }
 
-  .links a:hover {
-    color: var(--color-secondary-light, #fef08a);
-    text-decoration: underline;
-  }
-
-  .gold-link {
-    color: #ffd700 !important;
-  }
-
-  .separator {
-    color: rgba(212, 175, 55, 0.4);
-  }
-
-  @media (max-width: 768px) {
-    .hero {
-      padding: 2rem 1.25rem;
+  @media (max-width: 860px) {
+    .lobby {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        'notice'
+        'dispenser'
+        'instructions'
+        'specimen'
+        'fees';
+      gap: 1.5rem;
     }
 
-    .title {
-      font-size: 2.5rem;
+    .notice {
+      padding: 1.75rem 1.25rem 1.25rem;
+      transform: none;
     }
 
-    .subtitle {
-      font-size: 1.1rem;
+    .instructions,
+    .fees {
+      padding: 1.25rem;
     }
 
-    .description {
-      font-size: 1rem;
-    }
-
-    .gold-cta-button {
-      padding: 1rem 1.75rem;
-      font-size: 1.05rem;
-      width: 100%;
-    }
-
-    .steps,
-    .feature-grid {
+    .instructions li {
       grid-template-columns: 1fr;
+      gap: 0.4rem;
     }
 
-    h2 {
-      font-size: 1.75rem;
+    .step-no {
+      justify-self: start;
     }
   }
 </style>

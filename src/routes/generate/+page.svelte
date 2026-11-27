@@ -82,6 +82,23 @@
    */
   const hasGeneratedCards = $derived(appStore.generatedCards.length > 0)
 
+  /**
+   * Cards whose image failed. Shown after generation ends so they can be retried;
+   * the progress component (which also offers retry) is gone by then.
+   */
+  const failedCards = $derived(
+    appStore.generatedCards.filter(card => card.generationStatus === 'failed')
+  )
+
+  /** Card numbers with a retry in flight, so their buttons can't be double-clicked. */
+  let retrying = $state<number[]>([])
+
+  /**
+   * True while "Resubmit all" works through the list. Single resubmit buttons are disabled
+   * meanwhile so a queued card can't be generated (and billed) twice.
+   */
+  let retryingAll = $state(false)
+
   // ============================================================================
   // IMAGE GENERATION HANDLERS
   // ============================================================================
@@ -173,11 +190,16 @@
       return
     }
 
+    const current = appStore.generatedCards.find(card => card.cardNumber === cardNumber)
+
+    retrying = [...retrying, cardNumber]
+    // An earlier failure's banner would contradict this new attempt.
+    appStore.clearError()
     try {
       const response = await generationService.regenerateImage({
         cardNumber,
         prompt: prompt.generatedPrompt,
-        previousAttempts: 1,
+        previousAttempts: current?.retryCount ?? 0,
       })
 
       if (response.success && response.data?.generatedCard) {
@@ -197,6 +219,23 @@
       appStore.setError(
         error instanceof Error ? error.message : `Error retrying card ${cardNumber}`
       )
+    } finally {
+      retrying = retrying.filter(n => n !== cardNumber)
+    }
+  }
+
+  /** Retry every failed card, one at a time. */
+  async function retryAllFailed(): Promise<void> {
+    retryingAll = true
+    try {
+      for (const cardNumber of failedCards.map(card => card.cardNumber)) {
+        // Skip anything that stopped being failed since the list was taken.
+        const card = appStore.generatedCards.find(c => c.cardNumber === cardNumber)
+        if (card?.generationStatus !== 'failed' || retrying.includes(cardNumber)) continue
+        await handleRetryFailed(cardNumber)
+      }
+    } finally {
+      retryingAll = false
     }
   }
 
@@ -208,254 +247,204 @@
   }
 </script>
 
-<!-- ============================================================================ -->
-<!-- TEMPLATE -->
-<!-- ============================================================================ -->
+<svelte:head>
+  <title>Window 2 · Processing · Bureau of Fate</title>
+</svelte:head>
 
 <div class="generate-page">
-  <header>
-    <h1>Generate Your Tarot Deck</h1>
-    <p class="subtitle">Step 2 of 3: Review Prompts & Generate Images</p>
+  <header class="window-head">
+    <span class="window-plate">Window 2</span>
+    <h1>Processing</h1>
+    <p class="subtitle">
+      The clerk drafts a case file for every card. Amend what you like, then send the deck to be
+      illustrated.
+    </p>
   </header>
 
-  <div class="content">
-    <!-- Prompt List Section -->
-    <section class="prompts-section">
-      <PromptListComponent />
-    </section>
+  <section class="prompts-section sheet">
+    <PromptListComponent />
+  </section>
 
-    <!-- Generation Controls -->
-    <section class="generation-section">
-      {#if !isGenerating && !hasGeneratedCards}
-        <!-- Initial State: Ready to Generate -->
-        <div class="start-generation">
-          <h2>Ready to Generate?</h2>
+  <section class="generation-section sheet">
+    {#if !isGenerating && !hasGeneratedCards}
+      <div class="start-generation">
+        <h2>Send to illustration</h2>
+        <p class="description">
+          All 22 case files go to the illustrator, one card at a time. It takes a couple of minutes.
+          Anything that comes back rejected can be resubmitted.
+        </p>
+        <button class="stamp-btn" disabled={!hasPrompts} onclick={startGeneration}>
+          Approve all 22 for illustration
+        </button>
+        {#if !hasPrompts}
+          <p class="warning">The clerk needs all 22 case files drafted first.</p>
+        {/if}
+      </div>
+    {:else if isGenerating}
+      <GenerationProgressComponent onCancel={handleCancel} onRetryFailed={handleRetryFailed} />
+    {:else}
+      <div class="generation-complete">
+        {#if failedCards.length === 0}
+          <span class="approved-stamp" aria-hidden="true">Approved</span>
+          <h2>All 22 cards illustrated</h2>
+          <p class="description">Your deck is waiting at Window 3.</p>
+        {:else}
+          <h2>{22 - failedCards.length} of 22 cards illustrated</h2>
           <p class="description">
-            Review your prompts above. Once satisfied, click the button below to generate all 22
-            Major Arcana cards.
+            {failedCards.length === 1 ? 'One card was' : `${failedCards.length} cards were`} returned
+            unillustrated. Resubmit {failedCards.length === 1 ? 'it' : 'them'}, or collect the deck
+            as it is.
           </p>
-          <button class="btn-primary" disabled={!hasPrompts} onclick={startGeneration}>
-            Generate All 22 Cards
-          </button>
-          {#if !hasPrompts}
-            <p class="warning">Generate prompts first using the button above</p>
+          <ul class="failed-list">
+            {#each failedCards as card (card.cardNumber)}
+              <li>
+                <span class="returned-stamp" aria-hidden="true">Returned</span>
+                <span class="failed-name">{card.cardName}</span>
+                <button
+                  class="btn-retry"
+                  disabled={retryingAll || retrying.includes(card.cardNumber)}
+                  aria-label={`Resubmit ${card.cardName}`}
+                  onclick={() => handleRetryFailed(card.cardNumber)}
+                >
+                  {retrying.includes(card.cardNumber) ? 'Resubmitting…' : 'Resubmit'}
+                </button>
+              </li>
+            {/each}
+          </ul>
+          {#if failedCards.length > 1}
+            <button
+              class="btn-retry all"
+              disabled={retryingAll || retrying.length > 0}
+              onclick={retryAllFailed}
+            >
+              Resubmit all returned
+            </button>
           {/if}
-        </div>
-      {:else if isGenerating}
-        <!-- Generating State: Show Progress -->
-        <GenerationProgressComponent onCancel={handleCancel} onRetryFailed={handleRetryFailed} />
-      {:else}
-        <!-- Complete State: Navigation to Gallery -->
-        <div class="generation-complete">
-          <h2>Generation Complete!</h2>
-          <p class="description">Your tarot deck is ready to view.</p>
-          <button class="btn-primary" onclick={goToGallery}>View Gallery →</button>
-        </div>
-      {/if}
-    </section>
-  </div>
+        {/if}
+        <button class="stamp-btn" onclick={goToGallery}>Proceed to Window 3 →</button>
+      </div>
+    {/if}
+  </section>
 </div>
 
-<!-- ============================================================================ -->
-<!-- STYLES -->
-<!-- ============================================================================ -->
-
 <style>
-  /* ==========================================================================
-	   LAYOUT
-	   ========================================================================== */
-
   .generate-page {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
-  }
-
-  header {
-    text-align: center;
-    margin-bottom: 3rem;
-  }
-
-  header h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 0.5rem;
-  }
-
-  .subtitle {
-    font-size: 1.125rem;
-    color: #666;
-    margin: 0;
-  }
-
-  .content {
     display: flex;
     flex-direction: column;
-    gap: 3rem;
+    gap: 2rem;
   }
 
-  /* ==========================================================================
-	   SECTIONS
-	   ========================================================================== */
-
+  .prompts-section,
   .generation-section {
-    background: rgba(139, 92, 246, 0.05);
-    border: 1px solid rgba(139, 92, 246, 0.2);
-    border-radius: 12px;
-    padding: 2rem;
+    padding: 1.5rem;
   }
 
-  /* ==========================================================================
-	   START GENERATION STATE
-	   ========================================================================== */
-
-  .start-generation {
+  .start-generation,
+  .generation-complete {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
+    gap: 0.9rem;
   }
 
-  .start-generation h2 {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #1a1a1a;
-    margin-bottom: 1rem;
+  .start-generation h2,
+  .generation-complete h2 {
+    font-size: 1.6rem;
+    text-transform: uppercase;
   }
 
-  .start-generation .description {
-    font-size: 1.125rem;
-    color: #666;
-    margin-bottom: 2rem;
-    line-height: 1.6;
+  .description {
+    max-width: 56ch;
+    color: var(--ink-soft);
   }
 
   .warning {
-    color: #f6ad55;
-    margin-top: 1rem;
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--stamp-red);
   }
 
-  /* ==========================================================================
-	   COMPLETE STATE
-	   ========================================================================== */
-
-  .generation-complete {
-    text-align: center;
-  }
-
-  .generation-complete h2 {
-    font-size: 2rem;
+  .approved-stamp {
+    position: absolute;
+    top: -0.5rem;
+    right: 1rem;
+    padding: 0.15rem 0.6rem;
+    border: 4px solid #2f6b3d;
+    border-radius: 6px;
+    color: #2f6b3d;
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
     font-weight: 700;
-    color: #1a1a1a;
-    margin-bottom: 1rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    transform: rotate(10deg);
+    opacity: 0.8;
   }
 
-  .generation-complete h2::before {
-    content: '🎉 ';
-    font-size: 2.5rem;
-    display: block;
-    margin-bottom: 0.5rem;
+  .failed-list {
+    list-style: none;
+    width: min(100%, 460px);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
-  .generation-complete .description {
-    font-size: 1.125rem;
-    color: #666;
-    margin-bottom: 2rem;
+  .failed-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--carbon-pink);
+    border: 1px solid #d89aa0;
+    text-align: left;
   }
 
-  /* ==========================================================================
-	   BUTTONS
-	   ========================================================================== */
+  .returned-stamp {
+    padding: 0 0.35rem;
+    border: 2px solid var(--stamp-red);
+    color: var(--stamp-red);
+    font-family: var(--font-heading);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transform: rotate(-6deg);
+  }
 
-  .btn-primary {
-    padding: 1rem 2rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 1.1rem;
+  .failed-name {
+    flex: 1;
+    font-family: var(--font-tarot);
+  }
+
+  .btn-retry {
+    padding: 0.35rem 0.8rem;
+    border: 2px solid var(--stamp-blue);
+    background: transparent;
+    color: var(--stamp-blue);
+    font-family: var(--font-heading);
     font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     cursor: pointer;
-    transition:
-      transform 0.2s,
-      box-shadow 0.2s;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
   }
 
-  .btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
+  .btn-retry:hover:not(:disabled) {
+    background: var(--stamp-blue);
+    color: #fff;
   }
 
-  .btn-primary:active:not(:disabled) {
-    transform: translateY(0);
-  }
-
-  .btn-primary:disabled {
+  .btn-retry:disabled {
     opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
+    cursor: wait;
   }
 
-  /* ==========================================================================
-	   RESPONSIVE DESIGN
-	   ========================================================================== */
-
-  @media (max-width: 768px) {
-    .generate-page {
-      padding: 1rem;
-    }
-
-    header h1 {
-      font-size: 2rem;
-    }
-
-    .subtitle {
-      font-size: 1rem;
-    }
-
+  @media (max-width: 640px) {
+    .prompts-section,
     .generation-section {
-      padding: 1.5rem;
-    }
-
-    .start-generation h2,
-    .generation-complete h2 {
-      font-size: 1.5rem;
-    }
-
-    .start-generation .description,
-    .generation-complete .description {
-      font-size: 1rem;
-    }
-
-    .btn-primary {
-      width: 100%;
-      padding: 0.875rem 1.5rem;
-      font-size: 1rem;
-    }
-  }
-
-  /* ==========================================================================
-	   ACCESSIBILITY
-	   ========================================================================== */
-
-  @media (prefers-reduced-motion: reduce) {
-    .btn-primary,
-    header h1 {
-      transition: none;
-    }
-  }
-
-  @media (prefers-contrast: high) {
-    .generation-section {
-      border-width: 2px;
-    }
-
-    .btn-primary {
-      border: 2px solid white;
+      padding: 1rem 0.8rem;
     }
   }
 </style>

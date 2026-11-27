@@ -53,6 +53,7 @@ import type {
   GeneratedCard,
   ImageGenerationProgress,
 } from '$contracts/index'
+import { MAX_IMAGES } from '$contracts/ImageUpload'
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -117,10 +118,10 @@ class AppStore {
   uploadedImages = $state<UploadedImage[]>([])
 
   /**
-   * Maximum number of images allowed
-   * Per requirements: 10 images max
+   * Maximum number of images allowed.
+   * Must match the ImageUpload contract: the real upload service rejects anything above it.
    */
-  readonly MAX_IMAGES = 10
+  readonly MAX_IMAGES = MAX_IMAGES
 
   // ========================================================================
   // STYLE STATE
